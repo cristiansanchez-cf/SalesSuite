@@ -209,3 +209,11 @@ export const DIVE_VALUES: Record<string, readonly string[]> = {
   ...Object.fromEntries(ALL.map((x) => [x.key, Object.keys(x.options)])),
 };
 export const validDive = (key: string, value: string): boolean => !!DIVE_VALUES[key]?.includes(value);
+
+/** Marca un valor: en las de varios lo añade (o lo quita con `toggle` si ya estaba); en las demás lo pone (o lo quita). */
+export function setDive(q: Record<string, unknown>, key: string, value: string, toggle = false): void {
+  if (!DIVE_MULTI.includes(key)) { if (toggle && q[key] === value) delete q[key]; else q[key] = value; return; }
+  const cur = Array.isArray(q[key]) ? (q[key] as unknown[]).map(String).filter((x) => validDive(key, x)) : [];
+  const next = cur.includes(value) ? (toggle ? cur.filter((x) => x !== value) : cur) : [...cur, value];
+  if (next.length) q[key] = next; else delete q[key];
+}

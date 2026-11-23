@@ -12,6 +12,8 @@ import type { AccountsDb } from '../accounts/db';
 import { alertsOf, daysSince, STAGES, stageOf, stageSince, type PipelineInput, type Stage } from './pipeline';
 import { claudeModelPlan, fixtureModelPlan, MAX_MODEL_TEXT, readPlan, type ModelPlan, type ModelPlanApi } from './packages-ai';
 import { qualLabeler, qualQuestions, type QualQuestion } from './qual-labels';
+import { DIVE_MULTI, setDive, validDive } from './diving';
+import { LINK_ROLES } from './types';
 import { catalogText, cleanPicks, describe, freeNotes, listPrice, pickStr, tierOf, type Product } from './packages';
 import { isOpen, TRIAL_STEP, trialEnd, trialEndFrom, trialReminderDay, type Trial } from './trial';
 import { CYCLE_DAYS, CYCLE_DAYS_BIG, BASE_KIND, PROFILES, DISCARD_REASONS, normalizeKinds, profileOf, type Account, type AccountContact, type AccountFact, type AccountRef, type KindDef, type Zone } from '../accounts/types';
@@ -403,7 +405,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     note: z.string().trim().max(200).optional().transform((v) => (v === undefined ? undefined : v || null)),
     days: z.array(z.enum(LINK_DAYS)).max(7).optional(),
     freq: z.enum(['regular', 'sporadic', 'once']).nullable().optional().or(z.literal('').transform(() => null)),
-    role: z.enum(['resident', 'guest']).nullable().optional().or(z.literal('').transform(() => null)),
+    role: z.enum(LINK_ROLES).nullable().optional().or(z.literal('').transform(() => null)),
   });
   /**
    * Enlazar con otra empresa: la elegida, o por su nombre (si existe una que se llame igual, esa; si no, se crea del
@@ -1204,6 +1206,17 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
   async function markQual(id: string, current: Qualification | Record<string, unknown>, raw: Record<string, string>): Promise<Array<[string, string]>> {
     const q: Record<string, unknown> = { ...current };
     const marked: Array<[string, string]> = [];
+    // Buceo (§47): sus claves y valores (las de varios, sumadas).
+    if ((await qualPack()) === 'diving') {
+      for (const [k, val] of Object.entries(raw)) {
+        for (const v of DIVE_MULTI.includes(k) ? String(val).split(',').map((x) => x.trim()) : [String(val)]) {
+          if (!validDive(k, v)) continue;
+          setDive(q, k, v); marked.push([k, v]);
+        }
+      }
+      if (marked.length) { try { await accounts.qualify(id, q as Qualification); } catch (e) { mapError(e); } }
+      return marked;
+    }
     for (const [k, val] of Object.entries(raw)) {
       // Las de varios llegan juntas («club,hall»): se suman a lo que ya tenía.
       let set = false;
@@ -1226,7 +1239,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     const a = await accounts.getAccount(accountId);
     if (!a || a.tenantId !== t) throw new AdminError(404, 'Cuenta no encontrada');
     if (!(await qualPack())) return { name: a.name, gaps: [] };
-    return { name: a.name, gaps: qualQuestions(profileOf(await kinds(), a.kind), a.qualification ?? {}, requestLocale(), max) };
+    return { name: a.name, gaps: qualQuestions(profileOf(await kinds(), a.kind), a.qualification ?? {}, requestLocale(), max, await qualPack()) };
   }
   /**
    * «Tiene pantallas, hacen 2 fiestas al mes…»: la IA de Apuntar saca la cualificación de lo que cuenta de ESA empresa
@@ -1247,9 +1260,9 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     const norm = (x: string) => x.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
     const mine = items.length === 1 && (norm(items[0]!.venue).includes(norm(a.name)) || norm(a.name).includes(norm(items[0]!.venue))) ? items[0]! : null;
     const marked = mine ? await markQual(a.id, a.qualification ?? {}, mine.qualification) : [];
-    const ql = qualLabeler(requestLocale());
+    const ql = qualLabeler(requestLocale(), pack);
     const fresh = await accounts.getAccount(a.id);
-    return { name: a.name, marked: marked.map(([k, v]) => ql(k, v)), gaps: qualQuestions(profileOf(await kinds(), a.kind), fresh?.qualification ?? {}, requestLocale()) };
+    return { name: a.name, marked: marked.map(([k, v]) => ql(k, v)), gaps: qualQuestions(profileOf(await kinds(), a.kind), fresh?.qualification ?? {}, requestLocale(), 4, pack) };
   }
 
   /**
@@ -1413,10 +1426,22 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     const i = set.indexOf(':');
     const key = i > 0 ? set.slice(0, i) : '';
     // Estilo propio («añadir más»): lo escrito a mano, limpio; se añade (no se quita si ya estaba).
+    const pack = await qualPack();
+    // Buceo (§47): sus preguntas (y el tamaño de «Generar pago»); un clic marca, pulsar lo marcado lo quita.
+    if (pack === 'diving') {
+      const value = set.slice(i + 1);
+      if (!key || !(validDive(key, value) || (NO_PACK_QUAL.includes(key) && validQual(key, value)))) throw new AdminError(422, 'Datos no válidos');
+      const a = await accounts.getAccount(accountId);
+      if (!a || a.tenantId !== t) throw new AdminError(404, 'Cuenta no encontrada');
+      const q: Record<string, unknown> = { ...a.qualification };
+      setDive(q, key, value, !opts.add);
+      try { await accounts.qualify(accountId, q as Qualification); } catch (e) { mapError(e); }
+      return;
+    }
     const value = opts.add && PROFILE_MULTI.includes(key) ? cleanStyle(set.slice(i + 1)) : set.slice(i + 1);
     if (!key || !QUAL_VALUES[key] || !validQual(key, value)) throw new AdminError(422, 'Datos no válidos');
     // Sin cualificación en el espacio (§45), solo el tamaño (el de «Generar pago»).
-    if (!(await qualPack()) && !NO_PACK_QUAL.includes(key)) throw new AdminError(422, 'Datos no válidos');
+    if (!pack && !NO_PACK_QUAL.includes(key)) throw new AdminError(422, 'Datos no válidos');
     const a = await accounts.getAccount(accountId);
     if (!a || a.tenantId !== t) throw new AdminError(404, 'Cuenta no encontrada');
     const q: Record<string, unknown> = { ...a.qualification };
@@ -1783,9 +1808,9 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
       throw new AdminError(503, 'La IA no ha respondido; prueba en un momento', [aiReason(e)]);
     }
     // La cualificación en palabras, para el resumen del asistente («📋 Pantallas: Sí · Fiestas al mes: 2–3»).
-    const ql = qualLabeler(requestLocale());
+    const ql = qualLabeler(requestLocale(), pack);
     for (const it of items) {
-      it.qualLabels = pack ? Object.entries(it.qualification).filter(([k, raw]) => String(raw).split(',').some((x) => QUAL_VALUES[k]?.includes(x.trim()))).map(([k, raw]) => ql(k, String(raw))) : [];
+      it.qualLabels = pack ? Object.entries(it.qualification).filter(([k, raw]) => String(raw).split(',').some((x) => (pack === 'diving' ? validDive(k, x.trim()) : QUAL_VALUES[k]?.includes(x.trim())))).map(([k, raw]) => ql(k, String(raw))) : [];
     }
     // Paquetes al cerrar: solo los que existen (y gratis si se puede); en texto para el resumen («Canciones (gratis) + Álbum · 40 €/mes»).
     for (const it of items) {
@@ -1865,7 +1890,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     /** Tipo de la empresa nueva (§24: promotora, DJ…) y dónde trabaja (enlaces con días y frecuencia). */
     kind: z.string().regex(/^[a-z0-9][a-z0-9-]{0,39}$/).optional().or(z.literal('').transform(() => undefined)),
     worksAt: z.array(z.object({ place: z.string().trim().min(1).max(160), days: z.array(z.enum(LINK_DAYS)).max(7).default([]),
-      freq: z.enum(['regular', 'sporadic', 'once']).nullable().optional(), role: z.enum(['resident', 'guest']).nullable().optional(),
+      freq: z.enum(['regular', 'sporadic', 'once']).nullable().optional(), role: z.enum(LINK_ROLES).nullable().optional(),
       what: z.enum(PROFILES).nullable().optional() })).max(12).default([]),
     discardNote: z.string().trim().max(500).nullable().optional().transform((v) => v || null),
     /** Canales del propio sitio confirmados (§40): solo se rellenan los que la ficha no tiene. */
@@ -2060,14 +2085,14 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     const webAudit: WebAudit | null | undefined = !webOn ? undefined : a.website ? await site.audit(a.website).catch(() => unreachable(a.website!)) : null;
     // Sin cualificación en el espacio (§45), la IA no propone criterios: solo contacto y personas.
     const pack = await qualPack();
-    const known = pack ? Object.fromEntries(Object.entries(a.qualification ?? {}).filter(([, v]) => v !== undefined)) : {};
+    const known = pack === 'nightlife' ? Object.fromEntries(Object.entries(a.qualification ?? {}).filter(([, v]) => v !== undefined)) : {};
     let raw: unknown;
     try {
       raw = await ai.research({ name: a.name, city: (await zoneNameOf(a)) || null, address: a.address, website: a.website, instagram: a.instagram,
         sector: ctx.sector, seller: ctx.seller, clients: ctx.clients ?? [], known, pack, products: await products().then((c) => (c.length ? catalogText(c) : null)).catch(() => null), country: loc.regionCode ?? null, lang: requestLocale(), legalName: legal.legalName ?? null, taxId: legal.taxId ?? null, focus: focus || null, webAudit });
     } catch (e) { console.warn('[ai-research]', e instanceof Error ? e.message : e); throw new AdminError(503, 'La IA no ha respondido; prueba en un momento', [aiReason(e)]); }
     if (!raw) throw new AdminError(503, 'La IA no ha respondido; prueba en un momento');
-    const r = sanitizeResearch(raw, { known, contact: { phone: a.phone, email: a.email, instagram: a.instagram, linkedin: a.linkedin, website: a.website }, people, now: new Date(), qual: !!pack, name: a.name, group: groupName, focus: focus || null, ...(webAudit !== undefined ? { web: webAudit } : {}) });
+    const r = sanitizeResearch(raw, { known, contact: { phone: a.phone, email: a.email, instagram: a.instagram, linkedin: a.linkedin, website: a.website }, people, now: new Date(), qual: pack === 'nightlife', name: a.name, group: groupName, focus: focus || null, ...(webAudit !== undefined ? { web: webAudit } : {}) });
     try { await accounts.saveAiResearch(accountId, r); } catch (e) { mapError(e); }
     return r;
   }
@@ -2102,9 +2127,16 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
       const a = await accounts.getAccount(accountId);
       if (!a || a.tenantId !== t) throw new AdminError(404, 'Cuenta no encontrada');
       if (sg.kind === 'qual') {
-        if (!(await qualPack())) throw new AdminError(422, 'Datos no válidos');
+        const pk = await qualPack();
+        if (!pk) throw new AdminError(422, 'Datos no válidos');
         const q: Record<string, unknown> = { ...a.qualification };
-        if (q[sg.key] === undefined || (MULTI_QUAL.includes(sg.key) && !formatsOf(q as Qualification).includes(sg.value as Format))) {
+        if (pk === 'diving') {
+          // Buceo (§47): lo propuesto con su evidencia; no pisa lo marcado (en las de varios, se suma).
+          if (validDive(sg.key, sg.value) && (q[sg.key] === undefined || DIVE_MULTI.includes(sg.key))) {
+            setDive(q, sg.key, sg.value);
+            try { await accounts.qualify(accountId, q as Qualification); } catch (e) { mapError(e); }
+          }
+        } else if (q[sg.key] === undefined || (MULTI_QUAL.includes(sg.key) && !formatsOf(q as Qualification).includes(sg.value as Format))) {
           setQual(q, sg.key, sg.value === 'true' ? true : sg.value);
           try { await accounts.qualify(accountId, q as Qualification); } catch (e) { mapError(e); }
         }

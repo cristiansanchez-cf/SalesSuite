@@ -163,7 +163,8 @@ ${VALUE_HELP}
 
 /** La herramienta sin cualificación: contacto, personas y fuentes (lo general). Con ella, la de siempre (SAVE_TOOL). */
 export function researchTool(pack?: QualPack | null) {
-  if (pack !== null) return SAVE_TOOL;
+  // La de siempre solo con ocio nocturno (o sin decirlo); buceo, de momento, lo general (§47: la IA de buceo, fase 3).
+  if (pack === 'nightlife' || pack === undefined) return SAVE_TOOL;
   const { qualification: _q, ...props } = SAVE_TOOL.input_schema.properties;
   return { ...SAVE_TOOL, input_schema: { ...SAVE_TOOL.input_schema, required: SAVE_TOOL.input_schema.required.filter((k) => k !== 'qualification'),
     properties: { ...props, people: { ...props.people, description: 'Personas con un papel público en la empresa (dueño, gerente, dirección, responsables…).' } } } };
@@ -182,7 +183,7 @@ Reglas:
 const LANG_NAME: Record<string, string> = { es: 'español', en: 'inglés', pt: 'portugués', ko: 'coreano' };
 /** El sistema de la petición, con el idioma de quien investiga (el comercial coreano lee el resumen en coreano). */
 export const researchSystem = (pack?: QualPack | null, lang?: string | null) => {
-  const base = pack !== null ? SYSTEM : SYSTEM_GENERAL;
+  const base = pack === 'nightlife' || pack === undefined ? SYSTEM : SYSTEM_GENERAL;
   const name = LANG_NAME[(lang ?? 'es').slice(0, 2)] ?? 'español';
   return name === 'español' ? base : base.replace('- Escribe en español,', `- Escribe en ${name} (lo lee un comercial que habla ${name}),`);
 };
@@ -360,7 +361,7 @@ export const fixtureResearch = (): ResearchApi => ({
       return { point: point.slice(0, 60), verdict, detail: verdict === 'unknown' ? 'Ejemplo de prueba: no se ha comprobado.' : verdict === 'problem' ? 'Ejemplo de prueba: según la revisión de su web, falta.' : 'Ejemplo de prueba: en orden.', source: '' };
     });
     // Sin cualificación en el espacio (§45): lo general, sin nada de la noche.
-    if (i.pack === null) return {
+    if (i.pack === null || i.pack === 'diving') return {
       summary: `Ejemplo de prueba (sin IA): ${i.name}, con web y contacto públicos.`,
       look: ['Mira sus redes para ver cómo trabaja y con quién.'], qualification: [],
       contact: [{ key: 'email', value: 'hola@ejemplo.test', evidence: 'Email en el pie de su web.', source: src }],

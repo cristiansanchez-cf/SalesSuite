@@ -1,4 +1,5 @@
 ---
+import { divePriority } from '~/lib/crm/score';
 /**
  * Personas (docs/CRM_DINAMICO.md fase 2): el directorio de con quién habláis y dónde está cada uno.
  * Alta rápida con «¿dónde?» (la empresa se crea al vuelo) y la bandeja de quien aún no tiene empresa.
@@ -59,7 +60,7 @@ const [weights, segs, pack] = await Promise.all([admin.crm.weights(), admin.play
 const qual = pack !== null;
 const segKey = new Map(segs.map((sg) => [sg.id, sg.key]));
 const bestOf = (cs: (typeof items)[number]['companies']): Priority | null => !qual ? null :
-  cs.map((c) => priorityOf(c.qualification, segKey.get(c.segmentId ?? '') ?? null, weights)).sort(compareLeads)[0] ?? null;
+  cs.map((c) => (pack === 'diving' ? divePriority(c.qualification, 'venue') : priorityOf(c.qualification, segKey.get(c.segmentId ?? '') ?? null, weights))).sort(compareLeads)[0] ?? null;
 const orden = qual && q.get('orden') === 'prioridad';
 const fields = allFields.filter((x) => x.target === 'contact' && (!x.tags.length || x.tags.includes(lista)));
 const filterable = fields.filter((x) => x.filterable);

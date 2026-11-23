@@ -1,4 +1,5 @@
 ---
+import { divePriority } from '~/lib/crm/score';
 /**
  * Ruta del día (docs/CRM_DINAMICO.md §12): las visitas que tocan (o las empresas elegidas en Cuentas), en el orden más
  * corto desde donde estás, con la llegada estimada, el horario de hoy y la ruta entera para abrir en Google Maps.
@@ -63,7 +64,7 @@ const empty = !plan.stops.length && !plan.missing.length && !plan.closedForGood.
           <ol class="co-rows">
             {plan.stops.map((p, i) => {
               const a = p.account;
-              const pr = priorityOf(a.qualification, segKey.get(a.segmentId ?? '') ?? null, weights);
+              const pr = pack === 'diving' ? divePriority(a.qualification, 'venue') : priorityOf(a.qualification, segKey.get(a.segmentId ?? '') ?? null, weights);
               return (
                 <li class:list={['co-row', p.hours?.closed && 'co-row--attention']} data-testid="route-stop" data-name={a.name} data-order={i + 1}>
                   <span class="co-row__lead font-semibold">{i + 1}</span>

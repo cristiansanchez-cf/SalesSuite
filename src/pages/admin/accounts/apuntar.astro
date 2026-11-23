@@ -4,6 +4,7 @@
  * empresa que más se parece (o una nueva), su nota, lo que se marca en la cualificación y el próximo paso → se revisa
  * y se guarda todo de una vez. La IA no guarda nada.
  */
+import { divingMessages } from '~/lib/i18n/messages/diving';
 import { qualLabeler } from '~/lib/crm/qual-labels';
 import { clientsMessages } from '~/lib/i18n/messages/clients';
 import { trialMessages } from '~/lib/i18n/messages/trial';
@@ -106,7 +107,9 @@ const fieldLabel = new Map(items ? (await admin.accounts.crmFields().catch(() =>
 const hasAi = admin.crm.hasNotes();
 
 /** «Pantallas: Sí», «Noches a la semana: 4 o más», «Sin cobertura móvil» (las mismas palabras que el asistente). */
-const qualLabel = qualLabeler(locale);
+const qualLabel = qualLabeler(locale, await admin.crm.qualPack());
+// El papel donde trabaja: DJ residente o invitado; instructor fijo, colabora o dueño (§47).
+const roleWord = (r: string): string => (PRF.roles as Record<string, string>)[r] ?? divingMessages[locale].roles[r] ?? '';
 // Tipos del espacio (§24): el de cada sitio nuevo sale de lo que dice la IA (promotora, DJ o local).
 const kindDefs = items ? await admin.accounts.kinds() : [];
 const kindFor = (e: string | null) => (e && e !== 'venue' ? kindDefs.find((k) => k.profile === e)?.key : undefined) ?? kindDefs[0]?.key;
@@ -169,7 +172,7 @@ const best = (it: Item) => (it.candidates[0] && it.candidates[0].score >= 0.8 ? 
               <legend class="co-field px-1">{PRF.where[it.entity ?? 'venue']}</legend>
               {it.worksAt.map((w, j) => (
                 <label class="inline-flex items-center gap-2 text-sm"><input type="checkbox" name={`wk-${i}`} value={String(j)} checked class="h-4 w-4 accent-[var(--co-ink)]" data-testid="notes-work" />
-                  <span><strong>{w.place}</strong>{[w.what ? kindDefs.find((k) => (k.profile ?? 'venue') === w.what)?.label ?? '' : '', ...[w.days.map((d) => PRF.daysLong[d]).join(', '), w.role ? PRF.roles[w.role] : '', w.freq ? PRF.freqs[w.freq] : '']].filter(Boolean).map((x) => ` · ${x}`).join('')}</span></label>
+                  <span><strong>{w.place}</strong>{[w.what ? kindDefs.find((k) => (k.profile ?? 'venue') === w.what)?.label ?? '' : '', ...[w.days.map((d) => PRF.daysLong[d]).join(', '), w.role ? roleWord(w.role) : '', w.freq ? PRF.freqs[w.freq] : '']].filter(Boolean).map((x) => ` · ${x}`).join('')}</span></label>
               ))}
             </fieldset>
           )}

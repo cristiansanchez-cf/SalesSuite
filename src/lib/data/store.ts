@@ -437,7 +437,12 @@ export function freshDemoDb(): DemoDb {
     ],
     account_link: [],
     crm_import: [],
-    crm_settings: [{ tenant_id: ENJOY, priority_weights: {}, qualification: 'nightlife', kinds: [{ key: 'company', label: 'Empresa', plural: 'Empresas', icon: 'building2' }, { key: 'dj', label: 'DJ o artista', plural: 'DJs', icon: 'music', profile: 'dj' }, { key: 'promotora', label: 'Promotora', plural: 'Promotoras', icon: 'ticket', profile: 'promoter' }, { key: 'marca', label: 'Marca', plural: 'Marcas', icon: 'star' }] }],
+    crm_settings: [{ tenant_id: ENJOY, priority_weights: {}, qualification: 'nightlife', kinds: [{ key: 'company', label: 'Empresa', plural: 'Empresas', icon: 'building2' }, { key: 'dj', label: 'DJ o artista', plural: 'DJs', icon: 'music', profile: 'dj' }, { key: 'promotora', label: 'Promotora', plural: 'Promotoras', icon: 'ticket', profile: 'promoter' }, { key: 'marca', label: 'Marca', plural: 'Marcas', icon: 'star' }] },
+      // Con DEMO_DIVING=1, el espacio de prueba («re-tema») es como Oquea: cualificación de buceo y sus tres tipos (§47).
+      ...(process.env.DEMO_DIVING === '1' ? [{ tenant_id: ALT, priority_weights: {}, qualification: 'diving', kinds: [
+        { key: 'company', label: 'Centro u operador', plural: 'Centros y operadores', icon: 'anchor', profile: 'venue' },
+        { key: 'ong', label: 'ONG o club', plural: 'ONGs y clubs', icon: 'heart-handshake', profile: 'promoter' },
+        { key: 'instructor', label: 'Instructor', plural: 'Instructores', icon: 'graduation-cap', profile: 'dj' }] }] : [])],
     crm_fix: [],
     crm_sweep: [],
     usage_counter: [],

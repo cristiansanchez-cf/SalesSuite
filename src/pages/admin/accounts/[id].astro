@@ -48,6 +48,8 @@ import { suggestTariff } from '~/lib/crm/charge';
 import { chargeMessages } from '~/lib/i18n/messages/charge';
 import { mergeMessages } from '~/lib/i18n/messages/merge';
 import { SIZE_LIMITS, SIZES, formatsOf, sizeScaleOf } from '~/lib/crm/priority';
+import DiveCard from '~/components/crm/DiveCard.astro';
+import { divingMessages } from '~/lib/i18n/messages/diving';
 import QualificationCard from '~/components/crm/QualificationCard.astro';
 import GroupLocalesCard from '~/components/crm/GroupLocalesCard.astro';
 import AiResearchCard from '~/components/crm/AiResearchCard.astro';
@@ -233,10 +235,13 @@ const googleApplied = () => {
 const profile = profileOf(kindDefs, a.kind);
 const PRF = profilesMessages[locale];
 const segKey = segments.find((sg) => sg.id === a.segmentId)?.key ?? null;
-const prio = priorityFor(a.qualification, profile, segKey, weights);
+const prio = priorityFor(a.qualification, profile, segKey, weights, pack);
+// Buceo (§47): su propia tarjeta y su resumen (nivel y cómo entrar), sin «Le encaja» ni grupos de locales.
+const dive = pack === 'diving';
+const DV = divingMessages[locale];
 // Un grupo (§37) no se cualifica: sus locales, cada uno con su tipo, tamaño y nota.
 const isGroup = co.locales.length > 0;
-const groupLocals = isGroup && qual
+const groupLocals = isGroup && pack === 'nightlife'
   ? (await admin.crm.groupLocales(a.id)).map((l) => ({ id: l.id, name: l.name, zone: l.zoneId ? zonePath(t.zones, l.zoneId) : null, q: l.qualification,
       owner: l.ownerId ? (members.find((x) => x.userId === l.ownerId)?.displayName ?? null) : null,
       p: priorityFor(l.qualification, profileOf(kindDefs, l.kind), segments.find((sg) => sg.id === l.segmentId)?.key ?? null, weights) }))
@@ -269,7 +274,7 @@ const okMsg = okKey.startsWith('not-') ? null : flash(Astro.url, {
 });
 // Cobrar (§35): los tramos del tamaño según lo que es y quién generó cada enlace.
 const sizeRangeOf = (q: typeof a.qualification): Record<string, string> => {
-  if (!qual) return {};   // los tramos de aforo son de la cualificación de ocio nocturno
+  if (pack !== 'nightlife') return {};   // los tramos de aforo son de la cualificación de ocio nocturno
   const lim = SIZE_LIMITS[sizeScaleOf(formatsOf(q))];
   const num = (n: number) => n.toLocaleString('es-ES');
   return Object.fromEntries(SIZES.map((k, i) => [k, PS.sizeRange(i ? num(lim[i - 1]) : '', i < 3 ? num(lim[i]) : '')]));
@@ -381,7 +386,12 @@ const STATE_ALERT = {
 
       {/* Resumen (§22): lo que hace falta de un vistazo en la puerta del local; y saltos a cada parte (en el móvil la ficha es larga). */}
       <section id="account-summary" class="co-card grid gap-3 !p-4" data-testid="account-summary">
-        {qual && <div class="grid gap-2">
+        {dive && !isGroup && a.state !== 'customer' && <div class="flex flex-wrap items-baseline gap-2" data-testid="summary-dive">
+          {prio.out ? <span class="co-tag co-tag--danger">{DV.levels.out}</span>
+            : <><span class="co-figure text-3xl" data-testid="summary-score">{prio.score}</span><span class="co-meta">/ 100{!prio.qualified && ` · ${PS.unqualified}`}</span>
+              {prio.level && <span class="co-tag" data-testid="summary-level" data-level={prio.level}>{DV.levels[prio.level]}</span>}</>}
+        </div>}
+        {qual && !dive && <div class="grid gap-2">
           {isGroup ? (
             <span class="inline-flex items-baseline gap-1" data-testid="summary-group">{groupBest
               ? <><span class="co-figure text-3xl">{groupBest.p.score}</span><span class="co-meta">/ 100 · {PS.group.score}: {groupBest.name}</span></>
@@ -423,7 +433,7 @@ const STATE_ALERT = {
       </section>
 
       {/* Promotora o DJ (§24): lo primero es dónde trabaja, con qué días y frecuencia. */}
-      {profile !== 'venue' && <WorkLinks work={work} kinds={kindDefs} profile={profile} canEdit={canQualify} selfId={a.id} card />}
+      {profile !== 'venue' && <WorkLinks work={work} kinds={kindDefs} profile={profile} canEdit={canQualify} selfId={a.id} card pack={pack} />}
 
       {/* «Lo que sabemos» (§20): lo más valioso del comercial, arriba. Lo que le encaja primero; luego cómo es el sitio. */}
 
@@ -505,7 +515,8 @@ const STATE_ALERT = {
 
       {profile === 'venue' && a.state !== 'customer' && a.state !== 'blocked' && <AiResearchCard research={aiR} canEdit={canQualify && a.state !== 'taken'} hasAi={admin.crm.hasAi()} focus={await admin.crm.researchFocus()} hasWebsite={!!a.website} isAdmin={perms.manageTenant} />}
 
-      {!qual ? null : isGroup ? <GroupLocalesCard locales={groupLocals} /> : a.state !== 'customer' && (profile === 'venue'
+      {!qual ? null : dive ? (a.state !== 'customer' && <DiveCard q={a.qualification as Record<string, unknown>} profile={profile} canEdit={canQualify} cooling={coolingMap.get(id) ?? null} />)
+        : isGroup ? <GroupLocalesCard locales={groupLocals} /> : a.state !== 'customer' && (profile === 'venue'
         ? <QualificationCard q={a.qualification} p={prio} canEdit={canQualify} cooling={coolingMap.get(id) ?? null} />
         : <ProfileCard profile={profile} q={a.qualification as Record<string, unknown>} p={prio} canEdit={canQualify} />)}
 
@@ -678,7 +689,7 @@ const STATE_ALERT = {
         </div>
       </section>
       {/* «Trabaja con» de un cliente: solo si el espacio tiene organizadores o profesionales (promotoras, DJs…). */}
-      {profile === 'venue' && kindDefs.some((k) => k.profile === 'promoter' || k.profile === 'dj') && <WorkLinks work={work} kinds={kindDefs} profile={profile} canEdit={canQualify} selfId={a.id} card />}
+      {profile === 'venue' && kindDefs.some((k) => k.profile === 'promoter' || k.profile === 'dj') && <WorkLinks work={work} kinds={kindDefs} profile={profile} canEdit={canQualify} selfId={a.id} card pack={pack} />}
 
       {/* Los campos del espacio son de locales (aforo…): una promotora o un DJ no los enseña (§24). */}
       {/* Sin campos activos (en Enjoy, el aforo pasó a «Tamaño» en tramos, §30), la tarjeta no sale. */}

@@ -4,7 +4,8 @@ import { NO_PACK_QUAL, normalizePack, QUAL_PACKS } from './pack';
 
 describe('paquete de cualificación', () => {
   test('solo los paquetes conocidos; cualquier otra cosa (o nada) es «sin cualificación»', () => {
-    expect(QUAL_PACKS).toEqual(['nightlife']);
+    expect(QUAL_PACKS).toEqual(['nightlife', 'diving']);
+    expect(normalizePack('diving')).toBe('diving');
     expect(normalizePack('nightlife')).toBe('nightlife');
     for (const v of [null, undefined, '', 'Nightlife', ' nightlife', 'otro', 0, true, { pack: 'nightlife' }]) expect(normalizePack(v)).toBeNull();
   });

@@ -1282,3 +1282,62 @@ Datos: migración `20261230000000_notion_import.sql`:
 Pruebas:
 - `src/lib/notion/notion.test.ts`: documento, HTML escapado, Markdown, fechas, entradas, plan y de punta a punta en demo;
 - `scripts/smoke-notion-import.cjs`.
+
+## 47. Buceo: la cualificación de Oquea (paquete `diving`)
+
+Criterio de Oquea: «OQUEA · Criterios de cualificación de leads» v1.0 (23-nov-2026), del agente de modelo de negocio.
+Cristian eligió: 3 pestañas (con el segmento como pregunta), la IA rellena y la persona corrige (fase 3), y empezar por
+tipos, instructores y cualificación.
+
+- **Tipos** (migración `20270120000000_oquea_diving.sql`, solo si Oquea seguía con el tipo de siempre):
+  - **Centros y operadores** (`company`, ficha de cliente).
+  - **ONGs y clubs** (`ong`, ficha de organizador).
+  - **Instructores** (`instructor`, ficha de profesional).
+- **Segmento** («¿Qué es?»): en Centros y operadores, PREM · CENTRO · TOUR · OTRO; en ONGs y clubs, ONG · CLUB. Con él
+  salen sus preguntas.
+- **Nota (0–100)**, por bloques con tope:
+  - A, necesidad digital (25): su web, reserva online, contacto, fidelización.
+  - B, encaje con el segmento (40; club 15).
+  - C, valor potencial (25; club 0).
+  - D, acceso al decisor (10).
+  - Ajustes: mercado futuro −15 y ya tiene software −10. Etiquetas: PADI Adventures y zombie.
+  - Lo que no se sabe no suma; se enseña «puede llegar a».
+  - En TOUR las redes valen 10.
+- **Nivel**:
+  - A ≥ 70: ventas en menos de 48 h, con un dato concreto.
+  - B 45–69: secuencia; si la web está muy mal, se abre con la web.
+  - C < 45: nutrición.
+  - CANAL: ONG o club con ≥ 40; lo lleva alianzas.
+  - DESCARTADO: OTRO o zombie.
+  - Con el nivel, la ficha enseña **cómo entrar** (el ángulo de su segmento) y el **siguiente paso**.
+- **Instructor**:
+  - «¿Puede vendernos?»: nos vendería (40), alcance (25), nivel (20), dueño de algo (15).
+  - También qué hace (recreativo, técnico, apnea, cuevas…; varios) y agencias (varias).
+  - **Dónde trabaja** va en «Trabaja con», con su papel en cada centro: **fijo, colabora o dueño** (`account_link.role`
+    acepta `staff`, `freelance`, `owner`).
+- **Código**:
+  - `src/lib/crm/diving.ts`: puro; preguntas, nota, nivel, etiquetas y validación.
+  - `src/lib/i18n/messages/diving.ts`: los textos, en 4 idiomas.
+  - `src/components/crm/DiveCard.astro`: la tarjeta.
+  - `score.ts` `divePriority`: la misma forma que la nota de Enjoy, así que la lista, el mapa, personas y la ruta
+    ordenan igual.
+  - Lo que era «hay paquete» y en realidad era de ocio nocturno (preguntas, pesos, tramos de aforo, «Le encaja»,
+    locales del grupo, prompts de la IA) ahora pregunta `pack === 'nightlife'`.
+- **Dónde se marca**:
+  - La ficha: un clic, se guarda al instante.
+  - Apuntar: la IA ve las preguntas de buceo y el papel de cada instructor.
+  - WhatsApp: «cualifica X».
+  - MCP: `preguntas_cualificacion` y `cualificar`.
+  - Investigar (fase 3): de momento, lo general.
+- **Pesos**: los del documento, fijos por ahora (sin pestaña de prioridad). El documento pide revisarlos con los
+  primeros 50 leads.
+- **Pruebas**:
+  - `src/lib/crm/diving.test.ts`: nota, niveles, ajustes, preguntas, palabras y Apuntar.
+  - Test SQL 73: el paquete y los papeles.
+  - `scripts/smoke-diving.cjs`: demo con `DEMO_DIVING=1`; el espacio de prueba se vuelve como Oquea.
+- **Pendiente** (del documento, §9):
+  - El precio de la web.
+  - La lista de países con red (afecta a C y a MERCADO_FUTURO).
+  - Quién lleva los de CANAL.
+  - La fase 3: Investigar marca cada señal con su evidencia, el estado de la web con las 12 comprobaciones y el dato
+    de personalización.

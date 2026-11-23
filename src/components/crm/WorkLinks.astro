@@ -4,6 +4,10 @@
  * los dos sentidos, con qué días suele (nunca es exacto), la frecuencia y, si es un DJ, si es residente o invitado.
  * Arriba, la frase que importa de una promotora: «Viernes en Sala X · Sábados en Y · esporádico en Z».
  */
+import type { QualPack } from '~/lib/crm/pack';
+import { INSTRUCTOR_ROLES } from '~/lib/crm/diving';
+import type { LinkRole } from '~/lib/crm/types';
+import { divingMessages } from '~/lib/i18n/messages/diving';
 import Icon from '~/components/ui/Icon.astro';
 import type { KindDef, Profile } from '~/lib/accounts/types';
 import { LINK_DAYS, type LinkWhen } from '~/lib/crm/types';
@@ -13,10 +17,17 @@ import { kindsMessages } from '~/lib/i18n/messages/kinds';
 import { profilesMessages } from '~/lib/i18n/messages/profiles';
 
 type W = LinkWhen & { id: string; note: string | null; account: { id: string; name: string; kind: string } };
-interface Props { work: W[]; kinds: KindDef[]; profile: Profile; canEdit: boolean; card?: boolean; selfId: string }
-const { work, kinds, profile, canEdit, card = false, selfId } = Astro.props;
+interface Props { work: W[]; kinds: KindDef[]; profile: Profile; canEdit: boolean; card?: boolean; selfId: string; pack?: QualPack | null }
+const { work, kinds, profile, canEdit, card = false, selfId, pack = null } = Astro.props;
 const { m: PM, locale } = i18n(Astro, profilesMessages);
 const KN = kindsMessages[locale];
+// El papel del profesional donde trabaja: DJ residente o invitado; en buceo (§47), instructor fijo, colabora o dueño.
+const DV = divingMessages[locale];
+const ROLES: readonly LinkRole[] = pack === 'diving' ? INSTRUCTOR_ROLES : ['resident', 'guest'];
+const roleLabel = (r: LinkRole) => (pack === 'diving' ? DV.roles[r] : (PM.roles as Record<string, string>)[r]) ?? r;
+const roleTitle = pack === 'diving' ? DV.role : PM.role;
+const whereTitle = pack === 'diving' ? DV.where[profile] : PM.where[profile];
+const whereHelp = pack === 'diving' ? DV.whereHelp[profile] : PM.whereHelp[profile];
 const kindOf = (k: string) => kinds.find((d) => d.key === k) ?? kinds[0];
 const isDj = (k: string) => kindOf(k)?.profile === 'dj';
 // Para una promotora o un DJ, lo nuevo suele ser un local; para un local, una promotora (si el espacio la tiene).
@@ -31,15 +42,15 @@ const sections = wanted.map((k) => ({ kind: k as KindDef | null, title: k.plural
   items: work.filter((w) => w.account.kind === k.key) }));
 const others = sections.length ? work.filter((w) => !wanted.some((k) => k.key === w.account.kind)) : [];
 if (!sections.length) sections.push({ kind: null, title: '', icon: 'building2', dj: profile === 'dj', items: work });
-const when = (w: W) => [w.days.length ? w.days.map((d) => PM.daysLong[d]).join(', ') : '', w.role ? PM.roles[w.role] : '', w.freq ? PM.freqs[w.freq] : ''].filter(Boolean).join(' · ');
+const when = (w: W) => [w.days.length ? w.days.map((d) => PM.daysLong[d]).join(', ') : '', w.role ? roleLabel(w.role) : '', w.freq ? PM.freqs[w.freq] : ''].filter(Boolean).join(' · ');
 // La frase de arriba: lo habitual primero.
 const order = { regular: 0, sporadic: 1, once: 2 } as const;
 const line = [...work].filter((w) => w.days.length || w.freq).sort((a, b) => (order[a.freq ?? 'regular'] - order[b.freq ?? 'regular']))
   .map((w) => `${w.days.length ? `${w.days.map((d) => PM.daysLong[d]).join(' y ')} en ` : `${PM.freqs[w.freq ?? 'regular']} en `}${w.account.name}`).join(' · ');
 ---
 <div id="work" class:list={['grid gap-3', card && 'co-card']} data-testid="work-links">
-  {card ? <h2 class="co-entity">{PM.where[profile]}</h2> : <p class="m-0"><span class="text-eyebrow">{PM.where[profile]}</span></p>}
-  <p class="co-meta m-0">{PM.whereHelp[profile]}</p>
+  {card ? <h2 class="co-entity">{whereTitle}</h2> : <p class="m-0"><span class="text-eyebrow">{whereTitle}</span></p>}
+  <p class="co-meta m-0">{whereHelp}</p>
   {line && <p class="m-0 font-semibold" data-testid="work-line">{line}</p>}
   {sections.map((sec) => (
     <section class:list={['grid gap-2', sec.kind && 'co-inset !p-3']} data-testid="work-section" data-kind={sec.kind?.key ?? ''}>
@@ -62,7 +73,7 @@ const line = [...work].filter((w) => w.days.length || w.freq).sort((a, b) => (or
                       </div>
                       <div class="flex flex-wrap gap-2">
                         <select class="co-select w-auto" name="freq" aria-label={PM.freq} data-testid="work-freq"><option value="">{PM.freq}: {PM.anyFreq}</option>{(['regular', 'sporadic', 'once'] as const).map((f) => <option value={f} selected={w.freq === f}>{PM.freqs[f]}</option>)}</select>
-                        {(isDj(w.account.kind) || profile === 'dj') && <select class="co-select w-auto" name="role" aria-label={PM.role}><option value="">{PM.role}: {PM.anyRole}</option>{(['resident', 'guest'] as const).map((r) => <option value={r} selected={w.role === r}>{PM.roles[r]}</option>)}</select>}
+                        {(isDj(w.account.kind) || profile === 'dj') && <select class="co-select w-auto" name="role" aria-label={roleTitle}><option value="">{roleTitle}: {PM.anyRole}</option>{ROLES.map((r) => <option value={r} selected={w.role === r}>{roleLabel(r)}</option>)}</select>}
                         <input class="co-input min-w-0 flex-1" name="workNote" value={w.note ?? ''} maxlength="200" aria-label={KN.work.note} placeholder={KN.work.notePh} />
                         <button class="co-btn co-btn--ghost co-btn--sm" type="submit" data-testid="work-when-save">{PM.saveWhen}</button>
                       </div>
@@ -101,7 +112,7 @@ const line = [...work].filter((w) => w.days.length || w.freq).sort((a, b) => (or
             <div class="flex flex-wrap items-center gap-1.5" role="group" aria-label={PM.editWhen}>
               {LINK_DAYS.map((d) => <label class="co-chip work-day" title={PM.daysLong[d]}><input type="checkbox" class="sr-only" name="days" value={d} data-testid={`work-new-day-${d}`} />{PM.days[d]}</label>)}
               <select class="co-select w-auto" name="freq" aria-label={PM.freq} data-testid="work-new-freq"><option value="">{PM.freq}: {PM.anyFreq}</option>{(['regular', 'sporadic', 'once'] as const).map((f) => <option value={f}>{PM.freqs[f]}</option>)}</select>
-              {sec.dj && <select class="co-select w-auto" name="role" aria-label={PM.role}><option value="">{PM.role}: {PM.anyRole}</option>{(['resident', 'guest'] as const).map((r) => <option value={r}>{PM.roles[r]}</option>)}</select>}
+              {sec.dj && <select class="co-select w-auto" name="role" aria-label={roleTitle}><option value="">{roleTitle}: {PM.anyRole}</option>{ROLES.map((r) => <option value={r}>{roleLabel(r)}</option>)}</select>}
             </div>
             <button class="co-btn co-btn--primary co-btn--sm w-fit" type="submit" data-testid="work-add"><Icon name="link" size={14} /><span data-work-submit>{KN.work.add}</span></button>
           </div>

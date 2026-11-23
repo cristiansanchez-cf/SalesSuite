@@ -28,3 +28,9 @@ set request.jwt.claim.sub = '33333333-3333-4333-8333-333333333333';  -- de otro 
 select pg_temp.assert(not exists (select 1 from public.crm_settings where tenant_id = '00000000-0000-4000-8000-000000000e01'), 'otro espacio no la ve');
 reset role;
 \echo '73_crm_qualification OK'
+
+-- Buceo (migración 20270120): el paquete «diving» vale; un instructor puede ser fijo, colaborar o ser dueño.
+update public.crm_settings set qualification = 'diving' where tenant_id = (select id from public.tenant where slug = 'enjoy');
+select pg_temp.assert((select qualification = 'diving' from public.crm_settings where tenant_id = (select id from public.tenant where slug = 'enjoy')), 'diving vale');
+update public.crm_settings set qualification = 'nightlife' where tenant_id = (select id from public.tenant where slug = 'enjoy');
+select pg_temp.assert((select pg_get_constraintdef(oid) like '%staff%' from pg_constraint where conname = 'account_link_role_check'), 'instructor: fijo, colabora o dueño');

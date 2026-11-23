@@ -73,3 +73,43 @@ describe('Buceo: nota, nivel y etiquetas (documento de Oquea v1.0)', () => {
     expect(validDive('dv_specialty', 'technical')).toBe(true);
   });
 });
+
+describe('Buceo: preguntas y palabras (MCP, WhatsApp, Apuntar)', () => {
+  test('sin segmento, primero «¿Qué es?» (de cliente o de ONG/club según la ficha)', async () => {
+    const { qualQuestions } = await import('./qual-labels');
+    const v = qualQuestions('venue', {}, 'es', 4, 'diving');
+    expect(v[0]!.field).toBe('dv_segment');
+    expect(v[0]!.options.map((o) => o.v)).toEqual(['prem', 'centro', 'tour', 'otro']);
+    expect(qualQuestions('promoter', {}, 'es', 4, 'diving')[0]!.options.map((o) => o.v)).toEqual(['ong', 'club']);
+  });
+  test('con segmento: las suyas, de más a menos puntos, sin las ya contestadas', async () => {
+    const { qualQuestions } = await import('./qual-labels');
+    const qs = qualQuestions('venue', { dv_segment: 'prem', dv_ticket: 'high' }, 'es', 3, 'diving').map((x) => x.field);
+    expect(qs).not.toContain('dv_ticket');
+    expect(qs).toEqual(['dv_reviews', 'dv_full_packages', 'dv_intl_reviews']);
+  });
+  test('instructor: lo que dice si nos vendería, primero', async () => {
+    const { qualQuestions } = await import('./qual-labels');
+    expect(qualQuestions('dj', {}, 'en', 2, 'diving').map((x) => x.field)).toEqual(['dv_seller', 'dv_reach']);
+  });
+  test('palabras: «Reserva online: No se puede reservar»; varios separados', async () => {
+    const { qualLabeler } = await import('./qual-labels');
+    const ql = qualLabeler('es', 'diving');
+    expect(ql('dv_no_booking', 'yes')).toBe('Reserva online: No se puede reservar');
+    expect(ql('dv_segment', 'centro')).toBe('Qué es: Centro de buceo');
+    expect(ql('dv_specialty', 'technical,cave')).toBe('Qué hace: Técnico, Cuevas');
+  });
+  test('Apuntar: solo valores de buceo válidos; nada de la noche', async () => {
+    const { sanitizeNotes } = await import('./notes');
+    const [it] = sanitizeNotes({ items: [{ venue: 'Buceo X', interaction: 'Hablé con ellos', qualification: { dv_segment: 'centro', dv_agency: 'yes', dv_ticket: 'enorme', dv_specialty: 'technical,cave,nada', screens: 'yes' } }] }, { qual: 'diving' });
+    expect(it!.qualification).toEqual({ dv_segment: 'centro', dv_agency: 'yes', dv_specialty: 'technical,cave' });
+  });
+  test('la IA de Apuntar ve las preguntas de buceo (y no las de la noche)', async () => {
+    const { notesTool, notesSystem } = await import('./notes');
+    const tool = notesTool({ pack: 'diving', kinds: [{ key: 'company', label: 'Centro', plural: 'Centros', icon: 'anchor', profile: 'venue' }, { key: 'instructor', label: 'Instructor', plural: 'Instructores', icon: 'graduation-cap', profile: 'dj' }] });
+    const props = (tool.input_schema.properties.items as { items: { properties: Record<string, { properties?: Record<string, unknown> }> } }).items.properties;
+    expect(Object.keys(props.qualification!.properties!)).toContain('dv_segment');
+    expect(Object.keys(props.qualification!.properties!)).not.toContain('screens');
+    expect(notesSystem({ today: '2026-11-23', seller: 'Oquea', pack: 'diving' })).toMatch(/staff, freelance u owner/);
+  });
+});

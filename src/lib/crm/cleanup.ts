@@ -42,7 +42,7 @@ export const CLEANUP_TOOL = {
   },
 } as const;
 
-export const CLEANUP_SYSTEM = (ctx: CleanupContext) => (ctx.pack === null ? cleanupGeneral(ctx) : `Revisas el CRM de ${ctx.seller}. Sus clientes posibles son: ${ctx.clients.join(', ') || 'locales, salas, discotecas, promotoras, festivales y organizadores de conciertos y eventos'}.
+export const CLEANUP_SYSTEM = (ctx: CleanupContext) => (ctx.pack === null || ctx.pack === 'diving' ? cleanupGeneral(ctx) : `Revisas el CRM de ${ctx.seller}. Sus clientes posibles son: ${ctx.clients.join(', ') || 'locales, salas, discotecas, promotoras, festivales y organizadores de conciertos y eventos'}.
 Para cada registro (empresa importada de un Notion y de ferias del sector) devuelve:
 - kind: la clave del tipo que le corresponde, de esta lista: ${kindLines(ctx)}. Si no está claro, «${BASE_KIND}».
 - discard (si habría que sacarlo de la lista de ventas; null si puede ser cliente o si no está claro):
@@ -69,7 +69,7 @@ Para cada registro (empresa importada al CRM) devuelve:
 function kindLines(ctx: CleanupContext): string {
   const ks = ctx.kinds?.length ? ctx.kinds : [{ key: BASE_KIND, label: 'Empresa', plural: 'Empresas', icon: 'building2' }];
   // Las pistas de la noche (DJ, local, promotora), solo con la cualificación de ocio nocturno.
-  const hint: Record<string, string> = ctx.pack === null ? { company: ' (cualquier negocio que no sea de otro tipo de la lista)' }
+  const hint: Record<string, string> = ctx.pack === null || ctx.pack === 'diving' ? { company: ' (cualquier negocio que no sea de otro tipo de la lista)' }
     : { dj: ' (una persona con nombre artístico que pincha o produce por su cuenta; una empresa de DJs para bodas es «company»)', company: ' (empresa, local, promotora, agencia o cualquier negocio)' };
   return ks.map((k) => `«${k.key}» = ${k.label}${hint[k.key] ?? ''}`).join(' · ');
 }
@@ -117,7 +117,7 @@ export function claudeCleanup(apiKey: string, fetchImpl?: typeof fetch): Cleanup
 export const fixtureCleanup = (): CleanupApi => ({
   async classify(items, ctx) {
     const hasDj = !ctx?.kinds || ctx.kinds.some((k) => k.key === 'dj');
-    const general = ctx?.pack === null;
+    const general = ctx?.pack === null || ctx?.pack === 'diving';
     return items.map((x) => {
       const n = x.name.toLowerCase();
       if (hasDj && /\bdj\b/.test(n) && !/(eventos|bodas|s\.l\.|sl\b|events)/.test(n)) return { id: x.id, kind: 'dj' as const, discard: null, why: 'Nombre de DJ: trabaja por su cuenta.' };

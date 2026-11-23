@@ -1,0 +1,106 @@
+---
+/**
+ * Cualificación de buceo (Oquea; docs/CRM_DINAMICO.md §47, src/lib/crm/diving.ts). Un clic marca (se guarda al
+ * instante, en segundo plano), pulsar lo marcado lo quita. Lo que no se sabe no suma.
+ *  · Centro u operador, ONG o club: «¿Qué es?» (el segmento) y, con él, sus preguntas por bloques (A necesidad
+ *    digital, B encaje, C valor potencial, D acceso al decisor) y los ajustes; arriba la nota, el nivel, cómo entrar
+ *    y el siguiente paso.
+ *  · Instructor: qué hace, agencias, nivel, si es dueño de algo y si nos vendería (dónde trabaja va en «Trabaja con»).
+ */
+import { i18n } from '~/lib/i18n';
+import { divingMessages } from '~/lib/i18n/messages/diving';
+import { priorityMessages } from '~/lib/i18n/messages/priority';
+import { CHANNEL_SEGMENTS, CLIENT_SEGMENTS, DIVE_MULTI, INSTRUCTOR_QUESTIONS, NEXT_BY_LEVEL, diveScore, instructorScore, questionsFor, segmentOf, type Block } from '~/lib/crm/diving';
+import type { Profile } from '~/lib/accounts/types';
+
+interface Props { q: Record<string, unknown> | null; profile: Profile; canEdit: boolean; cooling?: number | null }
+const { q: raw, profile, canEdit, cooling = null } = Astro.props;
+const { m: D, locale } = i18n(Astro, divingMessages);
+const R = priorityMessages[locale];
+const q = raw ?? {};
+const instructor = profile === 'dj';
+const s = instructor ? null : diveScore(q);
+const is = instructor ? instructorScore(q) : null;
+const seg = segmentOf(q);
+const segs = profile === 'promoter' ? CHANNEL_SEGMENTS : CLIENT_SEGMENTS;
+const pressed = (k: string, v: string) => (Array.isArray(q[k]) ? (q[k] as unknown[]).includes(v) : q[k] === v);
+const opts = (k: string) => Object.entries(D.q[k]?.[1] ?? {});
+// Las preguntas del segmento, por bloque (los ajustes al final).
+const BLOCKS: Block[] = ['a', 'b', 'c', 'd', 'adj'];
+const qs = instructor ? INSTRUCTOR_QUESTIONS : questionsFor(seg);
+const groups = instructor ? [{ block: 'b' as Block, items: qs }] : BLOCKS.map((block) => ({ block, items: qs.filter((x) => x.block === block) })).filter((g) => g.items.length);
+const CAPS: Record<string, number> = { a: 25, d: 10 };
+const capOf = (b: Block) => (b === 'b' ? (seg === 'club' ? 15 : 40) : b === 'c' ? 25 : CAPS[b] ?? 0);
+const level = s?.level ?? null;
+---
+<section id="qual" class="co-card grid gap-4" data-testid="qualification" data-pack="diving" data-score={instructor ? is!.total : s!.total} data-level={level ?? ''} data-qualified={(instructor ? is!.qualified : s!.qualified) ? 'true' : 'false'}>
+  <div class="flex items-start justify-between gap-3">
+    <div class="grid min-w-0 gap-1">
+      <h2 class="co-entity flex flex-wrap items-baseline gap-2">{instructor ? D.instructorTitle : D.title}<span class="co-meta text-xs font-normal" data-save-status data-testid="qual-status" aria-live="polite"></span></h2>
+      <p class="co-meta">{instructor ? D.instructorLede : D.lede}</p>
+    </div>
+    <div class="grid max-w-[45%] shrink-0 justify-items-end gap-1 text-right">
+      {level === 'out'
+        ? <span class="co-tag !bg-[var(--co-ink)] !text-[var(--co-canvas)]" data-testid="qual-out">{D.levels.out}</span>
+        : <span class="co-figure text-4xl" data-testid="qual-score">{instructor ? is!.total : s!.total}</span>}
+      {level && level !== 'out' && <span class="co-tag dive-level" data-level={level} data-testid="dive-level">{D.levels[level]}</span>}
+      {level !== 'out' && !(instructor ? is!.qualified : s!.qualified) && <span class="co-meta" data-testid="qual-max">{D.upTo(instructor ? is!.max : s!.max)}</span>}
+      {cooling !== null && <span class="co-tag co-tag--danger" title={R.coolingHelp} data-testid="qual-cooling">{R.cooling(cooling)}</span>}
+    </div>
+  </div>
+
+  {!instructor && seg && level && (
+    <div class="grid gap-1 rounded-xl bg-[var(--console-chip-bg)] p-3" data-testid="dive-next">
+      {D.angles[seg] && <p class="m-0"><span class="text-eyebrow">{D.angle}</span> <span data-testid="dive-angle">«{D.angles[seg]}»</span></p>}
+      <p class="m-0"><span class="text-eyebrow">{D.nextLabel}</span> <span data-testid="dive-action">{D.next[NEXT_BY_LEVEL[level]]}</span></p>
+      {s!.tags.length > 0 && <div class="flex flex-wrap gap-1.5" data-testid="dive-tags">{s!.tags.map((t) => <span class="co-tag" data-tag={t}>{D.tags[t]}</span>)}</div>}
+    </div>
+  )}
+
+  <form method="post" action="#qual" class="grid gap-3" data-testid="qual-form" data-async="qual account-summary" data-async-quiet data-optimistic>
+    <input type="hidden" name="action" value="qualify" />
+    <fieldset class="grid gap-3" disabled={!canEdit}>
+      {!instructor && (
+        <div class="grid gap-1.5" data-criterion="dv_segment">
+          <span class="co-row-title">{D.segment}</span>
+          <div class="flex flex-wrap gap-2">
+            {segs.map((v) => (
+              <button type="submit" name="set" value={`dv_segment:${v}`} class="co-chip" aria-pressed={q.dv_segment === v ? 'true' : 'false'} title={D.segmentHelp[v]} data-testid={`qual-dv_segment-${v}`}>{D.segments[v]}</button>
+            ))}
+          </div>
+          {!seg && <p class="co-help m-0">{D.noSegment}</p>}
+        </div>
+      )}
+      {groups.map((g) => (
+        <div class="grid gap-3 border-t border-[var(--co-rule)] pt-3" data-testid={`dive-block-${g.block}`}>
+          {!instructor && (
+            <p class="m-0 flex flex-wrap items-baseline justify-between gap-2">
+              <span class="text-eyebrow">{D.blocks[g.block]}</span>
+              {g.block !== 'adj' && s && <span class="co-meta tabular-nums" data-testid={`qual-points-${g.block}`}>{s.blocks[g.block as 'a' | 'b' | 'c' | 'd']} / {capOf(g.block)}</span>}
+              {g.block === 'adj' && s && s.adjust !== 0 && <span class="co-meta tabular-nums" data-testid="qual-points-adj">{s.adjust}</span>}
+            </p>
+          )}
+          {g.items.map((x) => (
+            <div class="grid gap-1.5" data-criterion={x.key}>
+              <span class="co-row-title">{D.q[x.key]?.[0] ?? x.key}</span>
+              <div class="flex flex-wrap gap-2">
+                {opts(x.key).map(([v, l]) => (
+                  <button type="submit" name="set" value={`${x.key}:${v}`} class:list={['co-chip', DIVE_MULTI.includes(x.key) && 'qual-multi']} data-multi={DIVE_MULTI.includes(x.key) ? '' : undefined}
+                    aria-pressed={pressed(x.key, v) ? 'true' : 'false'} data-testid={`qual-${x.key}-${v}`}>{l}</button>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      ))}
+    </fieldset>
+  </form>
+</section>
+
+<style>
+  [data-testid=qualification] .co-chip[aria-pressed=true] { background: var(--co-ink); color: var(--co-canvas); border-color: var(--co-ink); }
+  [data-testid=qualification] .qual-multi[aria-pressed=true]::before { content: '✓ '; }
+  .dive-level[data-level=a] { background: #e7f6ec; color: #14532d; border-color: #b7e2c4; }
+  .dive-level[data-level=b] { background: #fff6e0; color: #6b4a00; border-color: #f0dca6; }
+  .dive-level[data-level=channel] { background: #e8f0fe; color: #1e3a8a; border-color: #c7d7fb; }
+</style>

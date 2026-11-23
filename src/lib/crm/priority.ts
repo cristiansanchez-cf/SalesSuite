@@ -139,6 +139,9 @@ export interface Priority {
   kind: LeadKind | null;
   /** Qué le encaja de lo que vendemos (el criterio «screens» puntúa el mejor). */
   fit: Record<Package, Fit>;
+  /** Buceo (§47): el nivel (A, B, C, canal, descartado) y sus etiquetas. */
+  level?: import('./diving').DiveLevel | null;
+  tags?: readonly string[];
 }
 
 export function normalizeWeights(w: Partial<Weights> | null | undefined): Weights {

@@ -85,7 +85,7 @@ export function buildMcpServer(ctx: () => Promise<AdminContext>, info: { space: 
       admin.accounts.get(a.empresa_id), admin.crm.timeline(a.empresa_id), admin.crm.company(a.empresa_id),
       admin.crm.qualGaps(a.empresa_id).catch(() => null), admin.accounts.kinds().catch(() => []),
     ]);
-    const ql = qualLabeler(info.locale);
+    const ql = qualLabeler(info.locale, await admin.crm.qualPack());
     const qual = Object.entries(x.qualification ?? {}).filter(([, v]) => v != null && v !== '').map(([k, v]) => ql(k, Array.isArray(v) ? v.join(',') : String(v)));
     return {
       id: x.id, nombre: x.name, tipo: kinds.find((k) => k.key === x.kind)?.label ?? null, ciudad: x.zonePath || null, estado: x.state, la_lleva: x.ownerName,
@@ -159,10 +159,11 @@ export function buildMcpServer(ctx: () => Promise<AdminContext>, info: { space: 
     inputSchema: { empresa_id: id, respuestas: z.array(z.object({ campo: z.string().max(40), valor: z.string().max(60) })).min(1).max(12) },
   }, run(async (admin, a: { empresa_id: string; respuestas: Array<{ campo: string; valor: string }> }) => {
     const cur = (await admin.accounts.get(a.empresa_id)).account.qualification as Record<string, unknown>;
-    const ql = qualLabeler(info.locale);
+    const ql = qualLabeler(info.locale, await admin.crm.qualPack());
     const marked: string[] = [];
     for (const r of a.respuestas) {
-      const already = MULTI_QUAL.includes(r.campo) ? multiOf(cur, r.campo).includes(r.valor) : cur[r.campo] === r.valor || (r.valor === 'true' && cur[r.campo] === true);
+      // Las de varios (formato en ocio nocturno; especialidad y agencias en buceo): ya está si está en la lista.
+      const already = Array.isArray(cur[r.campo]) ? (cur[r.campo] as unknown[]).map(String).includes(r.valor) : MULTI_QUAL.includes(r.campo) ? multiOf(cur, r.campo).includes(r.valor) : cur[r.campo] === r.valor || (r.valor === 'true' && cur[r.campo] === true);
       if (!already) await admin.crm.qualify(a.empresa_id, `${r.campo}:${r.valor}`);
       marked.push(ql(r.campo, r.valor));
     }

@@ -29,7 +29,10 @@ export const LINK_DAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as co
 export type LinkDay = (typeof LINK_DAYS)[number];
 export type LinkFreq = 'regular' | 'sporadic' | 'once';
 /** Dónde trabaja (§24): qué días suele, con qué frecuencia y, si es un DJ, si es residente o invitado. */
-export interface LinkWhen { days: LinkDay[]; freq: LinkFreq | null; role: 'resident' | 'guest' | null }
+/** El papel de un profesional donde trabaja: DJ residente o invitado (ocio nocturno); instructor fijo, colabora o dueño (buceo, §47). */
+export const LINK_ROLES = ['resident', 'guest', 'staff', 'freelance', 'owner'] as const;
+export type LinkRole = (typeof LINK_ROLES)[number];
+export interface LinkWhen { days: LinkDay[]; freq: LinkFreq | null; role: LinkRole | null }
 export interface AccountLink extends LinkWhen { id: string; aId: string; bId: string; note: string | null; createdAt: string }
 
 /** A dónde va cada columna del CSV. */

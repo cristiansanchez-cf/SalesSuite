@@ -19,3 +19,7 @@ update public.crm_settings s set kinds = '[
 from public.tenant t
 where t.id = s.tenant_id and t.slug = 'oquea'
   and jsonb_array_length(s.kinds) <= 1 and coalesce(s.kinds -> 0 ->> 'key', 'company') = 'company';
+
+-- Dónde trabaja un instructor: fijo, colabora o dueño (además de residente o invitado de un DJ).
+alter table public.account_link drop constraint if exists account_link_role_check;
+alter table public.account_link add constraint account_link_role_check check (role in ('resident', 'guest', 'staff', 'freelance', 'owner'));
