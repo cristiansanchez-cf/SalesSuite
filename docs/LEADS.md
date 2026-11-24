@@ -197,6 +197,11 @@ defecto, tras la despedida), maquetada con tablas y estilos en línea para que s
 texto en la versión sin formato. Sin firma, `{firma_email}` es el nombre de quien firma y la marca.
 
 ## 3. Ciclo de vida y métrica
+**Aceptar / Rechazar** (arriba a la derecha en la ficha y en cada fila de la bandeja, `LeadDecide.astro`), los dos con
+confirmación que dice qué hace y qué no: **Aceptar** = validar (pasa al CRM, no le escribe nada); **Rechazar** = a
+`discarded` con un motivo de la lista (o «Otro» con detalle), cancela lo automático pendiente y deja de esperar «Le
+hablamos». Lo descartado sale de «Por validar» y queda en «Cerrados».
+
 `new → contacted → replied/booked → meeting → opportunity → won | lost`, además de `nurture`, `discarded` (motivo
 obligatorio) y `spam`. Cada cambio queda en el historial con fecha, hora y quién. Los leads entran **por validar**,
 fuera del CRM principal; **Validar** crea la persona (y su empresa, si se sabe: local, empresa o evento) con la etiqueta

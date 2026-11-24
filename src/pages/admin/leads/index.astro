@@ -11,6 +11,9 @@ import { flash } from '~/lib/admin/forms';
 import { i18n } from '~/lib/i18n';
 import { leadsMessages } from '~/lib/i18n/messages/leads';
 import { leadsFor } from '~/lib/leads/service';
+import { formAction } from '~/lib/admin/forms';
+import { rejectReason } from '~/lib/leads/decide';
+import LeadDecide from '~/components/admin/leads/LeadDecide.astro';
 import type { View } from '~/lib/leads/types';
 import { summary } from '~/lib/leads/templates';
 
@@ -24,8 +27,22 @@ const VIEWS: View[] = ['inbox', 'quarantine', 'active', 'closed', 'test', 'all']
 const q = Astro.url.searchParams;
 const view = (VIEWS as string[]).includes(q.get('ver') ?? '') ? (q.get('ver') as View) : 'inbox';
 const search = q.get('q') ?? '';
+const here = `/admin/leads?ver=${view}${search ? `&q=${encodeURIComponent(search)}` : ''}`;
+
+// Aceptar / Rechazar desde la bandeja (con confirmación, components/admin/leads/LeadDecide.astro).
+let result: { error: string | null; details: string[] } = { error: null, details: [] };
+if (Astro.request.method === 'POST') {
+  const f = await Astro.request.formData();
+  const str = (k: string) => String(f.get(k) ?? '');
+  let ok = '';
+  result = await formAction(async () => {
+    if (str('action') === 'accept') { await svc.validate(str('id')); ok = 'validated'; }
+    else if (str('action') === 'reject') { await svc.reject(str('id'), rejectReason(str('reasonPreset'), str('reasonDetail'), L.decide.other)); ok = 'rejected'; }
+  });
+  if (!result.error && ok) return Astro.redirect(`${here}&ok=${ok}`, 303);
+}
 const [items, counts, metrics, settings] = await Promise.all([svc.list(view, search), svc.counts(), svc.metrics(), svc.settings()]);
-const okMsg = flash(Astro.url, { validated: L.ok.validated, stage: L.ok.stage, saved: L.ok.saved });
+const okMsg = flash(Astro.url, { validated: L.ok.validated, rejected: L.ok.rejected, stage: L.ok.stage, saved: L.ok.saved });
 const fmt = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 const host = (u: string) => { try { return new URL(u.startsWith('http') ? u : `https://${u}`).hostname.replace(/^www\./, ''); } catch { return u; } };
 const sourceOf = (x: unknown): string | null => {
@@ -43,6 +60,7 @@ const href = (v: View) => `/admin/leads?ver=${v}${search ? `&q=${encodeURICompon
     {settings && <a href={svc.canConfigure ? '/admin/leads/configurar' : undefined} class={`co-badge ${settings.enabled ? 'co-badge--signal' : 'co-badge--attention'}`} data-testid="leads-status-badge">{settings.enabled ? L.set.live : L.set.paused}</a>}
   </PageHeader>
   {okMsg && <div class="mb-4"><Alert kind="success" title={okMsg} /></div>}
+  {result.error && <div class="mb-4"><Alert kind="rejection" title={result.error} details={result.details} /></div>}
   {settings && !settings.enabled && (
     <div class="mb-4 grid gap-2"><Alert kind="info" title={L.off} />{svc.canConfigure && <a class="co-btn co-btn--primary co-btn--sm w-fit" href="/admin/leads/configurar" data-testid="leads-go-settings">{L.finishSetup}</a>}</div>
   )}
@@ -87,7 +105,7 @@ const href = (v: View) => `/admin/leads?ver=${v}${search ? `&q=${encodeURICompon
         const band = l.scoreDetail?.band as 'hot' | 'normal' | 'low' | undefined;
         const src = sourceOf(l.attributionFirst ?? l.attributionLast);
         return (
-          <li class:list={['co-row', band === 'hot' && 'co-row--attention']} data-testid="lead" data-email={l.email}>
+          <li class:list={['co-row flex-wrap gap-3', band === 'hot' && 'co-row--attention']} data-testid="lead" data-email={l.email}>
             <a class="flex min-w-0 flex-1 flex-wrap items-center gap-x-4 gap-y-1" href={`/admin/leads/${l.id}`}>
               <span class="min-w-0 flex-1">
                 <span class="co-row-title block truncate">{l.name}</span>
@@ -102,6 +120,7 @@ const href = (v: View) => `/admin/leads?ver=${v}${search ? `&q=${encodeURICompon
               {l.submissions > 1 && <span class="co-meta">{L.repeat(l.submissions)}</span>}
               <span class="co-meta whitespace-nowrap">{fmt.format(new Date(l.lastSubmissionAt))}</span>
             </a>
+            {!l.validatedAt && !l.isTest && !['discarded', 'spam'].includes(l.stage) && <LeadDecide id={l.id} name={l.name} action={here} M={L.decide} compact />}
           </li>
         );
       })}

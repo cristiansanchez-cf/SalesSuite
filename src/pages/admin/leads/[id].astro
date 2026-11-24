@@ -15,6 +15,8 @@ import { flash, formAction } from '~/lib/admin/forms';
 import { i18n } from '~/lib/i18n';
 import { leadsMessages } from '~/lib/i18n/messages/leads';
 import { leadsFor } from '~/lib/leads/service';
+import { rejectReason } from '~/lib/leads/decide';
+import LeadDecide from '~/components/admin/leads/LeadDecide.astro';
 import { summary } from '~/lib/leads/templates';
 import { STAGES, type Stage } from '~/lib/leads/types';
 import { safeHref } from '~/lib/safe-href';
@@ -34,7 +36,8 @@ if (Astro.request.method === 'POST') {
   let ok = '';
   result = await formAction(async () => {
     switch (str('action')) {
-      case 'validate': await svc.validate(id); ok = 'validated'; break;
+      case 'validate': case 'accept': await svc.validate(id); ok = 'validated'; break;
+      case 'reject': await svc.reject(id, rejectReason(str('reasonPreset'), str('reasonDetail'), L.decide.other)); ok = 'rejected'; break;
       case 'talk': await svc.approveWhatsapp(id, { whatsappReady: !!env('WHATSAPP_TOKEN') || appMode() === 'demo' }); ok = 'talked'; break;
       case 'not-now': await svc.dismissWhatsapp(id); ok = 'dismissed'; break;
       case 'stage': await svc.setStage(id, str('stage') as Stage, str('reason') || null); ok = 'stage'; break;
@@ -82,7 +85,7 @@ const evText = (e: (typeof events)[number]) => {
   <PageHeader eyebrow={`${L.types[l.type]} · ${L.stages[l.stage]}`} title={l.name} lede={summary(l.type, fields, locale)} back={{ href: '/admin/leads', label: D.back }}>
     {l.validatedAt
       ? (l.contactId && <a class="co-btn co-btn--ghost" href={`/admin/people/${l.contactId}`} data-testid="lead-open-contact"><Icon name="user" size={16} />{D.openContact}</a>)
-      : !l.isTest && <form method="post"><button class="co-btn co-btn--primary" name="action" value="validate" data-testid="lead-validate"><Icon name="check" size={16} />{D.validate}</button></form>}
+      : !l.isTest && !['discarded', 'spam'].includes(l.stage) && <LeadDecide id={l.id} name={l.name} action={`/admin/leads/${l.id}`} M={L.decide} />}
   </PageHeader>
   {okMsg && <div class="mb-4"><Alert kind="success" title={okMsg} /></div>}
   {/* «Le hablamos» (docs/LEADS.md §WhatsApp con tu OK): cuando espera tu OK, o si aún no se le ha escrito por WhatsApp. */}

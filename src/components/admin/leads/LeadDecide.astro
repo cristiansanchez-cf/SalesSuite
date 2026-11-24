@@ -1,0 +1,33 @@
+---
+/**
+ * Aceptar / Rechazar un lead (docs/LEADS.md §Consola), en la ficha (arriba a la derecha) y en cada fila de la bandeja.
+ * Los dos con confirmación: dice qué hace y qué no. Rechazar pide el motivo (uno de la lista o «Otro» con detalle).
+ * El formulario va a `action` con action=accept|reject e id; la página lo atiende y vuelve con ?ok=.
+ */
+import ConfirmDialog from '~/components/ui/ConfirmDialog.astro';
+import Icon from '~/components/ui/Icon.astro';
+import type { leadsMessages } from '~/lib/i18n/messages/leads';
+
+interface Props { id: string; name: string; action: string; M: (typeof leadsMessages)['es']['decide']; compact?: boolean }
+const { id, name, action, M, compact = false } = Astro.props;
+const size = compact ? 'co-btn--sm' : '';
+---
+<span class="flex flex-none flex-wrap items-center gap-2" data-testid="lead-decide">
+  <button type="button" class:list={['co-btn co-btn--primary', size]} data-dialog-open={`accept-${id}`} data-testid="lead-accept"><Icon name="check" size={compact ? 14 : 16} />{M.accept}</button>
+  <button type="button" class:list={['co-btn co-btn--danger', size]} data-dialog-open={`reject-${id}`} data-testid="lead-reject"><Icon name="x" size={compact ? 14 : 16} />{M.reject}</button>
+</span>
+<ConfirmDialog id={`accept-${id}`} title={M.acceptTitle(name)} does={M.acceptDoes} doesNot={M.acceptDoesNot} confirmLabel={M.accept} action={action} testid={`accept-${id}`}>
+  <input type="hidden" name="action" value="accept" /><input type="hidden" name="id" value={id} />
+</ConfirmDialog>
+<ConfirmDialog id={`reject-${id}`} title={M.rejectTitle(name)} does={M.rejectDoes} doesNot={M.rejectDoesNot} confirmLabel={M.reject} danger action={action} testid={`reject-${id}`}>
+  <input type="hidden" name="action" value="reject" /><input type="hidden" name="id" value={id} />
+  <div class="mt-3 grid gap-3 text-left">
+    <label class="co-field">{M.reason}
+      <select class="co-input" name="reasonPreset" data-testid={`reject-${id}-reason`}>
+        {M.reasons.map((r) => <option value={r}>{r}</option>)}
+        <option value={M.other}>{M.other}</option>
+      </select>
+    </label>
+    <label class="co-field">{M.detail}<input class="co-input" name="reasonDetail" maxlength="240" data-testid={`reject-${id}-detail`} /></label>
+  </div>
+</ConfirmDialog>

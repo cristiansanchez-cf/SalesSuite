@@ -117,7 +117,7 @@ export function demoLeadsDb(store: LeadsStore = demoLeadsStore()): LeadsDb {
         if (l.tenantId !== tenantId) return false;
         if (l.anonymizedAt && !opts.anonymized) return false;
         if (view === 'test') { if (!l.isTest) return false; } else if (l.isTest) return false;
-        if (view === 'inbox' && (l.validatedAt || l.quarantined || l.stage === 'spam')) return false;
+        if (view === 'inbox' && (l.validatedAt || l.quarantined || l.stage === 'spam' || l.stage === 'discarded')) return false;
         if (view === 'quarantine' && (!l.quarantined || l.stage === 'spam')) return false;
         if (view === 'active' && (!l.validatedAt || !['new', 'contacted', 'replied', 'booked', 'meeting', 'opportunity', 'nurture'].includes(l.stage))) return false;
         if (view === 'closed' && !['won', 'lost', 'discarded', 'spam'].includes(l.stage)) return false;
@@ -134,7 +134,7 @@ export function demoLeadsDb(store: LeadsStore = demoLeadsStore()): LeadsDb {
     },
     async counts(tenantId) {
       const ls = s.leads.filter((l) => l.tenantId === tenantId && !l.isTest && l.stage !== 'spam' && !l.anonymizedAt);
-      return { inbox: ls.filter((l) => !l.validatedAt && !l.quarantined).length, quarantine: ls.filter((l) => l.quarantined).length };
+      return { inbox: ls.filter((l) => !l.validatedAt && !l.quarantined && l.stage !== 'discarded').length, quarantine: ls.filter((l) => l.quarantined).length };
     },
   };
 }

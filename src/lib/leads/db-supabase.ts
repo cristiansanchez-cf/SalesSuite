@@ -188,7 +188,7 @@ export function supabaseLeadsDb(sb: SupabaseClient): LeadsDb {
       if (view === 'test') q = q.eq('is_test', true);
       else {
         q = q.eq('is_test', false);
-        if (view === 'inbox') q = q.is('validated_at', null).eq('quarantined', false).neq('stage', 'spam');
+        if (view === 'inbox') q = q.is('validated_at', null).eq('quarantined', false).not('stage', 'in', '(spam,discarded)');
         if (view === 'quarantine') q = q.eq('quarantined', true).neq('stage', 'spam');
         if (view === 'active') q = q.not('validated_at', 'is', null).in('stage', ['new', 'contacted', 'replied', 'booked', 'meeting', 'opportunity', 'nurture']);
         if (view === 'closed') q = q.in('stage', ['won', 'lost', 'discarded', 'spam']);
@@ -211,7 +211,7 @@ export function supabaseLeadsDb(sb: SupabaseClient): LeadsDb {
     async counts(tenantId) {
       const c = async (quar: boolean) => {
         let q = sb.from('lead').select('id', { count: 'exact', head: true }).eq('tenant_id', tenantId).eq('is_test', false).eq('quarantined', quar).neq('stage', 'spam').is('anonymized_at', null);
-        if (!quar) q = q.is('validated_at', null);
+        if (!quar) q = q.is('validated_at', null).neq('stage', 'discarded');
         const r = await q;
         return r.count ?? 0;
       };

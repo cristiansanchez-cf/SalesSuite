@@ -592,3 +592,27 @@ describe('WhatsApp con tu OK (docs/LEADS.md §WhatsApp con tu OK)', () => {
     expect(demoLeadsStore().msgs.find((m) => m.step === 'notify')!.status).toBe('sent');
   });
 });
+
+describe('aceptar / rechazar (ficha y bandeja)', () => {
+  test('el motivo: de la lista, con detalle, u «Otro» con su detalle', async () => {
+    const { rejectReason } = await import('./decide');
+    expect(rejectReason('Duplicado', '', 'Otro')).toBe('Duplicado');
+    expect(rejectReason('Duplicado', ' ya escribió  ayer ', 'Otro')).toBe('Duplicado: ya escribió ayer');
+    expect(rejectReason('Otro', 'Es un competidor', 'Otro')).toBe('Es un competidor');
+    expect(rejectReason('Otro', '', 'Otro')).toBe('');
+  });
+  test('rechazar: a Descartado con su motivo, cancela lo pendiente y deja de esperar «Le hablamos»; sin motivo, no', async () => {
+    resetDemoLeads(); demoWhatsAppOutbox().length = 0;
+    const s = { ...demoLeadsStore().settings[0], whatsappEnabled: true, whatsappPhoneId: '123456789', whatsappTemplates: { wa1: { es: 't1' } }, waApproval: 'all' as const };
+    demoLeadsStore().settings = [s];
+    await intake({ db: demoLeadsDb(), tenant: { id: ENJOY, name: 'Enjoy the Club' }, settings: s, now: new Date('2026-11-03T10:00:00Z'), origin: 'https://enjoytheclub.es', ip: '9.9.9.9', secret: 's', baseUrl: 'https://x', whatsappReady: true, rand: () => 0.5 }, v2());
+    const id = demoLeadsStore().leads[0].id;
+    const { createLeadsService } = await import('./service');
+    const svc = createLeadsService(demoLeadsDb(), { mode: 'demo', session: { tenantId: ENJOY, role: 'admin', userId: 'u1', email: 'a@enjoy.test' } } as never);
+    await expect(svc.reject(id, '')).rejects.toMatchObject({ status: 422 });
+    await svc.reject(id, 'Duplicado');
+    const l = demoLeadsStore().leads[0];
+    expect([l.stage, l.discardReason, l.facts.waAwaiting]).toEqual(['discarded', 'Duplicado', false]);
+    expect(demoLeadsStore().msgs.filter((m) => m.step === 'autoreply').every((m) => m.status === 'cancelled')).toBe(true);
+  });
+});

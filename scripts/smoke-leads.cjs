@@ -86,11 +86,24 @@ const post = (body, origin = WEB) => fetch(`${BASE}/api/v1/leads`, { method: 'PO
   if (OUT) await p.screenshot({ path: `${OUT}/leads-detail.png`, fullPage: true });
   await Promise.all([p.waitForURL(/ok=contacted/), p.click('[data-testid=lead-contacted]')]);
   assert((await p.textContent('[data-testid=lead-stage-box]')).includes('min laborables'), 'primer contacto humano, en minutos laborables');
-  await Promise.all([p.waitForURL(/ok=validated/), p.click('[data-testid=lead-validate]')]);
+  await p.click('[data-testid=lead-accept]');
+  assert(/No le manda ningún mensaje/.test(await p.textContent(`[data-testid=accept-${j1.id}]`)), 'aceptar: confirma y dice lo que no hace');
+  await Promise.all([p.waitForURL(/ok=validated/), p.click(`[data-testid=accept-${j1.id}-confirm]`)]);
   await Promise.all([p.waitForURL(/\/admin\/people\//), p.click('[data-testid=lead-open-contact]')]);
   assert((await p.textContent('main')).includes('Laura Smoke'), 'validado: la persona está en el CRM');
   await p.goto(`${BASE}/admin/leads`);
   assert(!(await p.$$eval('[data-testid=lead]', (xs) => xs.map((x) => x.getAttribute('data-email')))).includes('laura@salasmoke.es'), 'sale de «por validar»');
+
+  // ---- Bandeja: rechazar con confirmación y motivo (la marca)
+  await p.goto(`${BASE}/admin/leads`);
+  const brandRow = '[data-testid=lead][data-email="ana@cervezasmoke.com"]';
+  await p.click(`${brandRow} [data-testid=lead-reject]`);
+  await p.selectOption('dialog[open] select[name=reasonPreset]', { index: 1 });
+  await p.fill('dialog[open] input[name=reasonDetail]', 'marca de cerveza');
+  await Promise.all([p.waitForURL(/ok=rejected/), p.click('dialog[open] [type=submit]')]);
+  assert(!(await p.$$eval('[data-testid=lead]', (xs) => xs.map((x) => x.getAttribute('data-email')))).includes('ana@cervezasmoke.com'), 'bandeja: rechazada, sale de «por validar»');
+  await p.goto(`${BASE}/admin/leads?ver=closed`);
+  assert((await p.textContent('main')).includes('ana@cervezasmoke.com'), 'y queda en Cerrados');
 
   // ---- Descartar exige motivo
   const novios = (await (await post({ ...lead(), idempotency_key: `n-${Date.now()}`, type: 'wedding', contact: { name: 'Novios V1', email: 'novios@gmail.com' }, fields: { wedding_date: '2027-06-14' } })).json()).id;

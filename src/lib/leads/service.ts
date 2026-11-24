@@ -235,6 +235,13 @@ export function createLeadsService(db: LeadsDb, admin: AdminContext) {
     return { name: l.name };
   }
 
+  /** Rechazar (ficha o bandeja, con confirmación): a Descartado con su motivo; deja de esperar «Le hablamos». */
+  async function reject(id: string, reason: string) {
+    await setStage(id, 'discarded', reason);
+    const l = await own(id);
+    if (l.facts.waAwaiting) await db.updateLead(id, { facts: { ...l.facts, waAwaiting: false } });
+  }
+
   async function suppress(id: string) {
     const l = await own(id);
     await db.suppress(t, 'all', l.email, 'A mano desde la ficha');
@@ -452,7 +459,7 @@ export function createLeadsService(db: LeadsDb, admin: AdminContext) {
     return { total: ls.length, answered: mins.length, medianMins: median, within5: mins.filter((m) => m <= 5).length, bySource: [...bySource].sort((a, b) => b[1] - a[1]).slice(0, 6) };
   }
 
-  return { settings, list, counts, usedKinds, detail, setStage, markContacted, stopSequence, release, note, validate, approveWhatsapp, dismissWhatsapp, suppress, saveSettings, saveTexts, saveSignature, clearPastedSignature, saveSignerName, saveWhatsapp, saveEmailStyle, saveRetention, setEnabled, lastSubmission, saveOrigins, saveSender, metrics, canConfigure: perms.manageTenant };
+  return { settings, list, counts, usedKinds, detail, setStage, markContacted, stopSequence, release, note, validate, approveWhatsapp, dismissWhatsapp, reject, suppress, saveSettings, saveTexts, saveSignature, clearPastedSignature, saveSignerName, saveWhatsapp, saveEmailStyle, saveRetention, setEnabled, lastSubmission, saveOrigins, saveSender, metrics, canConfigure: perms.manageTenant };
 }
 export type LeadsService = ReturnType<typeof createLeadsService>;
 
