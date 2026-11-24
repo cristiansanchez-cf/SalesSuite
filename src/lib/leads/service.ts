@@ -214,6 +214,9 @@ export function createLeadsService(db: LeadsDb, admin: AdminContext) {
     if (['spam', 'discarded', 'lost', 'won'].includes(l.stage)) return { why: 'closed' };
     if (!l.phoneE164) return { why: 'noPhone' };
     if (!l.whatsappOk) return { why: 'noConsent' };
+    // Ya le ha escrito una persona (desde su WhatsApp, «Lo he contactado yo» o la etapa ya no es «Nuevo») o se paró lo
+    // automático: no se le manda el de bienvenida encima.
+    if (l.stage !== 'new' || l.firstResponseAt || l.sequenceStoppedAt) return { why: 'already' };
     if ((await db.suppressed(t, { email: l.email, phone: l.phoneE164 })).whatsapp) return { why: 'suppressed' };
     const msgs = await db.messages(l.id);
     if (l.lastInboundAt || msgs.some((m) => m.channel === 'whatsapp' && m.step === 'wa1' && ['pending', 'sending', 'sent'].includes(m.status))) return { why: 'already' };
@@ -238,7 +241,7 @@ export function createLeadsService(db: LeadsDb, admin: AdminContext) {
       return { name: l.name, ...v, whatsapp: null, why: 'why' in plan ? plan.why : null };
     }
     const now = new Date();
-    await db.updateLead(id, { facts: { ...fresh.facts, waAwaiting: false, waApproved: { by: s.userId, at: now.toISOString() } }, ...(fresh.sequenceStoppedAt ? { sequenceStoppedAt: null, sequenceStopReason: null } : {}) });
+    await db.updateLead(id, { facts: { ...fresh.facts, waAwaiting: false, waApproved: { by: s.userId, at: now.toISOString() } } });
     const payload = { base: '', brandName: st!.brand, approvedBy: s.userId };
     const fields = (l.facts.fields as Record<string, string>) ?? {};
     const out: NewMessage[] = [{ tenantId: t, leadId: id, channel: 'whatsapp', step: 'wa1', toAddr: l.phoneE164!, sendAt: plan.at.toISOString(), payload }];

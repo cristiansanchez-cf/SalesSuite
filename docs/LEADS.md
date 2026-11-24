@@ -156,6 +156,14 @@ consentimiento, sin baja, sin WhatsApp ya en marcha), le sale el WhatsApp 1 a lo
 confirmación dice exactamente qué va a pasar (o por qué no sale) y trae la casilla «Mandarle el WhatsApp de bienvenida»
 para no mandarlo; después, el aviso dice lo que ha pasado de verdad. **Rechazar** lo descarta con motivo.
 
+**Si ya le has escrito tú, no se le escribe encima.** Aceptar no programa el WhatsApp si el lead ya no está en «Nuevo»,
+si alguien pulsó «Lo he contactado yo», si se paró la secuencia, si contestó o si ya se le escribió. Con el número en
+**coexistencia**, lo que escribes desde la app de WhatsApp Business llega por el webhook `smb_message_echoes`
+(`handleEchoes`): queda en su historial («Le escribiste desde tu WhatsApp»), pasa a «Contactado», cuenta como primer
+contacto y cancela lo automático pendiente. Hay que suscribir ese campo en la app de Meta (WhatsApp → Configuración →
+Webhooks → `smb_message_echoes`). La confirmación de Aceptar recuerda: «Si ya le has escrito tú por WhatsApp, quita la
+casilla».
+
 **En bloque** (bandeja): casillas por lead, «Seleccionar todos» y «Aceptar seleccionados» / «Rechazar seleccionados»
 con una sola confirmación (para «todos menos estos»: seleccionar todos y quitar los que se quedan).
 

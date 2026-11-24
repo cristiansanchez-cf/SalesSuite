@@ -83,7 +83,7 @@ const planOf = (l: (typeof items)[number]): Plan => {
   if (!settings || !waConnected(settings, tokenReady, l.locale)) return { why: 'notConnected' };
   if (!l.phoneE164) return { why: 'noPhone' };
   if (!l.whatsappOk) return { why: 'noConsent' };
-  if (l.lastInboundAt || l.facts.waApproved) return { why: 'already' };
+  if (l.lastInboundAt || l.facts.waApproved || l.stage !== 'new' || l.firstResponseAt || l.sequenceStoppedAt) return { why: 'already' };
   return { soon: when!.soon, minutes: waDelay(settings) };
 };
 const fmt = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });

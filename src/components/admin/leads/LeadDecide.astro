@@ -26,7 +26,7 @@ const size = compact ? 'co-btn--sm' : '';
 </span>
 <ConfirmDialog id={`accept-${id}`} title={M.acceptTitle(name)} does={does} doesNot={doesNot} confirmLabel={M.accept} action={action} testid={`accept-${id}`}>
   <input type="hidden" name="action" value="accept" /><input type="hidden" name="id" value={id} /><input type="hidden" name="wa" value="0" />
-  {sends && <label class="co-check mt-3 text-left"><input type="checkbox" name="wa" value="1" checked data-testid={`accept-${id}-wa`} /> {W.sendWa}</label>}
+  {sends && <label class="co-check mt-3 text-left"><input type="checkbox" name="wa" value="1" checked data-testid={`accept-${id}-wa`} /> <span>{W.sendWa}<span class="co-help block">{W.manualHint}</span></span></label>}
 </ConfirmDialog>
 <ConfirmDialog id={`reject-${id}`} title={M.rejectTitle(name)} does={M.rejectDoes} doesNot={M.rejectDoesNot} confirmLabel={M.reject} danger action={action} testid={`reject-${id}`}>
   <input type="hidden" name="action" value="reject" /><input type="hidden" name="id" value={id} />

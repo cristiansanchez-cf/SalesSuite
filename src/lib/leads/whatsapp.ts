@@ -137,10 +137,16 @@ export function contactCard(raw: unknown): string {
 }
 
 export interface StatusUpdate { phoneId: string; id: string; status: string; error: string | null }
+/**
+ * Lo que la empresa escribe desde la app de WhatsApp Business con el número conectado en coexistencia (webhook
+ * `smb_message_echoes`, hay que suscribirlo en la app de Meta): para saber que ya le ha escrito una persona.
+ */
+export interface Echo { phoneId: string; to: string; text: string; at: Date; id: string }
 
 /** Lo que interesa del webhook: mensajes recibidos (para parar la secuencia) y fallos de entrega. */
-export function parseWebhook(body: unknown): { inbound: Inbound[]; statuses: StatusUpdate[] } {
+export function parseWebhook(body: unknown): { inbound: Inbound[]; statuses: StatusUpdate[]; echoes: Echo[] } {
   const inbound: Inbound[] = [];
+  const echoes: Echo[] = [];
   const statuses: StatusUpdate[] = [];
   const entries = (body as { entry?: unknown[] } | null)?.entry ?? [];
   for (const e of entries as { changes?: { value?: Record<string, unknown> }[] }[]) {
@@ -163,13 +169,18 @@ export function parseWebhook(body: unknown): { inbound: Inbound[]; statuses: Sta
         inbound.push({ phoneId, from: `+${String(m.from ?? '').replace(/^\+/, '')}`, text: (card || String(text)).slice(0, kind === 'text' ? 12000 : 2000), at: new Date(Number(m.timestamp ?? 0) * 1000 || Date.now()), id: String(m.id ?? ''),
           kind, forwarded: !!(ctx.forwarded || ctx.frequently_forwarded), mediaId: (m.audio as { id?: string } | undefined)?.id ?? image?.id ?? null, buttonId });
       }
+      for (const m of (v.message_echoes as Record<string, unknown>[] | undefined) ?? []) {
+        const text = (m.text as { body?: string } | undefined)?.body ?? `[${String(m.type ?? 'mensaje')}]`;
+        const to = String(m.to ?? '').replace(/^\+/, '');
+        if (to) echoes.push({ phoneId, to: `+${to}`, text: String(text).slice(0, 4000), at: new Date(Number(m.timestamp ?? 0) * 1000 || Date.now()), id: String(m.id ?? '') });
+      }
       for (const st of (v.statuses as Record<string, unknown>[] | undefined) ?? []) {
         const err = (st.errors as { title?: string; message?: string }[] | undefined)?.[0];
         statuses.push({ phoneId, id: String(st.id ?? ''), status: String(st.status ?? ''), error: err ? String(err.message ?? err.title ?? '').slice(0, 300) : null });
       }
     }
   }
-  return { inbound, statuses };
+  return { inbound, statuses, echoes };
 }
 
 /** «Baja», «stop», «no me escribas»…: se para todo y no se le vuelve a escribir por WhatsApp. */

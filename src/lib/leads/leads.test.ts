@@ -653,3 +653,41 @@ describe('aceptar / rechazar (ficha y bandeja)', () => {
     expect(demoLeadsStore().msgs.filter((m) => m.step === 'autoreply').every((m) => m.status === 'cancelled')).toBe(true);
   });
 });
+
+describe('lo que escribes tú desde la app de WhatsApp Business (coexistencia)', () => {
+  test('se lee del webhook, queda en el historial, cancela lo automático y aceptar ya no le escribe', async () => {
+    resetDemoLeads(); demoWhatsAppOutbox().length = 0;
+    const s = { ...demoLeadsStore().settings[0], whatsappEnabled: true, whatsappPhoneId: '123456789', whatsappTemplates: { wa1: { es: 't1' } }, waApproval: 'all' as const };
+    demoLeadsStore().settings = [s];
+    await intake({ db: demoLeadsDb(), tenant: { id: ENJOY, name: 'Enjoy the Club' }, settings: s, now: new Date('2026-11-03T10:00:00Z'), origin: 'https://enjoytheclub.es', ip: '9.9.9.9', secret: 's', baseUrl: 'https://x', whatsappReady: true, rand: () => 0.5 }, v2());
+    const id = demoLeadsStore().leads[0].id;
+    const body = { entry: [{ changes: [{ field: 'smb_message_echoes', value: { metadata: { phone_number_id: '123456789' }, message_echoes: [
+      { from: '34911000000', to: '34600123123', id: 'wamid.x', timestamp: '1762164000', type: 'text', text: { body: 'Hola Laura, soy Cristian. ¿Te llamo?' } },
+    ] } }] }] };
+    const { echoes } = parseWebhook(body);
+    expect(echoes).toEqual([expect.objectContaining({ to: '+34600123123', text: 'Hola Laura, soy Cristian. ¿Te llamo?' })]);
+    const { handleEchoes } = await import('./inbound');
+    expect(await handleEchoes(demoLeadsDb(), echoes, new Date('2026-11-03T10:02:00Z'))).toBe(1);
+    const l = demoLeadsStore().leads[0];
+    expect([l.stage, !!l.firstResponseAt, l.sequenceStopReason, l.facts.waAwaiting]).toEqual(['contacted', true, 'manual', false]);
+    expect(demoLeadsStore().events.some((e) => e.kind === 'message_out' && (e.data as { manual?: boolean }).manual)).toBe(true);
+    const { createLeadsService } = await import('./service');
+    const crm = { async quickAdd() { return { id: 'c1', accountId: 'a1' }; } };
+    const svc = createLeadsService(demoLeadsDb(), { mode: 'demo', crm, session: { tenantId: ENJOY, role: 'admin', userId: 'u1', email: 'a@enjoy.test' } } as never);
+    const r = await svc.accept(id, { whatsapp: true });
+    expect([r.whatsapp, r.why]).toEqual([null, 'already']);
+    expect(demoLeadsStore().msgs.some((m) => m.step === 'wa1')).toBe(false);
+  });
+  test('«Lo he contactado yo» también: aceptar no le escribe', async () => {
+    resetDemoLeads();
+    const s = { ...demoLeadsStore().settings[0], whatsappEnabled: true, whatsappPhoneId: '123456789', whatsappTemplates: { wa1: { es: 't1' } }, waApproval: 'all' as const };
+    demoLeadsStore().settings = [s];
+    await intake({ db: demoLeadsDb(), tenant: { id: ENJOY, name: 'Enjoy the Club' }, settings: s, now: new Date('2026-11-03T10:00:00Z'), origin: 'https://enjoytheclub.es', ip: '9.9.9.9', secret: 's', baseUrl: 'https://x', whatsappReady: true, rand: () => 0.5 }, v2());
+    const id = demoLeadsStore().leads[0].id;
+    const { createLeadsService } = await import('./service');
+    const crm = { async quickAdd() { return { id: 'c1', accountId: 'a1' }; } };
+    const svc = createLeadsService(demoLeadsDb(), { mode: 'demo', crm, session: { tenantId: ENJOY, role: 'admin', userId: 'u1', email: 'a@enjoy.test' } } as never);
+    await svc.markContacted(id);
+    expect((await svc.accept(id, { whatsapp: true })).why).toBe('already');
+  });
+});

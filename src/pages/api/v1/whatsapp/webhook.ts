@@ -8,7 +8,7 @@ import { digitsOf, processAssistant, teamMember } from '~/lib/assistant/process'
 import { hubConfig, hubWhatsApp } from '~/lib/assistant/hub-config';
 import { processHub } from '~/lib/assistant/hub';
 import type { Member } from '~/lib/assistant/db';
-import { handleInbound } from '~/lib/leads/inbound';
+import { handleInbound, handleEchoes } from '~/lib/leads/inbound';
 import { json, leadsRuntime } from '~/lib/leads/server';
 import { parseWebhook, validSignature, type Inbound } from '~/lib/leads/whatsapp';
 
@@ -43,7 +43,7 @@ export const POST: APIRoute = async ({ request }) => {
   if ('error' in rt) return json({ error: 'not_configured' }, 503);
   let body: unknown;
   try { body = JSON.parse(raw); } catch { return json({ ok: true }); }
-  const { inbound, statuses } = parseWebhook(body);
+  const { inbound, statuses, echoes } = parseWebhook(body);
   try {
     // Quién escribe: alguien del equipo del espacio de ese número → asistente; si no, lead.
     const adb = await assistantDb();
@@ -75,8 +75,9 @@ export const POST: APIRoute = async ({ request }) => {
       if (demo) await run(); else waitUntil(run());
     }
     const r = await handleInbound(rt.db, leads, new Date());
+    const manual = echoes.length ? await handleEchoes(rt.db, echoes, new Date()) : 0;
     for (const s of statuses.filter((x) => x.status === 'failed')) console.warn('[whatsapp] entrega fallida', s.id, s.error);
-    return json({ ok: true, ...r, assistant: team.length + hubTeam.length });
+    return json({ ok: true, ...r, manual, assistant: team.length + hubTeam.length });
   } catch (e) {
     console.error('[whatsapp]', e instanceof Error ? e.message : e);
     return json({ error: 'server_error' }, 500);
