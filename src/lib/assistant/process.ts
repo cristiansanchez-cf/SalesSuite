@@ -121,6 +121,10 @@ export function opsFor(admin: AdminContext, o: { drafter?: Drafter | null; local
       const next = await admin.crm.logActivity(accountId, { channel: 'whatsapp', outcome: 'no_reply', note: 'Mensaje de seguimiento (recordatorio del asistente de WhatsApp)' });
       return { name: account.name, nextAt: next?.at ? new Date(next.at).toISOString() : null };
     },
+    async agenda() {
+      const r = await admin.crm.today({ week: true });
+      return r.items.slice(0, 30).map((i) => ({ name: i.name, bucket: i.bucket as 'today', cooling: i.cooling, step: i.nextStep, at: i.nextStepAt, contact: i.contactName }));
+    },
     async leadOk(leadId) {
       const { leadsFor } = await import('../leads/service');
       const r = await (await leadsFor(admin)).accept(leadId, { whatsapp: true });

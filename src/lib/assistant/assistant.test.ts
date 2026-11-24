@@ -860,3 +860,23 @@ describe('Recordatorios: espacios de cada persona', () => {
     expect(r).toEqual([{ userId: 'u1', tenantId: 'cofundo' }, { userId: 'u2', tenantId: 'enjoy' }, { userId: 'u1', tenantId: 'oquea' }]);
   });
 });
+
+describe('«¿qué tengo para hoy?» por WhatsApp (lo mismo que lo_de_hoy del MCP)', () => {
+  test('reconoce la pregunta (y no la apunta como una nota), con lo de hoy y la semana; sin nada, lo dice', async () => {
+    const { handle } = await import('./flow');
+    const items = [
+      { name: 'Club Sol', bucket: 'overdue' as const, cooling: null, step: 'Llamar a Marta', at: '2026-11-20T10:00:00Z', contact: 'Marta' },
+      { name: 'Sala Norte', bucket: 'week' as const, cooling: null, step: 'Mandar la propuesta', at: '2026-11-27T10:00:00Z', contact: null },
+    ];
+    const run = async (text: string, list = items) => handle({ ops: { agenda: async () => list } as never, locale: 'es', now: new Date('2026-11-24T09:00:00Z') }, { kind: 'text', text }, { step: 'idle' });
+    for (const q of ['¿Qué tengo para hoy?', 'que tengo hoy', 'Qué me toca hoy', 'qué tengo esta semana', 'mi agenda', 'lo de hoy', "what's on today"]) {
+      const r = await run(q);
+      expect(r.replies[0].text, q).toContain('*Club Sol*');
+    }
+    const r = await run('¿Qué tengo para hoy?', items.slice(1));
+    expect(r.replies[0].text).toContain('Hoy no tienes nada pendiente');
+    expect(r.replies[0].text).toContain('Esta semana');
+    expect(r.replies[0].text).toContain('Mandar la propuesta');
+    expect((await run('¿Qué tengo para hoy?', [])).replies[0].text).toContain('y esta semana tampoco');
+  });
+});

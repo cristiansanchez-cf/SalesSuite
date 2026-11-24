@@ -240,3 +240,10 @@ pregunta espera su respuesta todo el día (14 horas).
 
 - Documentos (PDF) y fotos que no son conversaciones.
 - Ver en «Qué ha funcionado» qué frases y aperturas acaban en cita o en venta (las conversaciones ya se guardan literales).
+
+## «¿Qué tengo para hoy?»
+Una pregunta corta como «¿qué tengo para hoy?», «qué me toca hoy», «qué tengo esta semana», «mi agenda» o «lo de hoy»
+(también en inglés, portugués y coreano) no se apunta como nota: el asistente contesta con lo mismo que `lo_de_hoy` del
+MCP (`crm.today({ week: true })`): lo que se enfría, lo atrasado y lo de hoy y, debajo, mañana y el resto de la semana.
+Si hoy no hay nada, lo dice y enseña la semana; si tampoco, lo dice. No toca lo que estuviera a medias.
+

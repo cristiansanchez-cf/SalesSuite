@@ -866,16 +866,19 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
   }
 
   /** «Hoy»: lo que toca (vencido → hoy → mañana) en las empresas que llevo, con el contexto en una línea. */
-  type TodayItem = Account & { bucket: DueBucket | 'cooling'; cooling: number | null; last: Activity | null; contactName: string | null; contactPhone: string | null; contactInstagram: string | null; contactEmail: string | null };
-  async function today(opts: { all?: boolean } = {}) {
+  type TodayItem = Account & { bucket: DueBucket | 'cooling' | 'week'; cooling: number | null; last: Activity | null; contactName: string | null; contactPhone: string | null; contactInstagram: string | null; contactEmail: string | null };
+  /** Con `week`, también lo de los próximos 7 días («esta semana»), para cuando hoy no hay nada. */
+  async function today(opts: { all?: boolean; week?: boolean } = {}) {
     requireUse();
     const now = new Date();
     const all = await accounts.listAccounts(t, { ownerId: opts.all && perms.manageAccounts ? undefined : s.userId, limit: 5000 });
     // Lo que se enfría (contestó y llevamos 3 días laborables sin hacer nada) va primero, aunque no tenga próximo paso.
     const cool = await cooling(all);
-    const mine = all.map((a) => ({ a, cooling: cool.get(a.id) ?? null, bucket: dueBucket(a.nextStepAt, now) }))
-      .filter((x) => x.cooling !== null || (x.bucket && ['overdue', 'today', 'tomorrow'].includes(x.bucket)));
-    const counts = { cooling: 0, overdue: 0, today: 0, tomorrow: 0 };
+    const weekEnd = now.getTime() + 7 * 86_400_000;
+    const mine = all.map((a) => ({ a, cooling: cool.get(a.id) ?? null, bucket: dueBucket(a.nextStepAt, now) as DueBucket | 'week' | null }))
+      .map((x) => (x.bucket === 'later' && opts.week && new Date(x.a.nextStepAt ?? 0).getTime() < weekEnd ? { ...x, bucket: 'week' as const } : x))
+      .filter((x) => x.cooling !== null || (x.bucket && ['overdue', 'today', 'tomorrow', 'week'].includes(x.bucket)));
+    const counts = { cooling: 0, overdue: 0, today: 0, tomorrow: 0, week: 0 };
     if (!mine.length) return { items: [] as TodayItem[], counts };
     // El contexto («lo último que pasó») solo de las que salen hoy, no de todas las que llevo.
     const acts = await db.listActivities(t, mine.map((x) => x.a.id), 5000);
@@ -883,7 +886,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     for (const x of acts) byAcc.set(x.accountId, [...(byAcc.get(x.accountId) ?? []), x]);
     const contactIds = [...new Set(mine.map((x) => x.a.nextContactId).filter(Boolean) as string[])];
     const cs = contactIds.length ? await db.listContacts(t, { ids: contactIds, limit: contactIds.length }) : [];
-    const ORDER: Record<string, number> = { cooling: 0, overdue: 1, today: 2, tomorrow: 3 };
+    const ORDER: Record<string, number> = { cooling: 0, overdue: 1, today: 2, tomorrow: 3, week: 4 };
     const items: TodayItem[] = mine.map(({ a, cooling, bucket }) => {
       const c = cs.find((x) => x.id === a.nextContactId) ?? null;
       return { ...a, bucket: (cooling !== null ? 'cooling' : bucket!) as TodayItem['bucket'], cooling, last: byAcc.get(a.id)?.[0] ?? null,

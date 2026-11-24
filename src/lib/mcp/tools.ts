@@ -106,11 +106,11 @@ export function buildMcpServer(ctx: () => Promise<AdminContext>, info: { space: 
 
   server.registerTool('lo_de_hoy', {
     title: 'Lo de hoy',
-    description: 'Lo que toca hoy a la persona: empresas que se enfrían (contestaron y llevan días sin respuesta), pasos atrasados, de hoy y de mañana, con lo último que pasó y con quién hablar.',
+    description: 'Lo que toca hoy a la persona: empresas que se enfrían (contestaron y llevan días sin respuesta), pasos atrasados, de hoy y de mañana, y los de esta semana (por_que «week»), con lo último que pasó y con quién hablar. Si hoy no hay nada, dilo y cuenta lo de la semana.',
     inputSchema: {},
     annotations: { readOnlyHint: true },
   }, run(async (admin) => {
-    const r = await admin.crm.today();
+    const r = await admin.crm.today({ week: true });
     return { cuantas: r.counts, empresas: r.items.slice(0, 40).map((i) => ({
       id: i.id, nombre: i.name, por_que: i.bucket, dias_enfriandose: i.cooling, proximo_paso: i.nextStep, cuando: i.nextStepAt,
       con: i.contactName, telefono: i.contactPhone, instagram: i.contactInstagram, ultimo: i.last ? { cuando: i.last.happenedAt, resultado: i.last.outcome, nota: i.last.note } : null,

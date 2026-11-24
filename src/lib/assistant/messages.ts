@@ -1,5 +1,6 @@
 /** Lo que dice el asistente de WhatsApp (docs/ASSISTANT.md), en el idioma de cada persona. WhatsApp: *negrita*. */
 import { defineMessages } from '../i18n/core';
+import type { AgendaItem } from './flow';
 
 interface Why { bucket: 'cooling' | 'overdue' | 'today'; cooling: number | null; last: { outcome: string; at: string } | null }
 interface Prop { name: string; contact: string | null; why: string; step: string | null; draft: string | null }
@@ -9,6 +10,14 @@ const dayOf = (d: string, loc: string) => new Date(`${d}T12:00:00Z`).toLocaleDat
 const clip = (s: string, n = 600) => (s.length > n ? `${s.slice(0, n - 1)}…` : s);
 
 const es = {
+  agenda: (items: AgendaItem[]) => {
+    const day = (iso: string | null) => (iso ? new Intl.DateTimeFormat('es-ES', { weekday: 'short', day: 'numeric', month: 'short' }).format(new Date(iso)) : '');
+    const line = (i: AgendaItem) => `• *${i.name}*${i.contact ? ` (${i.contact})` : ''} — ${i.bucket === 'cooling' ? `se enfría: contestó hace ${i.cooling ?? 3} días` : i.bucket === 'overdue' ? `atrasado${i.at ? ` desde el ${day(i.at)}` : ''}` : i.bucket === 'today' ? 'hoy' : i.bucket === 'tomorrow' ? 'mañana' : day(i.at)}${i.step ? `: ${i.step}` : ''}`;
+    const now = items.filter((i) => ['cooling', 'overdue', 'today'].includes(i.bucket));
+    const next = items.filter((i) => ['tomorrow', 'week'].includes(i.bucket));
+    if (!items.length) return 'Hoy no tienes nada pendiente, y esta semana tampoco. Si quieres, cuéntame con quién has hablado y lo apunto.';
+    return [now.length ? `📋 *Lo de hoy* (${now.length}):\n${now.slice(0, 15).map(line).join('\n')}` : 'Hoy no tienes nada pendiente 🎉', next.length ? `🗓️ *Esta semana*:\n${next.slice(0, 15).map(line).join('\n')}` : ''].filter(Boolean).join('\n\n');
+  },
   help: 'Hola 👋 Soy el asistente de Cofundo. Cuéntame (por texto o audio) con quién has hablado y qué ha pasado, y lo apunto en su ficha. También puedes reenviarme los mensajes de un cliente o mandarme una captura de la conversación. Nada se guarda sin que me digas «Guardar».',
   willSave: 'Esto es lo que guardo:',
   summary: (s: Sum) => [`*${s.name}*${s.isNew ? ' (nueva)' : ''}`, `${s.channel} · ${s.outcome}`, s.interaction ? `«${clip(s.interaction)}»` : '',
@@ -101,6 +110,14 @@ export type AssistantText = typeof es;
 export const assistantMessages = defineMessages({
   es,
   en: {
+    agenda: (items) => {
+      const day = (iso: string | null) => (iso ? new Intl.DateTimeFormat('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }).format(new Date(iso)) : '');
+      const line = (i: AgendaItem) => `• *${i.name}*${i.contact ? ` (${i.contact})` : ''} — ${i.bucket === 'cooling' ? `cooling: replied ${i.cooling ?? 3} days ago` : i.bucket === 'overdue' ? `overdue${i.at ? ` since ${day(i.at)}` : ''}` : i.bucket === 'today' ? 'today' : i.bucket === 'tomorrow' ? 'tomorrow' : day(i.at)}${i.step ? `: ${i.step}` : ''}`;
+      const now = items.filter((i) => ['cooling', 'overdue', 'today'].includes(i.bucket));
+      const next = items.filter((i) => ['tomorrow', 'week'].includes(i.bucket));
+      if (!items.length) return 'Nothing pending today, nor this week. Tell me who you talked to and I will log it.';
+      return [now.length ? `📋 *Today* (${now.length}):\n${now.slice(0, 15).map(line).join('\n')}` : 'Nothing pending today 🎉', next.length ? `🗓️ *This week*:\n${next.slice(0, 15).map(line).join('\n')}` : ''].filter(Boolean).join('\n\n');
+    },
     help: 'Hi 👋 I am the Cofundo assistant. Tell me (by text or voice note) who you talked to and what happened, and I will log it on their record. You can also forward me a client’s messages or send me a screenshot of the chat. Nothing is saved until you say “Save”.',
     willSave: 'This is what I will save:',
     summary: (s) => [`*${s.name}*${s.isNew ? ' (new)' : ''}`, `${s.channel} · ${s.outcome}`, s.interaction ? `“${clip(s.interaction)}”` : '',
@@ -189,6 +206,14 @@ export const assistantMessages = defineMessages({
     outcomes: { no_reply: 'no reply', replied: 'replied', interested: 'interested', not_interested: 'not interested', meeting: 'meeting booked', note: 'note' },
   },
   pt: {
+    agenda: (items) => {
+      const day = (iso: string | null) => (iso ? new Intl.DateTimeFormat('pt-PT', { weekday: 'short', day: 'numeric', month: 'short' }).format(new Date(iso)) : '');
+      const line = (i: AgendaItem) => `• *${i.name}*${i.contact ? ` (${i.contact})` : ''} — ${i.bucket === 'cooling' ? `a arrefecer: respondeu há ${i.cooling ?? 3} dias` : i.bucket === 'overdue' ? `atrasado${i.at ? ` desde ${day(i.at)}` : ''}` : i.bucket === 'today' ? 'hoje' : i.bucket === 'tomorrow' ? 'amanhã' : day(i.at)}${i.step ? `: ${i.step}` : ''}`;
+      const now = items.filter((i) => ['cooling', 'overdue', 'today'].includes(i.bucket));
+      const next = items.filter((i) => ['tomorrow', 'week'].includes(i.bucket));
+      if (!items.length) return 'Hoje não tens nada pendente, nem esta semana. Conta-me com quem falaste e eu registo.';
+      return [now.length ? `📋 *Hoje* (${now.length}):\n${now.slice(0, 15).map(line).join('\n')}` : 'Hoje não tens nada pendente 🎉', next.length ? `🗓️ *Esta semana*:\n${next.slice(0, 15).map(line).join('\n')}` : ''].filter(Boolean).join('\n\n');
+    },
     help: 'Olá 👋 Sou o assistente da Cofundo. Conta-me (por texto ou áudio) com quem falaste e o que aconteceu, e eu registo na ficha. Também podes reencaminhar-me as mensagens de um cliente ou mandar-me uma captura da conversa. Nada se guarda sem dizeres «Guardar».',
     willSave: 'Isto é o que vou guardar:',
     summary: (s) => [`*${s.name}*${s.isNew ? ' (nova)' : ''}`, `${s.channel} · ${s.outcome}`, s.interaction ? `«${clip(s.interaction)}»` : '',
@@ -277,6 +302,14 @@ export const assistantMessages = defineMessages({
     outcomes: { no_reply: 'sem resposta', replied: 'respondeu', interested: 'interessado', not_interested: 'não interessado', meeting: 'reunião marcada', note: 'nota' },
   },
   ko: {
+    agenda: (items) => {
+      const day = (iso: string | null) => (iso ? new Intl.DateTimeFormat('ko-KR', { weekday: 'short', day: 'numeric', month: 'short' }).format(new Date(iso)) : '');
+      const line = (i: AgendaItem) => `• *${i.name}*${i.contact ? ` (${i.contact})` : ''} — ${i.bucket === 'cooling' ? `식는 중: ${i.cooling ?? 3}일 전 답장` : i.bucket === 'overdue' ? `지연${i.at ? ` (${day(i.at)}부터)` : ''}` : i.bucket === 'today' ? '오늘' : i.bucket === 'tomorrow' ? '내일' : day(i.at)}${i.step ? `: ${i.step}` : ''}`;
+      const now = items.filter((i) => ['cooling', 'overdue', 'today'].includes(i.bucket));
+      const next = items.filter((i) => ['tomorrow', 'week'].includes(i.bucket));
+      if (!items.length) return '오늘도, 이번 주에도 할 일이 없어요. 누구와 이야기했는지 알려주시면 기록할게요.';
+      return [now.length ? `📋 *오늘* (${now.length}):\n${now.slice(0, 15).map(line).join('\n')}` : '오늘은 할 일이 없어요 🎉', next.length ? `🗓️ *이번 주*:\n${next.slice(0, 15).map(line).join('\n')}` : ''].filter(Boolean).join('\n\n');
+    },
     help: '안녕하세요 👋 Cofundo 어시스턴트입니다. 누구와 이야기했고 무슨 일이 있었는지 (글이나 음성으로) 알려주시면 기록에 남길게요. 고객의 메시지를 전달하거나 대화 캡처를 보내도 됩니다. «저장»이라고 하기 전에는 아무것도 저장하지 않아요.',
     willSave: '이렇게 저장할게요:',
     summary: (s) => [`*${s.name}*${s.isNew ? ' (새 회사)' : ''}`, `${s.channel} · ${s.outcome}`, s.interaction ? `«${clip(s.interaction)}»` : '',

@@ -50,7 +50,12 @@ export interface AssistantOps {
   /** «Validar» / «Rechazar» del aviso de lead nuevo (docs/LEADS.md §2f). */
   leadOk?(leadId: string): Promise<{ name: string; whatsapp: { minutes: number; soon: boolean } | null; why: string | null }>;
   leadNo?(leadId: string): Promise<{ name: string }>;
+  /** «¿Qué tengo para hoy?»: lo de hoy (y de esta semana), lo mismo que lo_de_hoy del MCP. */
+  agenda?(): Promise<AgendaItem[]>;
 }
+export interface AgendaItem { name: string; bucket: 'cooling' | 'overdue' | 'today' | 'tomorrow' | 'week'; cooling: number | null; step: string | null; at: string | null; contact: string | null }
+/** Preguntar qué toca (no es algo que apuntar). Corto y con forma de pregunta o de orden. */
+const AGENDA = /^[¿¡\s]*(?:(?:y\s+)?(?:qu[eé]|que)\s+(?:tengo|me\s+toca|toca|hay|tenemos)(?:\s+(?:que\s+hacer\s+)?(?:para\s+)?(?:hoy|mañana|esta\s+semana|pendiente|de\s+hoy))?|(?:mi|la)\s+agenda(?:\s+de\s+hoy)?|lo\s+de\s+hoy|pendientes(?:\s+de\s+hoy)?|agenda|what(?:'s|\s+is|\s+do\s+i\s+have)\s+(?:on\s+|for\s+)?(?:today|this\s+week)|my\s+(?:agenda|day)|o\s+que\s+(?:tenho|há)(?:\s+(?:para\s+)?(?:hoje|esta\s+semana))?|오늘\s*(?:뭐|일정|할\s*일)[^\n]{0,10})[\s?!.]*$/iu;
 /** Una empresa del recordatorio de la mañana (lo de «Hoy»), con lo justo para proponer el mensaje. */
 export interface ReminderItem {
   accountId: string; name: string; bucket: 'cooling' | 'overdue' | 'today'; cooling: number | null; contactName: string | null; step: string | null;
@@ -480,6 +485,10 @@ export async function handle(d: FlowDeps, msg: Incoming, prev: State): Promise<F
   const heard = msg.kind === 'audio' ? [say(T.heard(text))] : [];
   const withHeard = (r: FlowResult): FlowResult => ({ ...r, replies: [...heard, ...r.replies] });
   if (!text) return { state, replies: [say(T.help)] };
+  // ---- «¿Qué tengo para hoy?»: la agenda (si hoy no hay nada, la semana). No cambia lo que estuviera a medias.
+  if (!(msg.kind === 'text' && msg.forwarded) && d.ops.agenda && text.length <= 60 && AGENDA.test(text)) {
+    try { return withHeard({ state, replies: [say(T.agenda(await d.ops.agenda()))] }); } catch { return withHeard({ state, replies: [say(T.failedOne)] }); }
+  }
 
   // ---- Reenviados: se juntan y se pregunta una vez de qué empresa son.
   if (msg.kind === 'text' && msg.forwarded) {
