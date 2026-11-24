@@ -128,7 +128,7 @@ const es = {
     design: {
       lede: 'Cómo se ve el email que recibe cada lead.', plain: 'Personal', plainHelp: 'Como un email escrito a mano. Suele llegar mejor a la bandeja principal.',
       brand: 'Con tu marca', brandHelp: 'Tu logo arriba y tu color en la línea y en los enlaces.',
-      logo: 'Logo', logoHelp: 'Un enlace https a un PNG o JPG (Gmail no enseña SVG). Sin logo, sale el nombre de tu empresa.', color: 'Color', save: 'Guardar diseño',
+      logo: 'Logo', logoHelp: 'Súbelo o pega un enlace https a un PNG o JPG (Gmail no enseña SVG), de 1 MB como mucho. Sin logo, sale el nombre de tu empresa.', upload: 'Subir', uploading: 'Subiendo…', uploaded: 'Subido: se guarda al pasar de parte o al cerrar.', color: 'Color', save: 'Guardar diseño',
     },
     ok: { design: 'Diseño guardado.', texts: 'Mensajes guardados.', reset: 'Vuelven nuestros textos.', ai: 'Propuesta de la IA: revísala; se guarda al pulsar «Siguiente».', sig: 'Firma guardada.', sigCleared: 'Firma pegada quitada.', signer: 'Guardado.' },
   },
@@ -321,7 +321,7 @@ export const leadsSetupMessages = defineMessages({
       design: {
         lede: 'How the email each lead receives looks.', plain: 'Personal', plainHelp: 'Like an email written by hand. It usually lands better in the main inbox.',
         brand: 'With your brand', brandHelp: 'Your logo at the top and your colour on the line and the links.',
-        logo: 'Logo', logoHelp: 'An https link to a PNG or JPG (Gmail does not show SVG). Without a logo, your company name is shown.', color: 'Colour', save: 'Save design',
+        logo: 'Logo', logoHelp: 'Upload it or paste an https link to a PNG or JPG (Gmail does not show SVG), 1 MB at most. Without a logo, your company name is shown.', upload: 'Upload', uploading: 'Uploading…', uploaded: 'Uploaded: it is saved when you move on or close.', color: 'Colour', save: 'Save design',
       },
       ok: { design: 'Design saved.', texts: 'Messages saved.', reset: 'Our texts are back.', ai: 'AI suggestion: review it; it is saved when you press “Next”.', sig: 'Signature saved.', sigCleared: 'Pasted signature removed.', signer: 'Saved.' },
     },
@@ -511,7 +511,7 @@ export const leadsSetupMessages = defineMessages({
       design: {
         lede: 'Como fica o email que cada lead recebe.', plain: 'Pessoal', plainHelp: 'Como um email escrito à mão. Costuma chegar melhor na caixa principal.',
         brand: 'Com sua marca', brandHelp: 'Seu logo no topo e sua cor na linha e nos links.',
-        logo: 'Logo', logoHelp: 'Um link https para um PNG ou JPG (o Gmail não mostra SVG). Sem logo, aparece o nome da sua empresa.', color: 'Cor', save: 'Salvar design',
+        logo: 'Logo', logoHelp: 'Carregue-o ou cole um link https para um PNG ou JPG (o Gmail não mostra SVG), até 1 MB. Sem logo, aparece o nome da sua empresa.', upload: 'Carregar', uploading: 'A carregar…', uploaded: 'Carregado: guarda-se ao avançar ou ao fechar.', color: 'Cor', save: 'Salvar design',
       },
       ok: { design: 'Design salvo.', texts: 'Mensagens salvas.', reset: 'Voltam os nossos textos.', ai: 'Proposta da IA: revise; ela é salva quando você clicar em «Próximo».', sig: 'Assinatura guardada.', sigCleared: 'Assinatura colada tirada.', signer: 'Salvo.' },
     },
@@ -699,7 +699,7 @@ export const leadsSetupMessages = defineMessages({
       design: {
         lede: '리드가 받는 이메일의 모양입니다.', plain: '개인용', plainHelp: '직접 쓴 이메일처럼 보입니다. 기본 받은편지함에 더 잘 도착합니다.',
         brand: '내 브랜드로', brandHelp: '위에 로고, 선과 링크에 내 색상.',
-        logo: '로고', logoHelp: 'PNG나 JPG로 가는 https 링크 (Gmail은 SVG를 보여 주지 않습니다). 로고가 없으면 회사 이름이 나옵니다.', color: '색상', save: '디자인 저장',
+        logo: '로고', logoHelp: '업로드하거나 PNG·JPG의 https 링크를 붙여넣으세요 (Gmail은 SVG를 보여 주지 않습니다). 최대 1MB. 로고가 없으면 회사 이름이 나옵니다.', upload: '업로드', uploading: '업로드 중…', uploaded: '업로드됨: 다음으로 넘어가거나 닫을 때 저장됩니다.', color: '색상', save: '디자인 저장',
       },
       ok: { design: '디자인을 저장했습니다.', texts: '메시지를 저장했습니다.', reset: '기본 문구로 돌아갔습니다.', ai: 'AI 제안입니다. 확인한 뒤 「다음」을 누르면 저장됩니다.', sig: '서명을 저장했습니다.', sigCleared: '붙여 넣은 서명을 삭제했습니다.', signer: '저장했습니다.' },
     },

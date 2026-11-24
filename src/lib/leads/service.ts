@@ -36,6 +36,8 @@ export const LEAD_ERRORS = {
   badHoliday: (v: string) => `«${v}» no es una fecha (AAAA-MM-DD)`,
   waNotReady: 'Para activarlo falta el número y la plantilla del primer WhatsApp en tu idioma',
   badColor: 'El color, en hexadecimal (ejemplo: #ff27bb)',
+  logoTooBig: 'El logo pesa más de 1 MB: usa uno más ligero (un logo de email ocupa poco)',
+  noFile: 'Elige un archivo',
 } as const;
 
 const wa = z.string().trim().max(1024).refine((v) => !v || (['{{1}}', '{{2}}', '{{3}}'].every((x) => v.includes(x)) && !/\{\{[4-9]\}\}/.test(v)), LEAD_ERRORS.waVars);

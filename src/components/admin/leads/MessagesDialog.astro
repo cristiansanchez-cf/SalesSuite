@@ -152,7 +152,7 @@ const pasted = !!sig.html;
         <label class="co-field">{S.sigEmail}<input class="co-input" type="email" name="sig_email" value={sig.email ?? ''} maxlength="200" /></label>
         <label class="co-field sm:col-span-2">{S.sigAddress}<input class="co-input" name="sig_address" value={sig.address ?? ''} maxlength="200" /></label>
         <label class="co-field">{S.sigWebsite}<input class="co-input" type="url" name="sig_website" value={sig.website ?? ''} placeholder="https://" /></label>
-        <label class="co-field">{S.sigLogo}<input class="co-input" type="url" name="sig_logoUrl" value={sig.logoUrl ?? ''} placeholder="https://…/logo.png" /><span class="co-meta">{S.sigLogoHelp}</span></label>
+        <span class="co-field"><span>{S.sigLogo}</span><span class="flex items-center gap-2" data-logo-upload><input class="co-input min-w-0 flex-1" type="url" name="sig_logoUrl" value={sig.logoUrl ?? ''} placeholder="https://…/logo.png" aria-label={S.sigLogo} data-logo-url /><label class="co-btn co-btn--ghost co-btn--sm shrink-0 cursor-pointer" data-testid="messages-sig-logo-upload"><Icon name="upload" size={14} />{T.design.upload}<input type="file" accept="image/png,image/jpeg" class="sr-only" data-logo-file data-testid="messages-sig-logo-upload-file" /></label></span><span class="co-meta" data-logo-status data-uploading={T.design.uploading} data-uploaded={T.design.uploaded}>{S.sigLogoHelp}</span></span>
       </div>
       <label class="co-field">{S.sigLegal}<textarea class="co-textarea h-24" name="sig_legal" maxlength="2000">{sig.legal ?? ''}</textarea></label>
     </form>
@@ -174,7 +174,7 @@ const pasted = !!sig.html;
         ))}
       </div>
       <div class="grid gap-3 sm:grid-cols-[1fr_auto]">
-        <label class="co-field">{T.design.logo}<input class="co-input" type="url" name="logoUrl" value={style.logoUrl ?? brandDefaults.logoUrl} placeholder="https://…/logo.png" /><span class="co-meta">{T.design.logoHelp}</span></label>
+        <span class="co-field"><span>{T.design.logo}</span><span class="flex items-center gap-2" data-logo-upload><input class="co-input min-w-0 flex-1" type="url" name="logoUrl" value={style.logoUrl ?? brandDefaults.logoUrl} placeholder="https://…/logo.png" aria-label={T.design.logo} data-logo-url /><label class="co-btn co-btn--ghost co-btn--sm shrink-0 cursor-pointer" data-testid="messages-logo-upload"><Icon name="upload" size={14} />{T.design.upload}<input type="file" accept="image/png,image/jpeg" class="sr-only" data-logo-file data-testid="messages-logo-upload-file" /></label></span><span class="co-meta" data-logo-status data-uploading={T.design.uploading} data-uploaded={T.design.uploaded}>{T.design.logoHelp}</span></span>
         <label class="co-field">{T.design.color}<input class="co-input h-11 w-24 !p-1" type="color" name="color" value={style.color ?? brandDefaults.color} /></label>
       </div>
     </form>
@@ -188,6 +188,32 @@ const pasted = !!sig.html;
 <script>
   import { previewFor, type PreviewCtx, type PreviewLocale } from '~/lib/leads/message-preview';
   import type { LeadTemplates, QuestionKey } from '~/lib/leads/types';
+
+  // Subir el logo (diseño y firma): se sube al elegirlo y su dirección queda en el campo, que se guarda como siempre.
+  for (const box of document.querySelectorAll<HTMLElement>('[data-logo-upload]')) {
+    const url = box.querySelector<HTMLInputElement>('[data-logo-url]')!;
+    const file = box.querySelector<HTMLInputElement>('[data-logo-file]')!;
+    const status = box.parentElement?.querySelector<HTMLElement>('[data-logo-status]');
+    const help = status?.textContent ?? '';
+    file.addEventListener('change', async () => {
+      const f = file.files?.[0];
+      if (!f) return;
+      if (status) { status.textContent = status.dataset.uploading ?? ''; status.classList.remove('text-[color:var(--console-danger)]'); }
+      const body = new FormData(); body.set('file', f);
+      let res: { url?: string; error?: string } = {};
+      try { res = await (await fetch('/admin/api/leads/logo', { method: 'POST', body, credentials: 'same-origin' })).json(); } catch { res = { error: help }; }
+      file.value = '';
+      if (res.url) {
+        url.value = res.url;
+        url.dispatchEvent(new Event('input', { bubbles: true }));
+        url.dispatchEvent(new Event('change', { bubbles: true }));
+        if (status) status.textContent = status.dataset.uploaded ?? '';
+      } else if (status) {
+        status.textContent = res.error ?? help;
+        status.classList.add('text-[color:var(--console-danger)]');
+      }
+    });
+  }
 
   const QK: QuestionKey[] = ['venue', 'dj', 'festival', 'wedding', 'general', 'trial_ended', 'extra_venue'];
   for (const form of document.querySelectorAll<HTMLFormElement>('form[data-msg-form]')) {
