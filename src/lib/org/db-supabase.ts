@@ -80,6 +80,11 @@ export function supabaseOrgDb(sb: SupabaseClient): OrgDb {
       if (r.error) return null;   // sin la migración 20270121
       return new Map(((r.data ?? []) as Row[]).map((x) => [x.tenant_id as string, { decks: !!x.decks }]));
     },
+    async platformWhatsapp() {
+      const r = await sb.from('lead_settings').select('tenant_id, whatsapp_enabled, whatsapp_phone_id, whatsapp_templates');
+      if (r.error) return null;
+      return new Map(((r.data ?? []) as Row[]).map((x) => [x.tenant_id as string, { enabled: !!x.whatsapp_enabled, phoneId: (x.whatsapp_phone_id as string | null) ?? null, templates: (x.whatsapp_templates as Record<string, Record<string, string>>) ?? {} }]));
+    },
     async setTenantFeature(tenantId, f) {
       check(await sb.rpc('platform_set_feature', { p_tenant: tenantId, p_decks: f.decks }));
     },

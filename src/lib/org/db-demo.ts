@@ -80,6 +80,10 @@ export function demoOrgDb(): OrgDb {
       if (!db().tenant.some((t) => t.id === tenantId)) throw new Error('Espacio no encontrado');
       demoLimits().set(tenantId, { ...l });
     },
+    async platformWhatsapp() {
+      const { demoLeadsStore } = await import('../leads/db-demo');
+      return new Map(demoLeadsStore().settings.map((x) => [x.tenantId, { enabled: x.whatsappEnabled, phoneId: x.whatsappPhoneId, templates: x.whatsappTemplates ?? {} }]));
+    },
     async platformFeatures() { return new Map((db().tenant_feature ?? []).map((x) => [x.tenant_id, { decks: x.decks }])); },
     async setTenantFeature(tenantId, f) {
       if (!db().tenant.some((t) => t.id === tenantId)) throw new Error('Espacio no encontrado');

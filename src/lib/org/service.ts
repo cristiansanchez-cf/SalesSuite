@@ -122,6 +122,19 @@ export function createOrgService(db: OrgDb, admin: AdminDb, s: AdminSession, dep
     if (!s.superadmin) throw new AdminError(403, 'Solo el superadmin');
     return (await db.platformFeatures?.().catch(() => null)) ?? new Map<string, { decks: boolean }>();
   }
+  /** Qué espacios tienen su WhatsApp de leads conectado con nosotros (docs/LEADS.md §2f). Solo el superadmin. */
+  async function whatsappStatus() {
+    if (!s.superadmin) throw new AdminError(403, 'Solo el superadmin');
+    const { waGaps, waTokenReady } = await import('../leads/wa-status');
+    const rows = (await db.platformWhatsapp?.().catch(() => null)) ?? new Map();
+    const ready = waTokenReady();
+    const out = new Map<string, { connected: boolean; gaps: ReturnType<typeof waGaps> }>();
+    for (const [id, x] of rows) {
+      const gaps = waGaps({ whatsappEnabled: x.enabled, whatsappPhoneId: x.phoneId, whatsappTemplates: x.templates } as never, ready);
+      out.set(id, { connected: gaps.length === 0, gaps });
+    }
+    return out;
+  }
   async function setFeature(tenantId: string, decks: boolean) {
     if (!s.superadmin) throw new AdminError(403, 'Solo el superadmin');
     if (!/^[0-9a-f-]{36}$/i.test(tenantId)) throw new AdminError(422, 'Datos no válidos');
@@ -169,7 +182,7 @@ export function createOrgService(db: OrgDb, admin: AdminDb, s: AdminSession, dep
     }
     return { id, slug, hostname, origin, invited, adminEmail: email || null };
   }
-  return { chart, saveDelegation, deleteDelegation, moveMember, setZone, platform, costs, setLimits, features, setFeature, createSpace };
+  return { chart, saveDelegation, deleteDelegation, moveMember, setZone, platform, costs, setLimits, features, setFeature, whatsappStatus, createSpace };
 }
 
 export type OrgService = ReturnType<typeof createOrgService>;

@@ -4,8 +4,6 @@
  * historial con fecha y hora. Acciones: validar al CRM, cambiar etapa (con motivo para descartar), cuarentena, parar la
  * secuencia y dar de baja.
  */
-import { env } from '~/lib/env';
-import { appMode } from '~/lib/mode';
 import AdminLayout from '~/layouts/AdminLayout.astro';
 import PageHeader from '~/components/ui/PageHeader.astro';
 import Alert from '~/components/ui/Alert.astro';
@@ -36,9 +34,12 @@ if (Astro.request.method === 'POST') {
   let ok = '';
   result = await formAction(async () => {
     switch (str('action')) {
-      case 'validate': case 'accept': await svc.validate(id); ok = 'validated'; break;
+      case 'validate': case 'accept': case 'talk': {
+        const r = str('action') === 'talk' ? await svc.approveWhatsapp(id) : await svc.accept(id, { whatsapp: str('action') === 'accept' && f.getAll('wa').includes('1') });
+        ok = r.whatsapp ? (r.whatsapp.soon ? `validatedWa&min=${r.whatsapp.minutes}` : 'validatedWaLater') : r.why ? `validatedNoWa&why=${r.why}` : 'validated';
+        break;
+      }
       case 'reject': await svc.reject(id, rejectReason(str('reasonPreset'), str('reasonDetail'), L.decide.other)); ok = 'rejected'; break;
-      case 'talk': await svc.approveWhatsapp(id, { whatsappReady: !!env('WHATSAPP_TOKEN') || appMode() === 'demo' }); ok = 'talked'; break;
       case 'not-now': await svc.dismissWhatsapp(id); ok = 'dismissed'; break;
       case 'stage': await svc.setStage(id, str('stage') as Stage, str('reason') || null); ok = 'stage'; break;
       case 'spam': await svc.setStage(id, 'spam'); ok = 'stage'; break;
@@ -56,7 +57,12 @@ let data;
 try { data = await svc.detail(id); } catch { return Astro.rewrite('/404'); }
 const { lead: l, submissions, events, messages, suppressed } = data;
 const fields = (l.facts.fields as Record<string, string>) ?? {};
-const okMsg = flash(Astro.url, L.ok);
+const W = L.waStatus;
+const okKey = Astro.url.searchParams.get('ok');
+const okMsg = okKey === 'validatedWa' ? W.validatedWa(Number(Astro.url.searchParams.get('min')) || 5)
+  : okKey === 'validatedWaLater' ? W.validatedWaLater
+  : okKey === 'validatedNoWa' ? W.validatedNoWa((W.why as Record<string, string>)[Astro.url.searchParams.get('why') ?? ''] ?? '—')
+  : flash(Astro.url, L.ok);
 const fmt = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 const when = (iso: string | null) => (iso ? fmt.format(new Date(iso)) : '—');
 const last = submissions[0];
@@ -64,10 +70,9 @@ const lastCtx = (last?.context ?? {}) as { page_url?: string; cta?: { label?: st
 const attrRows = (a: unknown) => (a ? Object.entries(a as Record<string, string>) : []);
 const cls = l.facts.classification as { category: keyof typeof L.cats; auto: boolean; reason: string; by: string } | undefined;
 const reason = (r: string) => (L.reasons as Record<string, string>)[r] ?? r;
-// Se le puede escribir por WhatsApp con «Le hablamos»: teléfono, aviso aceptado, sin baja, sin WhatsApp 1 ya en marcha.
-const awaiting = !!l.facts.waAwaiting && !l.facts.waApproved;
-const waBusy = messages.some((x) => x.channel === 'whatsapp' && x.step === 'wa1' && ['pending', 'sending', 'sent'].includes(x.status));
-const canTalk = !l.isTest && !!l.phoneE164 && l.whatsappOk && !suppressed.whatsapp && !waBusy && !l.lastInboundAt && !['spam', 'discarded', 'lost'].includes(l.stage) && !!data.settings?.whatsappEnabled;
+// Qué pasa con el WhatsApp si se acepta ahora (docs/LEADS.md §2f): sale a los N min, o por qué no. Una sola regla.
+const plan = await svc.whatsappPlan(id);
+const awaiting = !!l.facts.waAwaiting && !l.facts.waApproved && 'minutes' in plan;
 const bandLabel = l.scoreDetail ? (L.bands as Record<string, string>)[l.scoreDetail.band] ?? l.scoreDetail.band : '';
 const origins: [string, unknown][] = [[D.first, l.attributionFirst], [D.last, l.attributionLast]];
 const evText = (e: (typeof events)[number]) => {
@@ -85,18 +90,20 @@ const evText = (e: (typeof events)[number]) => {
   <PageHeader eyebrow={`${L.types[l.type]} · ${L.stages[l.stage]}`} title={l.name} lede={summary(l.type, fields, locale)} back={{ href: '/admin/leads', label: D.back }}>
     {l.validatedAt
       ? (l.contactId && <a class="co-btn co-btn--ghost" href={`/admin/people/${l.contactId}`} data-testid="lead-open-contact"><Icon name="user" size={16} />{D.openContact}</a>)
-      : !l.isTest && !['discarded', 'spam'].includes(l.stage) && <LeadDecide id={l.id} name={l.name} action={`/admin/leads/${l.id}`} M={L.decide} />}
+      : !l.isTest && !['discarded', 'spam'].includes(l.stage) && <LeadDecide id={l.id} name={l.name} action={`/admin/leads/${l.id}`} M={L.decide} W={W} wa={plan} />}
   </PageHeader>
   {okMsg && <div class="mb-4"><Alert kind="success" title={okMsg} /></div>}
-  {/* «Le hablamos» (docs/LEADS.md §WhatsApp con tu OK): cuando espera tu OK, o si aún no se le ha escrito por WhatsApp. */}
-  {canTalk && (
-    <div class:list={['co-inset mb-4 flex flex-wrap items-center gap-3 !py-3', awaiting && 'co-inset--warn']} data-testid="lead-talk-box">
+  {/* WhatsApp (docs/LEADS.md §2f): solo si de verdad puede salir. Sin validar, espera a «Aceptar»; ya validado, un botón. */}
+  {!l.validatedAt && awaiting && (
+    <div class="co-inset co-inset--warn mb-4 flex flex-wrap items-center gap-3 !py-3" data-testid="lead-talk-box">
+      <Icon name="whatsapp" size={18} /><strong class="min-w-0 flex-1 text-sm">{W.awaiting((plan as { minutes: number }).minutes)}</strong>
+    </div>
+  )}
+  {l.validatedAt && 'minutes' in plan && (
+    <div class="co-inset mb-4 flex flex-wrap items-center gap-3 !py-3" data-testid="lead-talk-box">
       <Icon name="whatsapp" size={18} />
-      <span class="min-w-0 flex-1 text-sm">{awaiting ? <strong>{D.awaiting}</strong> : null}<span class="co-help block">{D.talkHelp}</span></span>
-      <form method="post" class="flex flex-wrap gap-2">
-        <button class="co-btn co-btn--primary co-btn--sm" name="action" value="talk" data-testid="lead-talk">{D.talk}</button>
-        {awaiting && <button class="co-btn co-btn--ghost co-btn--sm" name="action" value="not-now" data-testid="lead-not-now">{D.notNow}</button>}
-      </form>
+      <span class="co-help min-w-0 flex-1">{W.talkHelp((plan as { minutes: number }).minutes)}</span>
+      <form method="post"><button class="co-btn co-btn--primary co-btn--sm" name="action" value="talk" data-testid="lead-talk">{W.talk}</button></form>
     </div>
   )}
   {result.error && <div class="mb-4"><Alert kind="rejection" title={result.error} details={result.details} /></div>}

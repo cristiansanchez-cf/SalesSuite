@@ -46,12 +46,14 @@ export interface LeadSettings {
   /** Último borrado automático (lo escribe el servidor). */
   lastPurgeAt?: string | null;
   /**
-   * Cuándo espera el WhatsApp 1 al «Le hablamos» de una persona (docs/LEADS.md §WhatsApp con tu OK): 'auto' (los dudosos,
+   * Cuándo espera el WhatsApp 1 a que una persona lo valide (docs/LEADS.md §2f): 'auto' (los dudosos,
    * nada), 'doubtful' (los dudosos esperan tu OK; por defecto) o 'all' (todos lo esperan).
    */
   waApproval?: WaApproval;
-  /** Avisar por WhatsApp (además del email) a quien atiende, con «Le hablamos». Sin la columna: no. */
+  /** Avisar por WhatsApp (además del email) a quien atiende, con «Validar» y «Rechazar». Sin la columna: no. */
   teamWhatsapp?: boolean;
+  /** Minutos desde que se valida hasta que le sale el primer WhatsApp (1–120; por defecto 5). */
+  waDelayMinutes?: number;
 }
 export type WaApproval = 'auto' | 'doubtful' | 'all';
 

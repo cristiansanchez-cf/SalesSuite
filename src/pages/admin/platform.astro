@@ -4,6 +4,7 @@
  * (por su dominio; dentro, el superadmin es admin aunque no sea miembro).
  */
 import { decksMessages } from '~/lib/i18n/messages/decks';
+import { leadsMessages } from '~/lib/i18n/messages/leads';
 import AdminLayout from '~/layouts/AdminLayout.astro';
 import Icon from '~/components/ui/Icon.astro';
 import { formAction } from '~/lib/admin/forms';
@@ -50,6 +51,8 @@ if (Astro.request.method === 'POST') {
 const spaces = await admin.org.platform();
 const feats = await admin.org.features().catch(() => new Map<string, { decks: boolean }>());
 const DK = decksMessages[locale0];
+const wa = await admin.org.whatsappStatus().catch(() => new Map<string, { connected: boolean; gaps: string[] }>());
+const WS = leadsMessages[locale0].waStatus;
 // Lo que lleva gastado cada espacio este mes (docs/COSTES.md); si falla, la página sale igual sin ello.
 const { m: cm, locale } = i18n(Astro, costsMessages);
 const costs = await admin.org.costs(monthOf(new Date())).catch(() => null);
@@ -123,6 +126,12 @@ const total = spaces.reduce((a, x) => ({ members: a.members + x.members, dossier
               <span class="text-sm"><b>{DK.platform.label}</b> · <span class="co-meta">{on ? DK.platform.on : DK.platform.off}</span></span>
               <button class="co-btn co-btn--ghost co-btn--sm" type="submit" data-testid="platform-decks-toggle">{on ? DK.platform.turnOff : DK.platform.turnOn}</button>
             </form>
+          ); })()}
+          {(() => { const w = wa.get(x.id); const on = !!w?.connected; return (
+            <p class="flex flex-wrap items-center gap-2 text-sm" data-testid="platform-whatsapp" data-on={on ? '1' : '0'}>
+              <span class:list={['co-badge', on ? 'co-badge--signal' : '']}>{on ? WS.on : WS.off}</span>
+              {!on && <span class="co-meta">{WS.missing}: {(w?.gaps ?? ['phone', 'template', 'off']).map((g) => WS.gaps[g as 'phone']).join(', ')}</span>}
+            </p>
           ); })()}
           <p class="co-meta">{m.revenue}: <b>{f.money(x.revenueCents, 'EUR')}</b>{costOf.get(x.id) && <> · <a href={`/admin/platform/costes?t=${encodeURIComponent(x.slug)}`} data-testid="platform-space-cost">{cm.variable}: <b>{money$(costOf.get(x.id)!.variable)}</b></a></>}</p>
           {(() => {

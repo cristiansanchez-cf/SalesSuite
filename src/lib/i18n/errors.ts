@@ -44,6 +44,7 @@ const EXACT: Record<string, T> = {
   'No se le puede escribir por WhatsApp: sin teléfono válido, sin el aviso de WhatsApp aceptado, se dio de baja o WhatsApp no está configurado': ['They cannot be messaged on WhatsApp: no valid phone, the WhatsApp notice was not accepted, they unsubscribed or WhatsApp is not set up', 'Não se lhe pode escrever por WhatsApp: sem telefone válido, sem o aviso de WhatsApp aceite, cancelou ou o WhatsApp não está configurado', 'WhatsApp로 보낼 수 없습니다: 유효한 전화번호가 없거나, WhatsApp 안내를 수락하지 않았거나, 수신 거부했거나, WhatsApp이 설정되지 않았습니다'],
   'El logo pesa más de 1 MB: usa uno más ligero (un logo de email ocupa poco)': ['The logo is over 1 MB: use a lighter one (an email logo is small)', 'O logo tem mais de 1 MB: use um mais leve (um logo de email ocupa pouco)', '로고가 1MB를 넘습니다: 더 가벼운 파일을 사용하세요 (이메일 로고는 작습니다)'],
   'Elige un archivo': ['Choose a file', 'Escolha um ficheiro', '파일을 선택하세요'],
+  'Este lead está descartado: cambia su etapa si quieres recuperarlo': ['This lead is discarded: change its stage if you want it back', 'Este lead está descartado: mude a etapa se o quiser recuperar', '이 리드는 폐기되었습니다: 되살리려면 단계를 바꾸세요'],
   'Ya se le ha escrito por WhatsApp o ha contestado': ['They have already been messaged on WhatsApp or have replied', 'Já se lhe escreveu por WhatsApp ou já respondeu', '이미 WhatsApp을 보냈거나 답장을 받았습니다'],
   'Un deck no tiene resultado de venta': ['A deck has no sale outcome', 'Um deck não tem resultado de venda', '덱에는 판매 결과가 없습니다'],
   // Importar con tu IA (docs/IMPORTAR_IA.md)

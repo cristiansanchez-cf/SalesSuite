@@ -47,8 +47,8 @@ export interface AssistantOps {
   qualifyFrom?(accountId: string, text: string): Promise<{ name: string; marked: string[]; gaps: QualQuestion[] }>;
   /** «Mañana»: el próximo paso, a mañana. */
   later?(accountId: string): Promise<{ name: string }>;
-  /** «Le hablamos» / «Lo miro yo» del aviso de lead nuevo (docs/LEADS.md §WhatsApp con tu OK). */
-  leadOk?(leadId: string): Promise<{ name: string }>;
+  /** «Validar» / «Rechazar» del aviso de lead nuevo (docs/LEADS.md §2f). */
+  leadOk?(leadId: string): Promise<{ name: string; whatsapp: { minutes: number; soon: boolean } | null; why: string | null }>;
   leadNo?(leadId: string): Promise<{ name: string }>;
 }
 /** Una empresa del recordatorio de la mañana (lo de «Hoy»), con lo justo para proponer el mensaje. */
@@ -422,7 +422,7 @@ export async function handle(d: FlowDeps, msg: Incoming, prev: State): Promise<F
   if (msg.kind === 'button' && /^lead:[0-9a-f-]{36}:[0-9a-f-]{36}:(ok|no)$/i.test(msg.id)) {
     const [, , leadId, what] = msg.id.split(':');
     try {
-      if (what === 'ok' && d.ops.leadOk) { const r = await d.ops.leadOk(leadId); return { state, replies: [say(T.leadOk(r.name))] }; }
+      if (what === 'ok' && d.ops.leadOk) { const r = await d.ops.leadOk(leadId); return { state, replies: [say(T.leadOk(r.name, r.whatsapp, r.why ? (T.leadWhy as Record<string, string>)[r.why] ?? r.why : null))] }; }
       if (what === 'no' && d.ops.leadNo) { const r = await d.ops.leadNo(leadId); return { state, replies: [say(T.leadNo(r.name))] }; }
     } catch (e) { return { state, replies: [say(e instanceof Error && e.message ? T.leadFailed(e.message) : T.failedOne)] }; }
   }

@@ -7,6 +7,7 @@ import type { Mailer } from '../notify/mailer';
 import { decide, type Classification, type Classifier, type ClassifyInput } from './classify';
 import type { LeadsDb } from './db';
 import { unsubscribeToken, whatsappTemplate } from './intake';
+import { waDelay } from './wa-status';
 import { toE164 } from './normalize';
 import type { Eta } from './schedule';
 import { autoreplyEmail, mediaFor, msgLocale, notifyEmail, waParams, waPreview } from './templates';
@@ -21,8 +22,8 @@ export interface JobDeps {
   /** Si hay IA: revisa la clasificación por reglas antes del primer envío (docs/LEADS.md §Clasificar). */
   classifier?: Classifier | null;
   /**
-   * El aviso de lead nuevo por WhatsApp a quien atiende (docs/LEADS.md §WhatsApp con tu OK): sale del número del asistente
-   * con su plantilla (equipo_nuevo_lead_<idioma>) y botones «Le hablamos» / «Lo miro yo». Sin esto, no se manda.
+   * El aviso de lead nuevo por WhatsApp a quien atiende (docs/LEADS.md §2f): sale del número del asistente
+   * con su plantilla (equipo_nuevo_lead_<idioma>) y botones «Validar» / «Rechazar». Sin esto, no se manda.
    */
   team?: { phoneId: string; templates: Record<'es' | 'en' | 'fr', string>; wa: WhatsApp | null } | null;
 }
@@ -86,7 +87,10 @@ async function one(d: JobDeps, m: LeadMessage, cache: Map<string, LeadSettings |
       source: sourceOf(lead), score: lead.score, band: lead.scoreDetail?.band ?? null, repeat: lead.submissions, quarantine: lead.quarantineReasons.filter(() => lead.quarantined),
       next: reply ? 'Te toca a ti: la secuencia automática se ha parado.'
         : m.payload.intent === 'trial_signup' ? 'Alta de prueba en la app: no se le ha mandado nada automático (la app le da la bienvenida). Escríbele tú para ayudarle a empezar.'
-        : m.payload.next === 'whatsapp' ? (cls && !cls.auto ? 'La web le dijo que le escribirías por WhatsApp en unos minutos, pero no encaja con el mensaje automático: escríbele tú.' : 'WhatsApp automático (1-3 min) y email de confirmación') : 'Email de confirmación neutro o específico; contéstale tú',
+        : m.payload.next === 'whatsapp' ? (cls && !cls.auto ? 'La web le dijo que le escribirías por WhatsApp en unos minutos, pero no encaja con el mensaje automático: escríbele tú.' : 'WhatsApp automático (1-3 min) y email de confirmación')
+        : waitsFor(lead) ? `Espera tu validación: al validarlo, a los ${waDelay(s)} min le sale el WhatsApp desde vuestro número. Le ha salido el email de confirmación.`
+        : m.payload.waOn === false ? 'Le ha salido el email de confirmación; contéstale tú (este espacio no tiene WhatsApp conectado, así que no se le escribe por WhatsApp).'
+        : 'Email de confirmación neutro o específico; contéstale tú',
       test: false, intent: typeof m.payload.intent === 'string' ? m.payload.intent : null, classification: cls ? `${CAT_ES[cls.category]} · ${cls.auto ? 'mensaje automático' : 'revísalo tú'} (${cls.reason})` : null,
     });
     const sent = await mailer.send({ to: m.toAddr, subject: reply ? `💬 ${lead.name} ha contestado por WhatsApp` : e.subject, html: e.html, text: e.text, tag: 'lead-notify',
@@ -123,7 +127,7 @@ async function one(d: JobDeps, m: LeadMessage, cache: Map<string, LeadSettings |
   if (sup.whatsapp) return done('cancelled', 'pidió que no le escribamos');
   if (lead.sequenceStoppedAt || lead.lastInboundAt) return done('cancelled', 'la secuencia está parada');
   if (STOP_STAGES.includes(lead.stage)) return done('cancelled', `etapa ${lead.stage}`);
-  // «Le hablamos» (una persona lo aprobó): sale aunque la clasificación dijera que no era automático.
+  // Validado (una persona lo aprobó): sale aunque la clasificación dijera que no era automático.
   if (cls && !cls.auto && !lead.facts.waApproved) return done('cancelled', `revisión humana: ${cls.reason}`);
   const step = m.step as 'wa1' | 'wa2';
   const template = whatsappTemplate(s, step, lead.locale);
@@ -149,7 +153,7 @@ async function one(d: JobDeps, m: LeadMessage, cache: Map<string, LeadSettings |
 }
 
 /**
- * El aviso por WhatsApp a quien atiende: quién es, qué pidió, qué parece y, si espera tu OK, «Le hablamos». Los botones
+ * El aviso por WhatsApp a quien atiende: quién es, qué pidió, qué parece y, si espera validación, «Validar». Los botones
  * llevan el espacio y el lead («lead:<espacio>:<lead>:ok»): valen aunque esté trabajando con otra empresa en el asistente.
  */
 async function teamAlert(d: JobDeps, m: LeadMessage, lead: Lead, s: LeadSettings, cls: Classification | null, done: (st: 'cancelled' | 'skipped', why: string) => Promise<'cancelled' | 'skipped'>): Promise<'sent' | 'cancelled' | 'skipped'> {
@@ -162,14 +166,19 @@ async function teamAlert(d: JobDeps, m: LeadMessage, lead: Lead, s: LeadSettings
   const sub = (await d.db.submissions(lead.id))[0];
   const one = (x: string, n: number) => x.replace(/\s+/g, ' ').trim().slice(0, n) || '—';
   const kind = cls ? `${CAT_ES[cls.category]}${cls.auto ? '' : ' · revísalo tú'}` : lead.type;
-  const awaiting = !!lead.facts.waAwaiting && !lead.facts.waApproved;
-  const next = awaiting ? 'Espera tu OK para escribirle por WhatsApp.' : m.payload.next === 'whatsapp' ? 'Le sale el WhatsApp automático en unos minutos.' : 'Le ha salido el email; el WhatsApp, cuando digas.';
+  const next = waitsFor(lead) ? `Valídalo y a los ${waDelay(s)} min le sale el WhatsApp desde vuestro número.`
+    : m.payload.next === 'whatsapp' ? 'Le sale el WhatsApp automático en unos minutos.'
+    : m.payload.waOn === false ? 'Le ha salido el email. Este espacio no tiene WhatsApp conectado: contéstale tú.'
+    : 'Le ha salido el email; contéstale tú.';
   const params = [String(m.payload.brandName ?? s.brand), one(lead.name, 60), one(`${kind}${lead.phoneE164 ? ` · ${lead.phoneE164}` : ''}`, 120), one(sub?.message ?? '', 300), next];
   const id = `lead:${lead.tenantId}:${lead.id}`;
   await d.team.wa.sendTemplate(d.team.phoneId, to, template, locale, params, [`${id}:ok`, `${id}:no`]);
   await d.db.updateMessage(m.id, { status: 'sent', sentAt: d.now.toISOString(), attempts: m.attempts + 1, payload: { ...m.payload, text: params.join(' · ') } });
   return 'sent';
 }
+
+/** Espera a que alguien lo valide para que le salga el WhatsApp (docs/LEADS.md §2f). */
+const waitsFor = (lead: Lead) => !!lead.facts.waAwaiting && !lead.facts.waApproved && !lead.validatedAt;
 
 const CAT_ES: Record<Classification['category'], string> = { venue: 'Local', dj: 'DJ', promoter: 'Promotora', festival: 'Festival', event: 'Evento', wedding: 'Boda', partner: 'Marca o alianza', press: 'Prensa', vendor: 'Nos quiere vender algo', job: 'Busca trabajo', other: 'No está claro' };
 
@@ -193,10 +202,10 @@ async function classified(d: JobDeps, lead: Lead, s: LeadSettings): Promise<Clas
   lead.facts = { ...lead.facts, classification: next };
   if (cur.auto && !next.auto && !lead.facts.waApproved) {
     const n = await d.db.cancelPending(lead.id, ['wa1', 'wa2']);
-    // Con «los dudosos esperan tu OK», el WhatsApp queda en espera de «Le hablamos» en vez de perderse.
+    // Con «los dudosos esperan tu OK», el WhatsApp queda en espera de que lo validen en vez de perderse.
     const wait = n > 0 && (s.waApproval ?? 'auto') !== 'auto';
     if (wait) { lead.facts = { ...lead.facts, waAwaiting: true }; await d.db.updateLead(lead.id, { facts: lead.facts }); }
-    await d.db.addEvent({ tenantId: lead.tenantId, leadId: lead.id, kind: 'note', data: { text: `Sin WhatsApp automático: ${CAT_ES[next.category]} (${next.reason}). ${wait ? 'Sale cuando alguien pulse «Le hablamos».' : 'Lo sigues tú.'}` } });
+    await d.db.addEvent({ tenantId: lead.tenantId, leadId: lead.id, kind: 'note', data: { text: `Sin WhatsApp automático: ${CAT_ES[next.category]} (${next.reason}). ${wait ? `Sale a los ${waDelay(s)} min de validarlo.` : 'Lo sigues tú.'}` } });
   }
   return next;
 }

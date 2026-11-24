@@ -12,8 +12,12 @@ import { i18n } from '~/lib/i18n';
 import { leadsMessages } from '~/lib/i18n/messages/leads';
 import { leadsFor } from '~/lib/leads/service';
 import { formAction } from '~/lib/admin/forms';
+import { AdminError } from '~/lib/admin/service';
+import { LEAD_ERRORS } from '~/lib/leads/service';
 import { rejectReason } from '~/lib/leads/decide';
 import LeadDecide from '~/components/admin/leads/LeadDecide.astro';
+import { afterValidationAt, waConnected, waDelay, waTokenReady } from '~/lib/leads/wa-status';
+import Icon from '~/components/ui/Icon.astro';
 import type { View } from '~/lib/leads/types';
 import { summary } from '~/lib/leads/templates';
 
@@ -36,13 +40,52 @@ if (Astro.request.method === 'POST') {
   const str = (k: string) => String(f.get(k) ?? '');
   let ok = '';
   result = await formAction(async () => {
-    if (str('action') === 'accept') { await svc.validate(str('id')); ok = 'validated'; }
+    if (str('action') === 'accept') {
+      const r = await svc.accept(str('id'), { whatsapp: f.getAll('wa').includes('1') });
+      ok = r.whatsapp ? (r.whatsapp.soon ? `validatedWa&min=${r.whatsapp.minutes}` : 'validatedWaLater') : r.why ? `validatedNoWa&why=${r.why}` : 'validated';
+    }
     else if (str('action') === 'reject') { await svc.reject(str('id'), rejectReason(str('reasonPreset'), str('reasonDetail'), L.decide.other)); ok = 'rejected'; }
+    // En bloque (marcados en la bandeja): uno a uno, contando lo que ha pasado de verdad.
+    else if (str('action') === 'bulk-accept' || str('action') === 'bulk-reject') {
+      const ids = [...new Set(f.getAll('ids').map(String))].filter((x) => /^[0-9a-f-]{36}$/i.test(x)).slice(0, 200);
+      const reason = rejectReason(str('reasonPreset'), str('reasonDetail'), L.decide.other);
+      if (str('action') === 'bulk-reject' && !reason) throw new AdminError(422, LEAD_ERRORS.needsReason);
+      let n = 0, wa = 0, failed = 0, min = 5;
+      for (const id of ids) {
+        try {
+          if (str('action') === 'bulk-reject') await svc.reject(id, reason);
+          else { const r = await svc.accept(id, { whatsapp: f.get('wa') === '1' }); if (r.whatsapp) { wa++; min = r.whatsapp.minutes; } }
+          n++;
+        } catch (e) { if (!(e instanceof AdminError)) throw e; failed++; }
+      }
+      ok = str('action') === 'bulk-reject' ? `bulkRejected&n=${n}&f=${failed}` : `bulkAccepted&n=${n}&wa=${wa}&min=${min}&f=${failed}`;
+    }
   });
   if (!result.error && ok) return Astro.redirect(`${here}&ok=${ok}`, 303);
 }
 const [items, counts, metrics, settings] = await Promise.all([svc.list(view, search), svc.counts(), svc.metrics(), svc.settings()]);
-const okMsg = flash(Astro.url, { validated: L.ok.validated, rejected: L.ok.rejected, stage: L.ok.stage, saved: L.ok.saved });
+const W = L.waStatus;
+const okKey = q.get('ok');
+const num = (k: string) => Number(q.get(k)) || 0;
+const bulkMsg = okKey === 'bulkAccepted' ? L.decide.accepted(num('n'), num('wa'), num('min') || 5) : okKey === 'bulkRejected' ? L.decide.rejected(num('n')) : null;
+const bulkFailed = (okKey === 'bulkAccepted' || okKey === 'bulkRejected') && num('f') ? L.decide.failed(num('f')) : null;
+const okMsg = bulkMsg ? bulkMsg : okKey === 'validatedWa' ? W.validatedWa(Number(q.get('min')) || 5)
+  : okKey === 'validatedWaLater' ? W.validatedWaLater
+  : okKey === 'validatedNoWa' ? W.validatedNoWa((W.why as Record<string, string>)[q.get('why') ?? ''] ?? '—')
+  : flash(Astro.url, { validated: L.ok.validated, rejected: L.ok.rejected, stage: L.ok.stage, saved: L.ok.saved });
+// WhatsApp al aceptar (docs/LEADS.md §2f), con lo que la bandeja ya sabe de cada lead; el servidor lo comprueba entero al
+// aceptar y el aviso de después dice lo que ha pasado de verdad.
+const tokenReady = waTokenReady();
+const connected = waConnected(settings, tokenReady);
+const when = settings ? afterValidationAt(new Date(), settings) : null;
+type Plan = { soon: boolean; minutes: number } | { why: 'notConnected' | 'noPhone' | 'noConsent' | 'already' };
+const planOf = (l: (typeof items)[number]): Plan => {
+  if (!settings || !waConnected(settings, tokenReady, l.locale)) return { why: 'notConnected' };
+  if (!l.phoneE164) return { why: 'noPhone' };
+  if (!l.whatsappOk) return { why: 'noConsent' };
+  if (l.lastInboundAt || l.facts.waApproved) return { why: 'already' };
+  return { soon: when!.soon, minutes: waDelay(settings) };
+};
 const fmt = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 const host = (u: string) => { try { return new URL(u.startsWith('http') ? u : `https://${u}`).hostname.replace(/^www\./, ''); } catch { return u; } };
 const sourceOf = (x: unknown): string | null => {
@@ -58,6 +101,7 @@ const href = (v: View) => `/admin/leads?ver=${v}${search ? `&q=${encodeURICompon
 <AdminLayout title={L.title}>
   <PageHeader eyebrow={L.eyebrow} title={L.title} lede={L.lede}>
     {settings && <a href={svc.canConfigure ? '/admin/leads/configurar' : undefined} class={`co-badge ${settings.enabled ? 'co-badge--signal' : 'co-badge--attention'}`} data-testid="leads-status-badge">{settings.enabled ? L.set.live : L.set.paused}</a>}
+    {settings && <a href={svc.canConfigure ? '/admin/leads/configurar?abrir=whatsapp' : undefined} class={`co-badge ${connected ? 'co-badge--signal' : ''}`} data-testid="leads-wa-badge" data-on={connected ? '1' : '0'}>{connected ? W.on : W.off}</a>}
   </PageHeader>
   {okMsg && <div class="mb-4"><Alert kind="success" title={okMsg} /></div>}
   {result.error && <div class="mb-4"><Alert kind="rejection" title={result.error} details={result.details} /></div>}
@@ -100,12 +144,59 @@ const href = (v: View) => `/admin/leads?ver=${v}${search ? `&q=${encodeURICompon
   {items.length === 0 ? (
     <div class="co-empty" data-testid="leads-empty"><p>{view === 'inbox' && !search ? L.emptyInbox : L.empty}</p></div>
   ) : (
+    <>
+    {items.some((l) => !l.validatedAt && !l.isTest && !['discarded', 'spam'].includes(l.stage)) && (
+      <form id="leads-bulk" method="post" action={here} class="mb-3 flex flex-wrap items-center gap-3 rounded-2xl bg-[var(--console-chip-bg)] px-4 py-2" data-testid="leads-bulk" data-bulk>
+        <label class="co-check text-sm"><input type="checkbox" data-bulk-all data-testid="leads-select-all" /> {L.decide.selectAll}</label>
+        <span class="co-meta text-sm" data-bulk-count data-template={L.decide.selected(999)}>{L.decide.selected(0)}</span>
+        <span class="co-meta hidden text-xs sm:inline">{L.decide.bulkTip}</span>
+        <span class="ml-auto flex gap-2">
+          <button type="button" class="co-btn co-btn--primary co-btn--sm" data-dialog-open="bulk-accept" data-bulk-btn disabled data-testid="leads-bulk-accept"><Icon name="check" size={14} />{L.decide.bulkAccept}</button>
+          <button type="button" class="co-btn co-btn--danger co-btn--sm" data-dialog-open="bulk-reject" data-bulk-btn disabled data-testid="leads-bulk-reject"><Icon name="x" size={14} />{L.decide.bulkReject}</button>
+        </span>
+        <dialog id="bulk-accept" class="co-dialog" aria-labelledby="bulk-accept-title" data-testid="bulk-accept">
+          <div class="co-dialog__body">
+            <h2 id="bulk-accept-title" class="co-entity" data-bulk-title data-template={L.decide.bulkAcceptTitle(999)}>{L.decide.bulkAcceptTitle(0)}</h2>
+            <p class="co-body">{L.decide.bulkAcceptDoes}</p>
+            <p class="co-dialog__not"><strong>{L.decide.doesNotLabel}</strong> {connected ? L.decide.bulkAcceptDoesNot : W.acceptNoWaDoesNot(W.why.notConnected)}</p>
+            {connected && <label class="co-check mt-3 text-left"><input type="checkbox" name="wa" value="1" checked data-testid="bulk-accept-wa" /> {L.decide.bulkWa(settings ? waDelay(settings) : 5)}</label>}
+          </div>
+          <div class="co-dialog__foot">
+            <button type="button" class="co-btn co-btn--ghost" data-dialog-close>{L.decide.cancel}</button>
+            <button type="submit" name="action" value="bulk-accept" class="co-btn co-btn--primary" data-testid="bulk-accept-confirm">{L.decide.accept}</button>
+          </div>
+        </dialog>
+        <dialog id="bulk-reject" class="co-dialog" aria-labelledby="bulk-reject-title" data-testid="bulk-reject">
+          <div class="co-dialog__body">
+            <h2 id="bulk-reject-title" class="co-entity" data-bulk-title data-template={L.decide.bulkRejectTitle(999)}>{L.decide.bulkRejectTitle(0)}</h2>
+            <p class="co-body">{L.decide.bulkRejectDoes}</p>
+            <p class="co-dialog__not"><strong>{L.decide.doesNotLabel}</strong> {L.decide.bulkRejectDoesNot}</p>
+            <div class="mt-3 grid gap-3 text-left">
+              <label class="co-field">{L.decide.reason}
+                <select class="co-input" name="reasonPreset" data-testid="bulk-reject-reason">
+                  {L.decide.reasons.map((r) => <option value={r}>{r}</option>)}
+                  <option value={L.decide.other}>{L.decide.other}</option>
+                </select>
+              </label>
+              <label class="co-field">{L.decide.detail}<input class="co-input" name="reasonDetail" maxlength="240" /></label>
+            </div>
+          </div>
+          <div class="co-dialog__foot">
+            <button type="button" class="co-btn co-btn--ghost" data-dialog-close>{L.decide.cancel}</button>
+            <button type="submit" name="action" value="bulk-reject" class="co-btn co-btn--danger" data-testid="bulk-reject-confirm">{L.decide.reject}</button>
+          </div>
+        </dialog>
+      </form>
+    )}
     <ul class="co-rows" data-testid="leads">
       {items.map((l) => {
         const band = l.scoreDetail?.band as 'hot' | 'normal' | 'low' | undefined;
         const src = sourceOf(l.attributionFirst ?? l.attributionLast);
         return (
           <li class:list={['co-row flex-wrap gap-3', band === 'hot' && 'co-row--attention']} data-testid="lead" data-email={l.email}>
+            {!l.validatedAt && !l.isTest && !['discarded', 'spam'].includes(l.stage)
+              ? <input type="checkbox" class="h-4 w-4 flex-none" name="ids" value={l.id} form="leads-bulk" aria-label={l.name} data-bulk-item data-testid="lead-select" />
+              : <span class="w-4 flex-none" aria-hidden="true"></span>}
             <a class="flex min-w-0 flex-1 flex-wrap items-center gap-x-4 gap-y-1" href={`/admin/leads/${l.id}`}>
               <span class="min-w-0 flex-1">
                 <span class="co-row-title block truncate">{l.name}</span>
@@ -120,10 +211,31 @@ const href = (v: View) => `/admin/leads?ver=${v}${search ? `&q=${encodeURICompon
               {l.submissions > 1 && <span class="co-meta">{L.repeat(l.submissions)}</span>}
               <span class="co-meta whitespace-nowrap">{fmt.format(new Date(l.lastSubmissionAt))}</span>
             </a>
-            {!l.validatedAt && !l.isTest && !['discarded', 'spam'].includes(l.stage) && <LeadDecide id={l.id} name={l.name} action={here} M={L.decide} compact />}
+            {!l.validatedAt && !l.isTest && !['discarded', 'spam'].includes(l.stage) && <LeadDecide id={l.id} name={l.name} action={here} M={L.decide} W={W} wa={planOf(l)} compact />}
           </li>
         );
       })}
     </ul>
+    </>
   )}
 </AdminLayout>
+
+<script>
+  // Marcar en bloque: «Seleccionar todos», el contador y los títulos de las confirmaciones con el número.
+  const bar = document.querySelector<HTMLFormElement>('[data-bulk]');
+  if (bar) {
+    const items = [...document.querySelectorAll<HTMLInputElement>('[data-bulk-item]')];
+    const all = bar.querySelector<HTMLInputElement>('[data-bulk-all]')!;
+    const refresh = () => {
+      const n = items.filter((x) => x.checked).length;
+      all.checked = n > 0 && n === items.length; all.indeterminate = n > 0 && n < items.length;
+      const count = bar.querySelector<HTMLElement>('[data-bulk-count]')!;
+      count.textContent = (count.dataset.template ?? '').replace('999', String(n));
+      bar.querySelectorAll<HTMLElement>('[data-bulk-title]').forEach((h) => { h.textContent = (h.dataset.template ?? '').replace('999', String(n)); });
+      bar.querySelectorAll<HTMLButtonElement>('[data-bulk-btn]').forEach((b) => { b.disabled = n === 0; });
+    };
+    all.addEventListener('change', () => { items.forEach((x) => { x.checked = all.checked; }); refresh(); });
+    items.forEach((x) => x.addEventListener('change', refresh));
+    refresh();
+  }
+</script>

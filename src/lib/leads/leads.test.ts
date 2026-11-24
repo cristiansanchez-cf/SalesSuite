@@ -503,7 +503,7 @@ describe('desde la app (docs/LEADS.md §App)', () => {
   });
 });
 
-describe('WhatsApp con tu OK (docs/LEADS.md §WhatsApp con tu OK)', () => {
+describe('WhatsApp con tu OK (docs/LEADS.md §2f)', () => {
   const deps = (over: Partial<IntakeDeps> = {}): IntakeDeps => ({
     db: demoLeadsDb(), tenant: { id: ENJOY, name: 'Enjoy the Club' }, settings: demoLeadsStore().settings[0], now: new Date('2026-11-03T10:00:00Z'),
     origin: 'https://enjoytheclub.es', ip: '9.9.9.9', secret: 's', baseUrl: 'https://enjoy.ventas.cofundo.io', whatsappReady: true, rand: () => 0.5, ...over,
@@ -539,26 +539,63 @@ describe('WhatsApp con tu OK (docs/LEADS.md §WhatsApp con tu OK)', () => {
     expect(out[0]).toMatchObject({ to: '+34600000001', template: 'equipo_nuevo_lead_es', buttons: [`lead:${ENJOY}:${lead.id}:ok`, `lead:${ENJOY}:${lead.id}:no`] });
     expect(out[0].params[1]).toBe('Ana Brand');
     expect(out[0].params[2]).toContain('revísalo tú');
-    expect(out[0].params[4]).toContain('Espera tu OK');
+    expect(out[0].params[4]).toContain('Valídalo y a los 5 min le sale el WhatsApp');
   });
 
-  test('«Le hablamos»: lo valida y le sale el WhatsApp 1 aunque no fuera automático; dos veces, no', async () => {
+  test('Aceptar: lo valida y le sale el WhatsApp 1 a los minutos de Ajustes aunque no fuera automático; dos veces, no', async () => {
     const s = setup('doubtful');
     await intake(deps({ settings: s }), brand());
     const id = demoLeadsStore().leads[0].id;
     const { createLeadsService } = await import('./service');
     const crm = { async quickAdd() { return { id: 'c1', accountId: 'a1' }; } };
     const svc = createLeadsService(demoLeadsDb(), { mode: 'demo', crm, session: { tenantId: ENJOY, role: 'admin', userId: 'u1', email: 'a@enjoy.test' } } as never);
-    await svc.approveWhatsapp(id, { whatsappReady: true });
+    demoLeadsStore().settings = [{ ...demoLeadsStore().settings[0], waDelayMinutes: 7 }];
+    const r = await svc.accept(id, { whatsapp: true });
+    expect(r.whatsapp?.minutes).toBe(7);
     expect(demoLeadsStore().leads[0].validatedAt).toBeTruthy();
     const l = demoLeadsStore().leads[0];
     expect(l.facts.waAwaiting).toBe(false);
     expect((l.facts.waApproved as { by: string }).by).toBe('u1');
     expect(demoLeadsStore().msgs.filter((m) => m.step === 'wa1' && m.status === 'pending')).toHaveLength(1);
     demoWhatsAppOutbox().length = 0;
-    await processDue({ db: demoLeadsDb(), mailer: { async send() {} }, whatsapp: demoWhatsApp, now: new Date(Date.now() + 60_000), secret: 's' });
+    await processDue({ db: demoLeadsDb(), mailer: { async send() {} }, whatsapp: demoWhatsApp, now: new Date(Date.parse(r.whatsapp!.at) - 60_000), secret: 's' });
+    expect(demoWhatsAppOutbox().filter((o) => o.template === 't1')).toHaveLength(0);
+    await processDue({ db: demoLeadsDb(), mailer: { async send() {} }, whatsapp: demoWhatsApp, now: new Date(Date.parse(r.whatsapp!.at) + 1000), secret: 's' });
     expect(demoWhatsAppOutbox().filter((o) => o.template === 't1')).toHaveLength(1);
-    await expect(svc.approveWhatsapp(id, { whatsappReady: true })).rejects.toMatchObject({ status: 409 });
+    await expect(svc.approveWhatsapp(id)).rejects.toMatchObject({ status: 409 });
+    expect((await svc.accept(id)).why).toBe('already');
+  });
+
+  test('sin WhatsApp conectado: nada lo promete (web, email, aviso) y aceptar no le escribe y dice por qué', async () => {
+    const s = { ...setup('all'), whatsappEnabled: false };
+    demoLeadsStore().settings = [s];
+    const res = await intake(deps({ settings: s }), v2());
+    expect(res.body).toMatchObject({ next: { channel: 'email' } });
+    expect(demoLeadsStore().leads[0].facts.waAwaiting).toBeUndefined();
+    const sent: Email[] = [];
+    await processDue({ db: demoLeadsDb(), mailer: { async send(e) { sent.push(e); } }, whatsapp: demoWhatsApp, now: new Date('2026-11-03T10:00:05Z'), secret: 's', team });
+    expect(sent.find((e) => e.tag === 'lead-autoreply')!.text).not.toMatch(/WhatsApp/);
+    expect(sent.find((e) => e.tag === 'lead-notify')!.text).toContain('no tiene WhatsApp conectado');
+    expect(demoWhatsAppOutbox()[0].params[4]).toContain('no tiene WhatsApp conectado');
+    const { createLeadsService } = await import('./service');
+    const crm = { async quickAdd() { return { id: 'c1', accountId: 'a1' }; } };
+    const svc = createLeadsService(demoLeadsDb(), { mode: 'demo', crm, session: { tenantId: ENJOY, role: 'admin', userId: 'u1', email: 'a@enjoy.test' } } as never);
+    expect(await svc.whatsappPlan(demoLeadsStore().leads[0].id)).toEqual({ why: 'notConnected' });
+    const r = await svc.accept(demoLeadsStore().leads[0].id, { whatsapp: true });
+    expect([r.whatsapp, r.why]).toEqual([null, 'notConnected']);
+    expect(demoLeadsStore().msgs.some((m) => m.step === 'wa1')).toBe(false);
+  });
+
+  test('aceptar sin el WhatsApp (casilla quitada): solo lo valida y deja de esperar', async () => {
+    const s = setup('all');
+    await intake(deps({ settings: s }), v2());
+    const id = demoLeadsStore().leads[0].id;
+    const { createLeadsService } = await import('./service');
+    const crm = { async quickAdd() { return { id: 'c1', accountId: 'a1' }; } };
+    const svc = createLeadsService(demoLeadsDb(), { mode: 'demo', crm, session: { tenantId: ENJOY, role: 'admin', userId: 'u1', email: 'a@enjoy.test' } } as never);
+    const r = await svc.accept(id, { whatsapp: false });
+    expect([r.whatsapp, r.why, demoLeadsStore().leads[0].facts.waAwaiting]).toEqual([null, null, false]);
+    expect(demoLeadsStore().msgs.some((m) => m.step === 'wa1')).toBe(false);
   });
 
   test('«Lo miro yo»: deja de esperar y no sale nada', async () => {

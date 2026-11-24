@@ -538,17 +538,21 @@ describe('de punta a punta (demo)', () => {
     expect(await teamMember(demoAssistantDb(), '00000000-0000-4000-8000-000000000a01', '+34699000111')).toBeNull();
   });
 
-  test('el aviso de un lead nuevo: «Lo miro yo» deja de esperar; «Le hablamos» sin WhatsApp listo lo explica', async () => {
+  test('el aviso de un lead nuevo: «Validar» lo pasa al CRM y dice si sale el WhatsApp; «Rechazar» lo descarta', async () => {
     const { demoLeadsStore, resetDemoLeads } = await import('../leads/db-demo');
     resetDemoLeads();
-    const id = '00000000-0000-4000-8000-0000000ead01';
-    demoLeadsStore().leads.push({ id, tenantId: ENJOY, name: 'Ana Brand', email: 'ana@x.com', phoneE164: '+34600111222', phoneRaw: null, whatsappOk: true, locale: 'es', type: 'venue', stage: 'new', facts: { waAwaiting: true } } as never);
+    const a = '00000000-0000-4000-8000-0000000ead01', b = '00000000-0000-4000-8000-0000000ead02';
+    const base = { tenantId: ENJOY, email: 'ana@x.com', phoneE164: '+34600111222', phoneRaw: null, whatsappOk: true, locale: 'es', type: 'venue', stage: 'new', quarantined: false, quarantineReasons: [], isTest: false, facts: { waAwaiting: true } };
+    demoLeadsStore().leads.push({ ...base, id: a, name: 'Ana Brand' } as never, { ...base, id: b, name: 'Bea Spam', email: 'bea@x.com' } as never);
     const member = { tenantId: ENJOY, userId: '22222222-2222-4222-8222-222222222222' }; // admin@enjoy.test: quien puede validar
-    await processAssistant(deps(), '123', member, msg('l1', { kind: 'button', buttonId: `lead:${ENJOY}:${id}:no`, text: 'Lo miro yo' }));
-    expect(sent.at(-1)!.text).toContain('a Ana Brand no le escribo nada');
-    expect(demoLeadsStore().leads[0].facts.waAwaiting).toBe(false);
-    await processAssistant(deps(), '123', member, msg('l2', { kind: 'button', buttonId: `lead:${ENJOY}:${id}:ok`, text: 'Le hablamos' }));
-    expect(sent.at(-1)!.text).toMatch(/^No he podido/);
+    await processAssistant(deps(), '123', member, msg('l1', { kind: 'button', buttonId: `lead:${ENJOY}:${a}:ok`, text: 'Validar' }));
+    // En la demo, Enjoy no tiene el WhatsApp de los leads conectado: lo valida y dice que no sale (no promete nada).
+    expect(sent.at(-1)!.text).toBe('✅ Ana Brand: validado y en el CRM. Sin WhatsApp: este espacio no tiene WhatsApp conectado.');
+    expect(demoLeadsStore().leads.find((l) => l.id === a)!.validatedAt).toBeTruthy();
+    await processAssistant(deps(), '123', member, msg('l2', { kind: 'button', buttonId: `lead:${ENJOY}:${b}:no`, text: 'Rechazar' }));
+    expect(sent.at(-1)!.text).toContain('Bea Spam: rechazado');
+    const rejected = demoLeadsStore().leads.find((l) => l.id === b)!;
+    expect([rejected.stage, rejected.facts.waAwaiting]).toEqual(['discarded', false]);
     resetDemoLeads();
   });
 

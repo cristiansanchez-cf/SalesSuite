@@ -21,7 +21,7 @@ const settingsOf = (r: Row): LeadSettings => ({
   sendFromHour: r.send_from_hour, sendToHour: r.send_to_hour, holidays: r.holidays ?? [], resendKeyHint: r.resend_key_hint ?? null,
   templates: r.templates ?? {}, aiContext: r.ai_context ?? null, emailSignature: r.email_signature ?? {}, media: r.media ?? {},
   whatsappWa2: r.whatsapp_wa2_enabled ?? true, lastPurgeAt: r.last_purge_at ?? null, emailStyle: r.email_style ?? undefined,
-  waApproval: r.wa_approval ?? 'auto', teamWhatsapp: r.team_whatsapp ?? false,
+  waApproval: r.wa_approval ?? 'auto', teamWhatsapp: r.team_whatsapp ?? false, ...(r.wa_delay_minutes != null ? { waDelayMinutes: r.wa_delay_minutes } : {}),
   retention: {
     leadMonths: r.retention_lead_months ?? DEFAULT_RETENTION.leadMonths, spamMonths: r.retention_spam_months ?? DEFAULT_RETENTION.spamMonths,
     testDays: r.retention_test_days ?? DEFAULT_RETENTION.testDays, proofYears: r.retention_proof_years ?? DEFAULT_RETENTION.proofYears,
@@ -87,7 +87,7 @@ export function supabaseLeadsDb(sb: SupabaseClient): LeadsDb {
         send_from_hour: s.sendFromHour, send_to_hour: s.sendToHour, holidays: s.holidays,
         ...(s.templates !== undefined ? { templates: s.templates } : {}), ...(s.aiContext !== undefined ? { ai_context: s.aiContext } : {}), ...(s.emailSignature !== undefined ? { email_signature: s.emailSignature } : {}), ...(s.media !== undefined ? { media: s.media } : {}),
         ...(s.whatsappWa2 !== undefined ? { whatsapp_wa2_enabled: s.whatsappWa2 } : {}), ...(s.emailStyle !== undefined ? { email_style: s.emailStyle } : {}),
-        ...(s.waApproval !== undefined ? { wa_approval: s.waApproval } : {}), ...(s.teamWhatsapp !== undefined ? { team_whatsapp: s.teamWhatsapp } : {}),
+        ...(s.waApproval !== undefined ? { wa_approval: s.waApproval } : {}), ...(s.teamWhatsapp !== undefined ? { team_whatsapp: s.teamWhatsapp } : {}), ...(s.waDelayMinutes !== undefined ? { wa_delay_minutes: s.waDelayMinutes } : {}),
         ...(s.retention ? { retention_lead_months: s.retention.leadMonths, retention_spam_months: s.retention.spamMonths, retention_test_days: s.retention.testDays, retention_proof_years: s.retention.proofYears } : {}),
       }, { onConflict: 'tenant_id' }));
     },

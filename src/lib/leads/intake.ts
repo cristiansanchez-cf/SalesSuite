@@ -9,6 +9,7 @@ import { DuplicateKey, type LeadsDb } from './db';
 import { classifyRules } from './classify';
 import { accountDomain, emailKind, spamReasons, toE164 } from './normalize';
 import { firstSendAt, nextBusinessAt, type Eta } from './schedule';
+import { waDelay } from './wa-status';
 import { scoreLead } from './score';
 import { mediaFor, msgLocale } from './templates';
 import type { Lead, LeadSettings, NewMessage } from './types';
@@ -175,15 +176,17 @@ export async function intake(d: IntakeDeps, body: unknown): Promise<IntakeResult
   // WhatsApp: no se reinicia si ya hay una conversación (secuencia en marcha, respuesta suya o un primer mensaje reciente).
   const openChat = !!lead.lastInboundAt || !!lead.sequenceStoppedAt
     || history.some((m) => m.channel === 'whatsapp' && m.step === 'wa1' && !['cancelled', 'skipped'].includes(m.status) && Date.parse(m.createdAt) > d.now.getTime() - 30 * 86_400_000);
-  // Con tu OK (docs/LEADS.md §WhatsApp con tu OK): según Ajustes, los dudosos (o todos) no reciben el WhatsApp 1 hasta que
-  // alguien pulsa «Le hablamos» (en el aviso por WhatsApp o en la ficha). Mientras, el email sale neutro y no promete WhatsApp.
+  // Con tu OK (docs/LEADS.md §2f): según Ajustes, los dudosos (o todos) no reciben el WhatsApp 1 hasta que
+  // alguien lo valida (en el aviso por WhatsApp o en la ficha). Mientras, el email sale neutro y no promete WhatsApp.
   const approval = d.settings.waApproval ?? 'auto';
-  const waReady = live && !!lead.whatsappOk && !!lead.phoneE164 && !sup.whatsapp && whatsappOn(d.settings, d.whatsappReady, lead.locale);
+  // El espacio tiene su WhatsApp conectado (wa-status.ts): si no, en ningún sitio se promete un WhatsApp.
+  const waOn = whatsappOn(d.settings, d.whatsappReady, lead.locale);
+  const waReady = live && !!lead.whatsappOk && !!lead.phoneE164 && !sup.whatsapp && waOn;
   const awaiting = waReady && !openChat && (approval === 'all' || (approval === 'doubtful' && !cls.auto));
   if (awaiting && canAuto) {
     lead.facts = { ...lead.facts, waAwaiting: true };
     await db.updateLead(lead.id, { facts: lead.facts });
-    await db.addEvent({ tenantId: t, leadId: lead.id, at: nowIso, kind: 'note', data: { text: 'WhatsApp en espera: sale cuando alguien pulse «Le hablamos».' } });
+    await db.addEvent({ tenantId: t, leadId: lead.id, at: nowIso, kind: 'note', data: { text: `WhatsApp en espera: sale a los ${waDelay(d.settings)} min de validarlo.` } });
   }
   if (waReady && cls.auto && approval !== 'all') {
     if (openChat) next = { channel: 'whatsapp', eta: 'today' };
@@ -211,10 +214,10 @@ export async function intake(d: IntakeDeps, body: unknown): Promise<IntakeResult
   if (booking) next = { ...next, booking_url: booking };
   // Aviso a quien atiende: siempre que no sea prueba ni cuarentena (eso se revisa en la bandeja).
   if (!isTest && !lead.quarantined) {
-    for (const to of d.settings.notifyEmails) msgs.push({ tenantId: t, leadId: lead.id, channel: 'email', step: 'notify', toAddr: to, sendAt: nowIso, payload: { ...payload, next: next.channel, band: score.band, ...(i.intent ? { intent: i.intent } : {}) } });
-    // Y por WhatsApp (con «Le hablamos»), a quien tenga el teléfono en Mi cuenta. El teléfono se busca al enviar.
+    for (const to of d.settings.notifyEmails) msgs.push({ tenantId: t, leadId: lead.id, channel: 'email', step: 'notify', toAddr: to, sendAt: nowIso, payload: { ...payload, next: next.channel, band: score.band, awaiting: awaiting && canAuto, waOn, ...(i.intent ? { intent: i.intent } : {}) } });
+    // Y por WhatsApp (con «Validar»), a quien tenga el teléfono en Mi cuenta. El teléfono se busca al enviar.
     if (d.settings.teamWhatsapp && d.whatsappReady && !existing) {
-      for (const to of d.settings.notifyEmails) msgs.push({ tenantId: t, leadId: lead.id, channel: 'whatsapp', step: 'team_wa', toAddr: to, sendAt: nowIso, payload: { ...payload, next: next.channel, awaiting } });
+      for (const to of d.settings.notifyEmails) msgs.push({ tenantId: t, leadId: lead.id, channel: 'whatsapp', step: 'team_wa', toAddr: to, sendAt: nowIso, payload: { ...payload, next: next.channel, awaiting: awaiting && canAuto, waOn } });
     }
   }
   await db.enqueue(msgs);

@@ -139,30 +139,37 @@ El tipo de formulario no basta: una marca de bebidas que busca un acuerdo puede 
    que pidió), en la bandeja aparece «Marca o alianza · Lo sigues tú» y el aviso a quien atiende lo dice. Si la web ya
    le había dicho «te escribo por WhatsApp», el aviso pide escribirle a mano.
 
-## 2f. WhatsApp con tu OK
-Para no escribir (ni pagar) a quien no toca, el primer WhatsApp puede **esperar a que una persona diga «Le hablamos»**.
-En Ajustes → WhatsApp a los leads, «¿Cuándo espera tu OK el primer WhatsApp?» (`lead_settings.wa_approval`):
+## 2f. WhatsApp al validar
+**Una sola regla** (`src/lib/leads/wa-status.ts`): un espacio tiene su WhatsApp **conectado** si está la clave de Meta de
+la plataforma en el servidor, su número conectado, la plantilla del primer mensaje y el envío encendido (Ajustes →
+WhatsApp a los leads). Si no, **en ningún sitio se promete un WhatsApp**: ni la web (`next.channel` es `email`), ni el
+email al lead, ni el aviso interno (dice «este espacio no tiene WhatsApp conectado»), ni el aviso por WhatsApp, ni la
+ficha, ni la bandeja, ni el asistente, ni el MCP. Plataforma (superadmin) y la bandeja dicen quién lo tiene conectado y,
+si no, qué falta.
 
-- **Solo los dudosos** (`doubtful`, por defecto): los claros (un local, un DJ…) reciben el WhatsApp en minutos, como
-  siempre; los que las reglas o la IA marcan para revisar (marca, prensa, «otro»…) quedan **en espera**
-  (`facts.waAwaiting`). Si la IA quita el automático en la cola, el WhatsApp ya programado pasa a esperar en vez de perderse.
-- **Todos** (`all`): ninguno sale solo; cada lead con teléfono y consentimiento espera «Le hablamos».
-- **Nunca** (`auto`): como antes; a los dudosos no se les escribe.
+**Validar = escribirle.** En Ajustes, «¿Qué WhatsApp esperan a que valides el lead?» (`lead_settings.wa_approval`):
+**Todos** (`all`, por defecto y recomendado: nada sale solo), **Solo los dudosos** (`doubtful`) o **Ninguno** (`auto`,
+los claros salen solos). Al **aceptar** (ficha, bandeja, en bloque, botón «Validar» del aviso por WhatsApp o
+`lead_validar` por MCP) el lead entra al CRM y, si el espacio está conectado y al lead se le puede escribir (teléfono,
+consentimiento, sin baja, sin WhatsApp ya en marcha), le sale el WhatsApp 1 a los **minutos de Ajustes**
+(`wa_delay_minutes`, 5 por defecto; fuera del horario de envío, al abrirlo) y el 2 al día laborable siguiente. La
+confirmación dice exactamente qué va a pasar (o por qué no sale) y trae la casilla «Mandarle el WhatsApp de bienvenida»
+para no mandarlo; después, el aviso dice lo que ha pasado de verdad. **Rechazar** lo descarta con motivo.
 
-**«Le hablamos»** (en la ficha del lead o en el botón del aviso por WhatsApp, `approveWhatsapp`): lo valida (entra en el
-CRM) si no lo estaba y le sale **ya** el WhatsApp 1 desde el número de la empresa (con coexistencia, la conversación se
-ve en la app de WhatsApp Business); el 2, al día laborable siguiente si está encendido. Queda apuntado quién y cuándo
-(`facts.waApproved`), y eso deja salir el WhatsApp aunque la clasificación dijera «revísalo tú». No se puede dos veces
-ni si ya contestó. **«Lo miro yo»** (`dismissWhatsapp`): no se le escribe nada automático.
+**En bloque** (bandeja): casillas por lead, «Seleccionar todos» y «Aceptar seleccionados» / «Rechazar seleccionados»
+con una sola confirmación (para «todos menos estos»: seleccionar todos y quitar los que se quedan).
 
-**Aviso por WhatsApp a quien atiende** (`lead_settings.team_whatsapp`, encendido por defecto): además del email, a cada
-email de avisos que sea de un/a admin o gerente con su teléfono en Mi cuenta le llega un WhatsApp **desde el número del
-asistente** (paso `team_wa` de la cola) con el nombre, qué es (y «revísalo tú» si es dudoso), su teléfono, lo que
-escribió y qué va a pasar, con los botones «Le hablamos» y «Lo miro yo» (payload `lead:<espacio>:<lead>:ok|no`, lo
-contesta el asistente). Sin teléfono o sin la plantilla, se salta y el email sigue.
+**Aviso por WhatsApp a quien atiende** (`lead_settings.team_whatsapp`): además del email, a cada email de avisos que sea
+de un/a admin o gerente con su teléfono en Mi cuenta le llega un WhatsApp **desde el número del asistente** (paso
+`team_wa`), también en los espacios sin su WhatsApp conectado, con el nombre, qué parece, su teléfono, lo que escribió y
+qué pasará, y los botones **Validar** y **Rechazar** (payload `lead:<espacio>:<lead>:ok|no`; rechazar desde aquí pone el
+motivo «Rechazado desde el aviso por WhatsApp»). Sin teléfono o sin la plantilla, se salta y el email sigue.
+
+**Por MCP** (la IA de la persona): `leads_por_validar`, `lead_validar` (con `whatsapp: false` para no escribirle) y
+`lead_rechazar` (con motivo).
 
 Plantilla en la cuenta de WhatsApp del **asistente** (Utilidad), `equipo_nuevo_lead_es` (y `_en`, `_fr`; otros nombres
-con `ASSISTANT_LEAD_TEMPLATES`), con dos botones de respuesta rápida «Le hablamos» y «Lo miro yo»:
+con `ASSISTANT_LEAD_TEMPLATES`), con dos botones de respuesta rápida **Validar** y **Rechazar**:
 
 ```
 Nuevo lead en {{1}}: {{2}} · {{3}}.

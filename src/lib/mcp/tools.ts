@@ -23,6 +23,7 @@ import type { NoteItem } from '../crm/notes';
 import type { Locale } from '../i18n/core';
 import { createAiImport } from '../crm/ai-import-service';
 import { registerDeckTools } from './deck-tools';
+import { registerLeadTools } from './lead-tools';
 
 export const MCP_NAME = 'cofundo-ventas';
 export const MCP_VERSION = '1.0.0';
@@ -314,6 +315,7 @@ export function buildMcpServer(ctx: () => Promise<AdminContext>, info: { space: 
 
   // Decks de inversión (docs/DECKS.md): solo responden en los espacios con la sección activada.
   registerDeckTools(server, run);
+  registerLeadTools(server, run);
 
   return server;
 }

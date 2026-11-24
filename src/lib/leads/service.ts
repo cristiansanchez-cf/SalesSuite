@@ -11,15 +11,19 @@ import { DuplicateKey, type LeadsDb } from './db';
 import { normalizeOrigin } from './cors';
 import { sanitizeSignatureHtml, signatureHtmlToText } from './signature-html';
 import { businessMinutes, nextBusinessAt } from './schedule';
-import { wa2On, whatsappTemplate } from './intake';
+import { wa2On } from './intake';
+import { afterValidationAt, waConnected, waDelay, waTokenReady } from './wa-status';
 import { RETENTION_LIMITS, sourceKey } from './privacy';
 import { STAGES, STOP_STAGES, type Lead, type LeadSettings, type NewMessage, type WaApproval, type LeadTemplates, type Stage, type View } from './types';
 import { DEFAULT_TEXTS, MEDIA_TYPES } from './templates';
+
+export type WaWhy = 'test' | 'notConnected' | 'closed' | 'noPhone' | 'noConsent' | 'suppressed' | 'already';
 
 export const LEAD_ERRORS = {
   notFound: 'Lead no encontrado',
   waCannot: 'No se le puede escribir por WhatsApp: sin teléfono válido, sin el aviso de WhatsApp aceptado, se dio de baja o WhatsApp no está configurado',
   waAlready: 'Ya se le ha escrito por WhatsApp o ha contestado',
+  closedLead: 'Este lead está descartado: cambia su etapa si quieres recuperarlo',
   needsReason: 'Indica el motivo para descartarlo',
   brandTaken: 'Esa marca ya la usa otro espacio',
   waVars: 'Cada mensaje de WhatsApp tiene que llevar {{1}}, {{2}} y {{3}}',
@@ -201,30 +205,62 @@ export function createLeadsService(db: LeadsDb, admin: AdminContext) {
   }
 
   /**
-   * «Le hablamos» (docs/LEADS.md §WhatsApp con tu OK): lo valida si no lo estaba y le sale el WhatsApp 1 ya (y el 2 al
-   * día laborable siguiente, si está encendido). Lo usan la ficha y el botón del aviso por WhatsApp.
+   * Qué pasaría con el WhatsApp si se valida ahora (docs/LEADS.md §2f): sale (cuándo) o por qué no. Sale solo si el
+   * espacio tiene su WhatsApp conectado con nosotros y al lead se le puede escribir.
    */
-  async function approveWhatsapp(id: string, opts: { whatsappReady: boolean }) {
+  async function waPlan(l: Lead, st: LeadSettings | null): Promise<{ at: Date; soon: boolean; minutes: number } | { why: WaWhy }> {
+    if (l.isTest) return { why: 'test' };
+    if (!waConnected(st, waTokenReady(), l.locale)) return { why: 'notConnected' };
+    if (['spam', 'discarded', 'lost', 'won'].includes(l.stage)) return { why: 'closed' };
+    if (!l.phoneE164) return { why: 'noPhone' };
+    if (!l.whatsappOk) return { why: 'noConsent' };
+    if ((await db.suppressed(t, { email: l.email, phone: l.phoneE164 })).whatsapp) return { why: 'suppressed' };
+    const msgs = await db.messages(l.id);
+    if (l.lastInboundAt || msgs.some((m) => m.channel === 'whatsapp' && m.step === 'wa1' && ['pending', 'sending', 'sent'].includes(m.status))) return { why: 'already' };
+    const when = afterValidationAt(new Date(), st!);
+    return { ...when, minutes: waDelay(st) };
+  }
+
+  /**
+   * Aceptar (ficha, bandeja, aviso por WhatsApp o MCP): lo valida (entra al CRM) y, si se puede (waPlan), le programa el
+   * WhatsApp 1 a los minutos de Ajustes y el 2 al día laborable siguiente. Con `whatsapp: false`, solo lo valida.
+   * Devuelve lo que ha pasado de verdad, para decirlo tal cual.
+   */
+  async function accept(id: string, opts: { whatsapp?: boolean } = {}) {
     const l = await own(id);
+    if (['spam', 'discarded'].includes(l.stage)) throw new AdminError(409, LEAD_ERRORS.closedLead);
     const st = await db.settings(t);
-    const sup = await db.suppressed(t, { email: l.email, phone: l.phoneE164 });
-    if (!st || !opts.whatsappReady || !st.whatsappEnabled || !st.whatsappPhoneId || !whatsappTemplate(st, 'wa1', l.locale) || !l.phoneE164 || !l.whatsappOk || sup.whatsapp) {
-      throw new AdminError(422, LEAD_ERRORS.waCannot);
-    }
-    const msgs = await db.messages(id);
-    if (l.lastInboundAt || msgs.some((m) => m.channel === 'whatsapp' && m.step === 'wa1' && ['pending', 'sending', 'sent'].includes(m.status))) throw new AdminError(409, LEAD_ERRORS.waAlready);
-    if (['spam', 'discarded', 'lost'].includes(l.stage)) throw new AdminError(409, LEAD_ERRORS.waCannot);
     const v = await validate(id);
+    const plan = await waPlan(l, st);
+    const fresh = (await db.getLead(id)) ?? l;
+    if (opts.whatsapp === false || 'why' in plan) {
+      if (fresh.facts.waAwaiting) await db.updateLead(id, { facts: { ...fresh.facts, waAwaiting: false } });
+      return { name: l.name, ...v, whatsapp: null, why: 'why' in plan ? plan.why : null };
+    }
     const now = new Date();
-    const facts = { ...l.facts, waAwaiting: false, waApproved: { by: s.userId, at: now.toISOString() } };
-    await db.updateLead(id, { facts, ...(l.sequenceStoppedAt ? { sequenceStoppedAt: null, sequenceStopReason: null } : {}) });
-    const payload = { base: '', brandName: st.brand, approvedBy: s.userId };
+    await db.updateLead(id, { facts: { ...fresh.facts, waAwaiting: false, waApproved: { by: s.userId, at: now.toISOString() } }, ...(fresh.sequenceStoppedAt ? { sequenceStoppedAt: null, sequenceStopReason: null } : {}) });
+    const payload = { base: '', brandName: st!.brand, approvedBy: s.userId };
     const fields = (l.facts.fields as Record<string, string>) ?? {};
-    const out: NewMessage[] = [{ tenantId: t, leadId: id, channel: 'whatsapp', step: 'wa1', toAddr: l.phoneE164, sendAt: now.toISOString(), payload }];
-    if (wa2On(st, l.type, fields, l.locale)) out.push({ tenantId: t, leadId: id, channel: 'whatsapp', step: 'wa2', toAddr: l.phoneE164, sendAt: nextBusinessAt(now, st, 10, Math.random()).toISOString(), payload });
+    const out: NewMessage[] = [{ tenantId: t, leadId: id, channel: 'whatsapp', step: 'wa1', toAddr: l.phoneE164!, sendAt: plan.at.toISOString(), payload }];
+    if (wa2On(st!, l.type, fields, l.locale)) out.push({ tenantId: t, leadId: id, channel: 'whatsapp', step: 'wa2', toAddr: l.phoneE164!, sendAt: nextBusinessAt(plan.at, st!, 10, Math.random()).toISOString(), payload });
     await db.enqueue(out);
-    await db.addEvent({ tenantId: t, leadId: id, at: now.toISOString(), kind: 'note', byUser: s.userId, data: { text: '«Le hablamos»: sale el WhatsApp 1 ahora.' } });
-    return { name: l.name, ...v };
+    await db.addEvent({ tenantId: t, leadId: id, at: now.toISOString(), kind: 'note', byUser: s.userId, data: { text: `Validado: el WhatsApp 1 sale ${plan.soon ? `a los ${plan.minutes} min` : 'al abrir el horario de envío'}.` } });
+    return { name: l.name, ...v, whatsapp: { at: plan.at.toISOString(), soon: plan.soon, minutes: plan.minutes }, why: null };
+  }
+
+  /** «Escribirle por WhatsApp» en un lead ya validado: lo mismo que aceptar, pero si no puede salir, lo dice (409/422). */
+  async function approveWhatsapp(id: string) {
+    const l = await own(id);
+    const plan = await waPlan(l, await db.settings(t));
+    if ('why' in plan) throw new AdminError(plan.why === 'already' ? 409 : 422, plan.why === 'already' ? LEAD_ERRORS.waAlready : LEAD_ERRORS.waCannot);
+    return accept(id, { whatsapp: true });
+  }
+
+  /** Para la ficha y la bandeja: qué pasará con el WhatsApp al aceptar (sin cambiar nada). */
+  async function whatsappPlan(id: string) {
+    const l = await own(id);
+    const p = await waPlan(l, await db.settings(t));
+    return 'why' in p ? { why: p.why } : { at: p.at.toISOString(), soon: p.soon, minutes: p.minutes };
   }
 
   /** «Lo miro yo»: no se le escribe nada automático; queda para escribirle a mano. */
@@ -235,7 +271,7 @@ export function createLeadsService(db: LeadsDb, admin: AdminContext) {
     return { name: l.name };
   }
 
-  /** Rechazar (ficha o bandeja, con confirmación): a Descartado con su motivo; deja de esperar «Le hablamos». */
+  /** Rechazar (ficha o bandeja, con confirmación): a Descartado con su motivo; deja de esperar a que lo validen. */
   async function reject(id: string, reason: string) {
     await setStage(id, 'discarded', reason);
     const l = await own(id);
@@ -364,7 +400,7 @@ export function createLeadsService(db: LeadsDb, admin: AdminContext) {
    */
   async function saveWhatsapp(input: {
     phoneId?: string | null; enabled?: boolean; wa2?: boolean; templates?: Record<string, Record<string, string>>;
-    fromHour?: number; toHour?: number; holidays?: string[]; approval?: string; teamWhatsapp?: boolean;
+    fromHour?: number; toHour?: number; holidays?: string[]; approval?: string; teamWhatsapp?: boolean; delayMinutes?: number;
   }, brand: string) {
     requireAdmin();
     let prev = await db.settings(t);
@@ -406,6 +442,7 @@ export function createLeadsService(db: LeadsDb, admin: AdminContext) {
     if (input.wa2 !== undefined) next.whatsappWa2 = input.wa2;
     if (input.approval !== undefined && ['auto', 'doubtful', 'all'].includes(input.approval)) next.waApproval = input.approval as WaApproval;
     if (input.teamWhatsapp !== undefined) next.teamWhatsapp = input.teamWhatsapp;
+    if (input.delayMinutes !== undefined && Number.isFinite(input.delayMinutes)) next.waDelayMinutes = Math.min(Math.max(Math.round(input.delayMinutes), 1), 120);
     if (input.enabled !== undefined) {
       if (input.enabled && (!next.whatsappPhoneId || !Object.values(next.whatsappTemplates?.wa1 ?? {}).some(Boolean))) throw new AdminError(422, LEAD_ERRORS.waNotReady);
       next.whatsappEnabled = input.enabled;
@@ -459,7 +496,7 @@ export function createLeadsService(db: LeadsDb, admin: AdminContext) {
     return { total: ls.length, answered: mins.length, medianMins: median, within5: mins.filter((m) => m <= 5).length, bySource: [...bySource].sort((a, b) => b[1] - a[1]).slice(0, 6) };
   }
 
-  return { settings, list, counts, usedKinds, detail, setStage, markContacted, stopSequence, release, note, validate, approveWhatsapp, dismissWhatsapp, reject, suppress, saveSettings, saveTexts, saveSignature, clearPastedSignature, saveSignerName, saveWhatsapp, saveEmailStyle, saveRetention, setEnabled, lastSubmission, saveOrigins, saveSender, metrics, canConfigure: perms.manageTenant };
+  return { settings, list, counts, usedKinds, detail, setStage, markContacted, stopSequence, release, note, validate, accept, approveWhatsapp, whatsappPlan, dismissWhatsapp, reject, suppress, saveSettings, saveTexts, saveSignature, clearPastedSignature, saveSignerName, saveWhatsapp, saveEmailStyle, saveRetention, setEnabled, lastSubmission, saveOrigins, saveSender, metrics, canConfigure: perms.manageTenant };
 }
 export type LeadsService = ReturnType<typeof createLeadsService>;
 

@@ -47,7 +47,7 @@ export function demoLeadsDb(store: LeadsStore = demoLeadsStore()): LeadsDb {
       const prev = s.settings.find((x) => x.tenantId === v.tenantId);
       const hint = prev?.resendKeyHint ?? null;
       s.settings = s.settings.filter((x) => x.tenantId !== v.tenantId).concat({ ...clone(v), resendKeyHint: hint, templates: v.templates ?? prev?.templates ?? {}, aiContext: v.aiContext ?? prev?.aiContext ?? null, emailSignature: v.emailSignature ?? prev?.emailSignature ?? {}, media: v.media ?? prev?.media ?? {},
-        whatsappWa2: v.whatsappWa2 ?? prev?.whatsappWa2 ?? true, waApproval: v.waApproval ?? prev?.waApproval, teamWhatsapp: v.teamWhatsapp ?? prev?.teamWhatsapp, retention: v.retention ?? prev?.retention, lastPurgeAt: prev?.lastPurgeAt ?? null });
+        whatsappWa2: v.whatsappWa2 ?? prev?.whatsappWa2 ?? true, waApproval: v.waApproval ?? prev?.waApproval, teamWhatsapp: v.teamWhatsapp ?? prev?.teamWhatsapp, waDelayMinutes: v.waDelayMinutes ?? prev?.waDelayMinutes, retention: v.retention ?? prev?.retention, lastPurgeAt: prev?.lastPurgeAt ?? null });
     },
     async resendKey(tenantId) { return s.secrets?.[tenantId] ?? null; },
     async setResendKey(tenantId, sealed, hint) {

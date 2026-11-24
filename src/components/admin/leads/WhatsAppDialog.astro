@@ -30,16 +30,17 @@ interface Props {
   saved: Record<string, Record<string, string>>;
   enabled: boolean;
   wa2: boolean;
-  /** Con tu OK (docs/LEADS.md §WhatsApp con tu OK). */
+  /** Con tu OK (docs/LEADS.md §2f). */
   approval: 'auto' | 'doubtful' | 'all';
   teamWhatsapp: boolean;
+  delayMinutes: number;
   fromHour: number;
   toHour: number;
   holidays: string[];
   notice?: string | null;
   error?: { title: string; details: string[] } | null;
 }
-const { id, open, part, T, langNames, preview, platformReady, partnerId, phoneId, check, guides, saved, enabled, wa2, approval, teamWhatsapp, fromHour, toHour, holidays, notice, error } = Astro.props;
+const { id, open, part, T, langNames, preview, platformReady, partnerId, phoneId, check, guides, saved, enabled, wa2, approval, teamWhatsapp, delayMinutes, fromHour, toHour, holidays, notice, error } = Astro.props;
 const ACTION = '/admin/leads/configurar';
 const locales = [...new Set(guides.map((g) => g.locale))];
 ---
@@ -143,10 +144,11 @@ const locales = [...new Set(guides.map((g) => g.locale))];
       <label class="co-check"><input type="checkbox" name="wa2" checked={wa2} /> <span>{T.activate.wa2}<span class="co-help block">{T.activate.wa2Help}</span></span></label>
       <fieldset class="grid gap-2" data-testid="whatsapp-approval">
         <legend class="co-field mb-1">{T.activate.approval}</legend>
-        {(['doubtful', 'all', 'auto'] as const).map((v) => (
+        {(['all', 'doubtful', 'auto'] as const).map((v) => (
           <label class="co-check"><input type="radio" name="approval" value={v} checked={approval === v} data-testid={`approval-${v}`} /> <span>{T.activate.approvalOpts[v]}<span class="co-help block">{T.activate.approvalHelp[v]}</span></span></label>
         ))}
       </fieldset>
+      <label class="co-field">{T.activate.delay}<input class="co-input w-24" type="number" name="delayMinutes" min="1" max="120" value={delayMinutes} data-testid="wa-delay" /><span class="co-help">{T.activate.delayHelp}</span></label>
       <label class="co-check"><input type="checkbox" name="teamWhatsapp" checked={teamWhatsapp} data-testid="team-whatsapp" /> <span>{T.activate.team}<span class="co-help block">{T.activate.teamHelp}</span></span></label>
       <fieldset class="grid gap-2">
         <legend class="co-field mb-1">{T.activate.hours}</legend>

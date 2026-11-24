@@ -26,6 +26,8 @@ export interface OrgDb {
   /** Secciones por espacio (docs/DECKS.md): qué espacios tienen Decks, y cambiarlo. */
   platformFeatures?(): Promise<Map<string, { decks: boolean }> | null>;
   setTenantFeature?(tenantId: string, f: { decks: boolean }): Promise<void>;
+  /** El WhatsApp de los leads de cada espacio (docs/LEADS.md §2f): lo que hace falta para saber si está conectado. */
+  platformWhatsapp?(): Promise<Map<string, { enabled: boolean; phoneId: string | null; templates: Record<string, Record<string, string>> }> | null>;
   /** Alta de un espacio (solo superadmin; la base de datos lo comprueba). Devuelve su id. */
   createTenant(t: { slug: string; name: string; locale: string; hostname: string }): Promise<string>;
   /** Hace admin de un espacio a un usuario (solo superadmin). */

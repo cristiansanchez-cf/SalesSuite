@@ -123,12 +123,15 @@ export function opsFor(admin: AdminContext, o: { drafter?: Drafter | null; local
     },
     async leadOk(leadId) {
       const { leadsFor } = await import('../leads/service');
-      const r = await (await leadsFor(admin)).approveWhatsapp(leadId, { whatsappReady: !!env('WHATSAPP_TOKEN') });
-      return { name: r.name };
+      const r = await (await leadsFor(admin)).accept(leadId, { whatsapp: true });
+      return { name: r.name, whatsapp: r.whatsapp ? { minutes: r.whatsapp.minutes, soon: r.whatsapp.soon } : null, why: r.why };
     },
     async leadNo(leadId) {
       const { leadsFor } = await import('../leads/service');
-      return (await leadsFor(admin)).dismissWhatsapp(leadId);
+      const svc = await leadsFor(admin);
+      const { lead } = await svc.detail(leadId);
+      await svc.reject(leadId, 'Rechazado desde el aviso por WhatsApp');
+      return { name: lead.name };
     },
     async later(accountId) {
       const { account } = await admin.accounts.get(accountId);
