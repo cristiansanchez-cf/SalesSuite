@@ -1,0 +1,111 @@
+---
+/**
+ * Paso guiado «Calendario y reservas» (docs/LEADS.md §2e). Cuatro partes:
+ *  1. Qué es: el botón «Reserva una llamada ahora» de la web abre el enlace que le damos al recibir el lead
+ *     (next.booking_url); sin enlace, la web no debe enseñarlo. Con lo que recibe ahora mismo.
+ *  2. Tu enlace: el general (y el vídeo del email), con dónde crearlo y «Probar el enlace».
+ *  3. Por tipo e idioma (opcional): uno distinto por tipo de solicitud o idioma (vacío = el general).
+ *  4. Tu web: la regla para quien la hace (copiar) y lo que le llega con un lead de ejemplo.
+ */
+import Icon from '~/components/ui/Icon.astro';
+import StepDialog from '~/components/ui/StepDialog.astro';
+import type { leadsSetupMessages } from '~/lib/i18n/messages/leadsSetup';
+
+interface Props {
+  id: string; open: boolean; part: number;
+  T: (typeof leadsSetupMessages)['es']['booking'];
+  bookingUrl: string | null; videoUrl: string | null;
+  media: Record<string, Record<string, { video?: string; booking?: string }>>;
+  /** Los tipos que se enseñan (general y los suyos), con su nombre. */
+  types: Array<{ key: string; label: string }>;
+  /** El enlace que recibiría la web ahora (el general en su idioma), o null. */
+  current: string | null;
+  /** La respuesta de ejemplo de POST /api/v1/leads (JSON). */
+  sample: string;
+  notice?: string | null;
+  error?: { title: string; details: string[] } | null;
+}
+const { id, open, part, T, bookingUrl, videoUrl, media, types, current, sample, notice, error } = Astro.props;
+const ACTION = '/admin/leads/configurar';
+const LOCS = ['es', 'en', 'fr'] as const;
+const TOOLS = [
+  { name: 'Google Calendar', href: 'https://support.google.com/calendar/answer/10729749' },
+  { name: 'Calendly', href: 'https://calendly.com/' },
+  { name: 'Cal.com', href: 'https://cal.com/' },
+];
+---
+<StepDialog id={id} title={T.title} parts={T.parts} open={open} part={part} notice={notice} error={error} testid="booking"
+  labels={{ back: T.back, next: T.next, close: T.close, copied: T.copied }}>
+  <Fragment slot="p1">
+    <div class="grid gap-4 sm:grid-cols-2">
+      <div class="co-inset grid gap-3 !p-5" aria-hidden="true">
+        <p class="font-semibold">{T.mock.thanks}</p>
+        <span class:list={['co-btn w-fit', current ? 'co-btn--primary' : 'co-btn--ghost line-through opacity-50']}><Icon name="calendar" size={16} />{T.mock.button}</span>
+        {!current && <span class="co-meta">{T.mock.none}</span>}
+      </div>
+      <ol class="grid list-decimal content-start gap-2 pl-5">{T.why.map((w) => <li>{w}</li>)}</ol>
+    </div>
+    <p class:list={['flex items-start gap-2 text-sm', !current && 'font-semibold']} data-testid="booking-current" data-on={current ? '1' : '0'}>
+      <Icon name={current ? 'circle-check' : 'triangle-alert'} size={16} />
+      <span class="break-all">{current ? T.now(current) : T.nowNone}</span>
+    </p>
+  </Fragment>
+
+  <Fragment slot="p2">
+    <form method="post" action={ACTION} class="grid gap-3" data-autosave data-enter-next data-testid="booking-form">
+      <input type="hidden" name="action" value="booking-save" />
+      <label class="co-field">{T.link}
+        <span class="flex flex-wrap items-center gap-2">
+          <input class="co-input min-w-0 flex-1" type="url" name="bookingUrl" value={bookingUrl ?? ''} placeholder="https://calendly.com/tu-nombre/llamada" data-booking-url data-testid="booking-url" />
+          <a class="co-btn co-btn--ghost co-btn--sm" href={bookingUrl ?? '#'} target="_blank" rel="noopener noreferrer" data-booking-open hidden={!bookingUrl}><Icon name="external-link" size={14} />{T.open}</a>
+        </span>
+        <span class="co-help">{T.linkHelp}</span>
+      </label>
+      <p class="co-meta flex flex-wrap items-center gap-2">{T.tools} {TOOLS.map((t) => <a class="co-chip" href={t.href} target="_blank" rel="noopener noreferrer">{t.name}</a>)}</p>
+      <label class="co-field">{T.video}<input class="co-input" type="url" name="videoUrl" value={videoUrl ?? ''} placeholder="https://" /><span class="co-help">{T.videoHelp}</span></label>
+    </form>
+  </Fragment>
+
+  <Fragment slot="p3">
+    <p class="co-meta">{T.mediaLede}</p>
+    <form method="post" action={ACTION} class="grid gap-2" data-autosave data-testid="booking-media">
+      <input type="hidden" name="action" value="booking-media" />
+      {types.map((ty) => {
+        const has = LOCS.some((l) => media?.[ty.key]?.[l]?.video || media?.[ty.key]?.[l]?.booking);
+        return (
+          <details class="co-inset !p-3" open={has || undefined} data-testid={`booking-media-${ty.key}`}>
+            <summary class="cursor-pointer font-semibold">{ty.label}</summary>
+            <div class="mt-2 grid gap-2">
+              {LOCS.map((l) => (
+                <div class="grid gap-2 sm:grid-cols-[2.5rem_1fr_1fr] sm:items-end">
+                  <span class="co-meta font-semibold uppercase">{l}</span>
+                  <label class="co-field text-xs">{T.link}<input class="co-input" type="url" name={`m_${ty.key}_${l}_booking`} value={media?.[ty.key]?.[l]?.booking ?? ''} placeholder={bookingUrl ?? 'https://'} /></label>
+                  <label class="co-field text-xs">{T.video}<input class="co-input" type="url" name={`m_${ty.key}_${l}_video`} value={media?.[ty.key]?.[l]?.video ?? ''} placeholder={videoUrl ?? 'https://'} /></label>
+                </div>
+              ))}
+            </div>
+          </details>
+        );
+      })}
+    </form>
+  </Fragment>
+
+  <Fragment slot="p4">
+    <p>{T.webLede}</p>
+    <div class="co-inset grid gap-2 !p-4">
+      <p class="text-sm" data-testid="booking-rule">{T.webRule}</p>
+      <button type="button" class="co-btn co-btn--ghost co-btn--sm w-fit" data-copy data-copy-value={T.webRule}><Icon name="copy" size={14} />{T.copy}</button>
+    </div>
+    <p class="co-meta">{T.sample}</p>
+    <pre class="co-inset overflow-x-auto !p-3 text-xs" data-testid="booking-sample">{sample}</pre>
+  </Fragment>
+</StepDialog>
+
+<script>
+  // «Probar el enlace»: sigue a lo que se escribe (solo si es https).
+  document.querySelectorAll<HTMLInputElement>('[data-booking-url]').forEach((input) => {
+    const a = input.parentElement?.querySelector<HTMLAnchorElement>('[data-booking-open]');
+    const sync = () => { const ok = /^https:\/\/\S+\.\S+/.test(input.value.trim()); if (a) { a.hidden = !ok; if (ok) a.href = input.value.trim(); } };
+    input.addEventListener('input', sync); sync();
+  });
+</script>

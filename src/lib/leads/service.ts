@@ -40,6 +40,7 @@ export const LEAD_ERRORS = {
   badHoliday: (v: string) => `«${v}» no es una fecha (AAAA-MM-DD)`,
   waNotReady: 'Para activarlo falta el número y la plantilla del primer WhatsApp en tu idioma',
   badColor: 'El color, en hexadecimal (ejemplo: #ff27bb)',
+  badUrl: (v: string) => `El enlace (${v}) tiene que ser una dirección completa con https://`,
   logoTooBig: 'El logo pesa más de 1 MB: usa uno más ligero (un logo de email ocupa poco)',
   noFile: 'Elige un archivo',
 } as const;
@@ -401,6 +402,33 @@ export function createLeadsService(db: LeadsDb, admin: AdminContext) {
    * WhatsApp a los leads (Leads entrantes → WhatsApp): el número de Meta, las plantillas aprobadas, si se manda (y el 2),
    * el horario y los festivos. Lo demás de los ajustes no se toca. No se activa sin número ni plantilla del WhatsApp 1.
    */
+  /**
+   * Calendario y reservas (Configurar → paso guiado): el enlace general, el vídeo y, si se quiere, uno por tipo e idioma.
+   * Solo cambia lo que se manda (undefined = se queda como estaba); vacío = se quita.
+   */
+  async function saveBooking(input: { bookingUrl?: string | null; videoUrl?: string | null; media?: Record<string, Record<string, { video?: string; booking?: string }>> }, brand: string): Promise<void> {
+    requireAdmin();
+    let prev = await db.settings(t);
+    if (!prev) { await saveOrigins([], brand); prev = await db.settings(t); }
+    if (!prev) throw new AdminError(404, LEAD_ERRORS.notFound);
+    const url = z.string().trim().url().startsWith('https://').max(500);
+    const check = (v: string | null | undefined, field: string) => {
+      const x = (v ?? '').trim();
+      if (!x) return null;
+      if (!url.safeParse(x).success) throw new AdminError(422, LEAD_ERRORS.badUrl(field));
+      return x;
+    };
+    const next = { ...prev };
+    if (input.bookingUrl !== undefined) next.bookingUrl = check(input.bookingUrl, 'reserva');
+    if (input.videoUrl !== undefined) next.videoUrl = check(input.videoUrl, 'vídeo');
+    if (input.media !== undefined) {
+      const r = settingsSchema.shape.media.safeParse(input.media);
+      if (!r.success) throw new AdminError(422, LEAD_ERRORS.badUrl(r.error.issues[0]?.path.join(' · ') ?? ''));
+      next.media = r.data ?? {};
+    }
+    await db.saveSettings(next);
+  }
+
   async function saveWhatsapp(input: {
     phoneId?: string | null; enabled?: boolean; wa2?: boolean; templates?: Record<string, Record<string, string>>;
     fromHour?: number; toHour?: number; holidays?: string[]; approval?: string; teamWhatsapp?: boolean; delayMinutes?: number;
@@ -499,7 +527,7 @@ export function createLeadsService(db: LeadsDb, admin: AdminContext) {
     return { total: ls.length, answered: mins.length, medianMins: median, within5: mins.filter((m) => m <= 5).length, bySource: [...bySource].sort((a, b) => b[1] - a[1]).slice(0, 6) };
   }
 
-  return { settings, list, counts, usedKinds, detail, setStage, markContacted, stopSequence, release, note, validate, accept, approveWhatsapp, whatsappPlan, dismissWhatsapp, reject, suppress, saveSettings, saveTexts, saveSignature, clearPastedSignature, saveSignerName, saveWhatsapp, saveEmailStyle, saveRetention, setEnabled, lastSubmission, saveOrigins, saveSender, metrics, canConfigure: perms.manageTenant };
+  return { settings, list, counts, usedKinds, detail, setStage, markContacted, stopSequence, release, note, validate, accept, approveWhatsapp, whatsappPlan, dismissWhatsapp, reject, suppress, saveSettings, saveTexts, saveSignature, clearPastedSignature, saveSignerName, saveWhatsapp, saveBooking, saveEmailStyle, saveRetention, setEnabled, lastSubmission, saveOrigins, saveSender, metrics, canConfigure: perms.manageTenant };
 }
 export type LeadsService = ReturnType<typeof createLeadsService>;
 

@@ -205,6 +205,13 @@ generales de arriba. Un lead `general` que dice qué es (`event_type`: venue, dj
 Si no está claro qué es (marca, prensa…), el email no lleva vídeo y la reserva es la general. Enjoy viene con los vídeos
 de su web (locales, testimonio de DJ y festival, en los tres idiomas); las bodas usan el general.
 
+**Calendario y reservas** (Configurar → paso guiado «Calendario y reservas», `BookingDialog.astro`): el enlace general
+de reserva (y el vídeo del email) y, si se quiere, uno por tipo e idioma. La respuesta a la web trae
+`next.booking_url` (el de su tipo e idioma, si no el general); **sin enlace, la web no debe enseñar el botón** «Reserva
+una llamada ahora». Esa regla va en las instrucciones para quien hace la web (`connect-guide.ts`) y en la última parte del
+paso, con la respuesta de ejemplo. El paso es «recomendado» y, sin enlace, la tarjeta dice que el botón de la web no
+lleva a ningún sitio. En «Todos los ajustes» ya no se edita: lleva al paso guiado y guardar los ajustes no lo toca.
+
 ## 2d. Firma del email
 Leads → Ajustes → **Firma del email**: nombre, cargo y empresa, teléfono, dirección, email, web, logo (PNG o JPG por
 https: Gmail no muestra SVG) y texto legal. Va donde esté `{firma_email}` en el email automático (en los textos por

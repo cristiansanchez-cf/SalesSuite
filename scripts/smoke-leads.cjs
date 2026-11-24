@@ -125,13 +125,31 @@ const post = (body, origin = WEB) => fetch(`${BASE}/api/v1/leads`, { method: 'PO
   const st = await p.textContent('[data-testid=leads-resend-status]');
   assert(st.includes('re_…5678') && !(await p.content()).includes('re_smokeKey12345678'), 'clave propia guardada: solo se ve la pista');
   await Promise.all([p.waitForURL(/ok=resendCleared/), p.click('[data-testid=leads-resend-clear]')]);
-  // Vídeo y reserva por tipo: los de la web vienen puestos (locales, DJ); uno nuevo se guarda.
-  assert((await p.inputValue('[name=m_venue_es_video]')).includes('locales-es.mp4'), 'vídeo de locales ya puesto');
-  await p.click('[data-testid=leads-media-wedding] summary');
-  await p.fill('[name=m_wedding_es_booking]', 'https://cal.example.com/bodas');
+  // Calendario y reservas: ya no está suelto en los ajustes, tiene su paso guiado; guardar los ajustes no lo toca.
+  assert((await p.getAttribute('[data-testid=leads-media]', 'href')) === '/admin/leads/configurar?abrir=booking', 'ajustes: «Calendario y reservas» lleva a su paso guiado');
   await Promise.all([p.waitForURL(/ok=saved/), p.click('[data-testid=leads-settings-save]')]);
   assert((await p.textContent('[data-testid=leads-status-badge]')).includes('Activo'), 'ajustes guardados: guardar no apaga la entrada');
+  const submitIn = async (testid, values, okRe) => {
+    await Promise.all([p.waitForURL(okRe), p.evaluate(([id, v]) => {
+      const f = document.querySelector(`[data-testid=${id}]`);
+      for (const [k, val] of Object.entries(v)) f.querySelector(`[name="${k}"]`).value = val;
+      f.requestSubmit();
+    }, [testid, values])]);
+  };
+  await p.goto(`${BASE}/admin/leads/configurar?abrir=booking&p=3`);
+  assert((await p.inputValue('[name=m_venue_es_video]')).includes('locales-es.mp4'), 'reservas por tipo: el vídeo de locales ya puesto');
+  await submitIn('booking-media', { m_wedding_es_booking: 'https://cal.example.com/bodas' }, /ok=bookingMedia/);
   assert((await p.inputValue('[name=m_wedding_es_booking]')) === 'https://cal.example.com/bodas' && (await p.inputValue('[name=m_venue_es_video]')).includes('locales-es.mp4'), 'reserva de bodas guardada y el resto intacto');
+  await submitIn('booking-form', { bookingUrl: 'https://cal.example.com/general' }, /ok=bookingSaved/);
+  await p.goto(`${BASE}/admin/leads/configurar?abrir=booking&p=1`);
+  assert((await p.getAttribute('[data-testid=booking-current]', 'data-on')) === '1' && (await p.textContent('[data-testid=booking-current]')).includes('https://'), 'reservas: dice qué enlace recibe tu web');
+  assert(/next\.booking_url/.test(await p.textContent('[data-testid=booking-rule]')) && /booking_url/.test(await p.textContent('[data-testid=booking-sample]')), 'reservas: la regla para tu web y la respuesta de ejemplo');
+  if (OUT) await p.screenshot({ path: `${OUT}/leads-booking.png` });
+  await p.goto(`${BASE}/admin/leads/ajustes`);
+  await Promise.all([p.waitForURL(/ok=saved/), p.click('[data-testid=leads-settings-save]')]);
+  await p.goto(`${BASE}/admin/leads/configurar?abrir=booking&p=3`);
+  assert((await p.inputValue('[name=m_wedding_es_booking]')) === 'https://cal.example.com/bodas', 'guardar los ajustes no borra las reservas');
+  await p.goto(`${BASE}/admin/leads/ajustes`);
   // ---- Activar / pausar (arriba a la derecha) y la lista de lo que falta
   assert(await p.getAttribute('[data-testid=leads-check-resend]', 'data-ok') === '1', 'lista: lo obligatorio está');
   await Promise.all([p.waitForURL(/ok=paused/), p.click('[data-testid=leads-toggle]')]);

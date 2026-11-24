@@ -12,6 +12,7 @@ import ConnectDialog from '~/components/admin/leads/ConnectDialog.astro';
 import EmailDialog from '~/components/admin/leads/EmailDialog.astro';
 import MessagesDialog from '~/components/admin/leads/MessagesDialog.astro';
 import WhatsAppDialog from '~/components/admin/leads/WhatsAppDialog.astro';
+import BookingDialog from '~/components/admin/leads/BookingDialog.astro';
 import { checkPhone, subscribeApp, templateGuide, type PhoneCheck, type WaStep } from '~/lib/leads/whatsapp-guide';
 import { hubConfig } from '~/lib/assistant/hub-config';
 import { previewFor } from '~/lib/leads/message-preview';
@@ -55,7 +56,7 @@ let error: string | null = null;
 let errorDetails: string[] = [];
 let errorPart = 2;
 /** Qué modal enseña el error (el de la parte en la que estaba). */
-let errorIn: 'connect' | 'email' | 'messages' | 'whatsapp' | null = null;
+let errorIn: 'connect' | 'email' | 'messages' | 'whatsapp' | 'booking' | null = null;
 /** Mensajes: la propuesta de la IA o lo enviado con error, para enseñarlo en el editor sin guardar. */
 let textsShown: LeadTemplates | null = null;
 let aiDrafted = false;
@@ -208,6 +209,22 @@ if (Astro.request.method === 'POST') {
     if (!r.error) return back(`/admin/leads/configurar?abrir=whatsapp&p=${to}&ok=${ok}`);
     error = r.error; errorDetails = r.details; errorIn = 'whatsapp';
     errorPart = action === 'whatsapp-connect' ? 3 : action === 'whatsapp-templates' ? 4 : 5;
+  } else if (action === 'booking-save' || action === 'booking-media') {
+    // Calendario y reservas: el enlace general y el vídeo, o uno por tipo e idioma (vacío = el general).
+    const r = await formAction(async () => {
+      if (action === 'booking-save') await svc.saveBooking({ bookingUrl: String(f.get('bookingUrl') ?? ''), videoUrl: String(f.get('videoUrl') ?? '') }, slug);
+      else {
+        const media: Record<string, Record<string, { video?: string; booking?: string }>> = {};
+        for (const [k, v] of f.entries()) {
+          const m = /^m_([a-z_]+)_(es|en|fr)_(video|booking)$/.exec(k);
+          const val = String(v).trim();
+          if (m && val) ((media[m[1]] ??= {})[m[2]] ??= {})[m[3] as 'video' | 'booking'] = val;
+        }
+        await svc.saveBooking({ media }, slug);
+      }
+    });
+    if (!r.error) return back(`/admin/leads/configurar?abrir=booking&p=${action === 'booking-save' ? 2 : 3}&ok=${action === 'booking-save' ? 'bookingSaved' : 'bookingMedia'}`);
+    error = r.error; errorDetails = r.details; errorIn = 'booking'; errorPart = action === 'booking-save' ? 2 : 3;
   } else if (action === 'toggle') {
     const on = f.get('on') === '1';
     const cur = await svc.settings();
@@ -233,7 +250,7 @@ const kinds = await svc.usedKinds().catch(() => [] as string[]);
 const steps = leadSetupSteps({ settings: s, domains, received: !!last, demo, platformMail, platformWa: !!env('WHATSAPP_TOKEN') });
 const ready = readiness(s, domains, { demo, platformMail }).ready;
 const progress = requiredProgress(steps);
-const okMsg = flash(Astro.url, { live: L.ok.live, paused: L.ok.paused, webs: T.connect.ok.webs, test: T.connect.ok.test, ...T.email.ok, ...T.messages.ok, ...T.whatsapp.ok });
+const okMsg = flash(Astro.url, { live: L.ok.live, paused: L.ok.paused, webs: T.connect.ok.webs, test: T.connect.ok.test, ...T.email.ok, ...T.messages.ok, ...T.whatsapp.ok, ...T.booking.ok });
 const fmt = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: s.timezone });
 
 // Las que tienen paso guiado abren su modal; las demás, su sección de los ajustes.
@@ -242,7 +259,7 @@ const META: Record<StepKey, { icon: IconName; href: string }> = {
   email: { icon: 'mail', href: '/admin/leads/configurar?abrir=email' },
   messages: { icon: 'message-square-text', href: '/admin/leads/configurar?abrir=messages' },
   whatsapp: { icon: 'whatsapp', href: '/admin/leads/configurar?abrir=whatsapp' },
-  extras: { icon: 'link', href: '/admin/leads/ajustes#media' },
+  extras: { icon: 'calendar', href: '/admin/leads/configurar?abrir=booking' },
   privacy: { icon: 'shield-check', href: '/admin/leads/ajustes#privacy' },
 };
 const summary = (k: StepKey): string[] => {
@@ -251,7 +268,7 @@ const summary = (k: StepKey): string[] => {
     case 'email': return [s.fromEmail ? T.done.email(s.fromEmail) : T.done.emailPlatform, s.notifyEmails.length ? T.done.notify(s.notifyEmails.length) : ''].filter(Boolean);
     case 'messages': return [T.done.messages];
     case 'whatsapp': return [T.done.whatsapp];
-    case 'extras': return [T.done.extras];
+    case 'extras': return [mediaFor(s, 'general', {}, msgLocale(locale)).booking ?? T.done.extras];
     case 'privacy': return [T.done.privacy(retentionOf(s).leadMonths)];
   }
 };
@@ -301,8 +318,12 @@ const waGuides = waLocales.flatMap((l) => waSteps.map((st) => templateGuide(st, 
 const waCheck: PhoneCheck | null = openParam === 'whatsapp' && pParam === 3 && s.whatsappPhoneId
   ? (demo ? { ok: true, number: '+34 600 00 00 00', name: tenant?.name ?? null, quality: 'GREEN' } : await checkPhone(s.whatsappPhoneId, env('WHATSAPP_TOKEN')).catch(() => null))
   : null;
-const main = steps.filter((x) => x.key !== 'extras' && x.key !== 'privacy');
-const extras = steps.filter((x) => x.key === 'extras' || x.key === 'privacy');
+const main = steps.filter((x) => x.key !== 'privacy');
+const extras = steps.filter((x) => x.key === 'privacy');
+// Calendario y reservas: lo que recibe la web ahora (el general en su idioma) y la respuesta de ejemplo.
+const bookingNow = mediaFor(s, 'general', {}, msgLocale(locale)).booking ?? null;
+const bookingSample = JSON.stringify({ id: '7f3c…', next: { channel: 'email', eta: 'minutes', ...(bookingNow ? { booking_url: bookingNow } : {}) } }, null, 2);
+const bookingPart = openParam === 'booking' && pParam >= 1 && pParam <= 4 ? pParam : bookingNow ? 2 : 1;
 const pct = progress.total ? Math.round((progress.done / progress.total) * 100) : 0;
 ---
 <AdminLayout title={T.title}>
@@ -319,7 +340,7 @@ const pct = progress.total ? Math.round((progress.done / progress.total) * 100) 
       <p class="co-meta max-w-[18rem] sm:text-right">{s.enabled ? S.liveHelp : ready ? S.pausedHelp : S.activateBlocked}</p>
     </div>
   </PageHeader>
-  {okMsg && !['connect', 'email', 'messages', 'whatsapp'].includes(openParam ?? '') && <div class="mb-4"><Alert kind="success" title={okMsg} /></div>}
+  {okMsg && !['connect', 'email', 'messages', 'whatsapp', 'booking'].includes(openParam ?? '') && <div class="mb-4"><Alert kind="success" title={okMsg} /></div>}
   {error && !errorIn && <div class="mb-4"><Alert kind="rejection" title={error} details={errorDetails} /></div>}
 
   <section class="mb-6 grid max-w-3xl gap-2" data-testid="leads-setup-progress" data-done={progress.done} data-total={progress.total}>
@@ -337,7 +358,7 @@ const pct = progress.total ? Math.round((progress.done / progress.total) * 100) 
         status={x.status} need={x.need} step={T.stepN(i + 1)}
         labels={{ need: T.need[x.need], status: T.status[x.status], cta: T.cta[x.status], missing: T.missing }}
         missing={x.missing.map((k) => T.miss[k])} summary={summary(x.key)} testid={`setup-card-${x.key}`}
-        dialog={x.key === 'connect' ? 'setup-connect' : x.key === 'email' ? 'setup-email' : x.key === 'messages' ? 'setup-messages' : x.key === 'whatsapp' ? 'setup-whatsapp' : undefined}
+        dialog={x.key === 'connect' ? 'setup-connect' : x.key === 'email' ? 'setup-email' : x.key === 'messages' ? 'setup-messages' : x.key === 'whatsapp' ? 'setup-whatsapp' : x.key === 'extras' ? 'setup-booking' : undefined}
       />
     ))}
   </section>
@@ -381,6 +402,13 @@ const pct = progress.total ? Math.round((progress.done / progress.total) * 100) 
     style={s.emailStyle ?? {}} brandDefaults={{ logoUrl: brandLogo, color: brandColor.length === 4 ? `#${[...brandColor.slice(1)].map((c) => c + c).join('')}` : brandColor }}
     notice={aiDrafted ? T.messages.ok.ai : openParam === 'messages' ? okMsg : null}
     error={error && errorIn === 'messages' ? { title: error, details: errorDetails } : null}
+  />
+  <BookingDialog
+    id="setup-booking" open={openParam === 'booking' || errorIn === 'booking'} part={errorIn === 'booking' ? errorPart : bookingPart} T={T.booking}
+    bookingUrl={s.bookingUrl} videoUrl={s.videoUrl} media={(s.media ?? {}) as Record<string, Record<string, { video?: string; booking?: string }>>} current={bookingNow} sample={bookingSample}
+    types={shown.media.map((k) => ({ key: k, label: L.types[k as keyof typeof L.types] ?? k }))}
+    notice={openParam === 'booking' ? okMsg : null}
+    error={error && errorIn === 'booking' ? { title: error, details: errorDetails } : null}
   />
   <WhatsAppDialog
     id="setup-whatsapp" open={openParam === 'whatsapp' || errorIn === 'whatsapp'} part={errorIn === 'whatsapp' ? errorPart : waPart}

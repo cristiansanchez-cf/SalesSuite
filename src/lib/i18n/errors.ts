@@ -371,6 +371,7 @@ const PATTERNS: [RegExp, (m: RegExpMatchArray) => T][] = [
   [/^Tarifa a medida: (.+)$/s, (m) => [`Custom rate: ${m[1]}`, `Tarifa sob medida: ${m[1]}`, `맞춤 요금제: ${m[1]}`]],
   [/^Ya existe una faceta con la clave «(.+)»$/, (m) => [`A situation with the key «${m[1]}» already exists`, `Já existe uma situação com a chave «${m[1]}»`, `«${m[1]}» 키의 상황이 이미 있습니다`]],
   [/^No tiene el formato de este paso \((.+)\)\. ¿Lo has pegado en el paso correcto\?$/, (m) => [`It doesn't match this step's format (${m[1]}). Did you paste it in the right step?`, `Não tem o formato deste passo (${m[1]}). Você colou no passo certo?`, `이 단계의 형식과 맞지 않습니다 (${m[1]}). 올바른 단계에 붙여넣었나요?`]],
+  [/^El enlace \((.*)\) tiene que ser una dirección completa con https:\/\/$/, (m) => [`The link (${m[1]}) must be a full address with https://`, `O link (${m[1]}) tem de ser um endereço completo com https://`, `링크(${m[1]})는 https://로 시작하는 전체 주소여야 합니다`]],
   [/^Máximo (\d+(?:\.\d+)?) MB$/, (m) => [`Maximum ${m[1]} MB`, `Máximo de ${m[1]} MB`, `최대 ${m[1]}MB`]],
   [/^Mapeo no válido: (.+)$/s, (m) => [`Invalid mapping: ${m[1]}`, `Mapeamento inválido: ${m[1]}`, `유효하지 않은 매핑: ${m[1]}`]],
   [/^Faltan módulos en el catálogo: (.+)$/, (m) => [`Modules missing from the catalogue: ${m[1]}`, `Faltam módulos no catálogo: ${m[1]}`, `카탈로그에 없는 모듈: ${m[1]}`]],

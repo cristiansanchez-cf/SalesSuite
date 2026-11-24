@@ -72,9 +72,11 @@ describe('pasos de los leads entrantes', () => {
     expect(run({ whatsappPhoneId: '123', whatsappEnabled: true }, { platformWa: true }).whatsapp).toMatchObject({ status: 'done', missing: [] });
   });
 
-  it('extras: hecho con un vídeo general o uno por tipo', () => {
-    expect(run({ videoUrl: 'https://v.com' }).extras.status).toBe('done');
+  it('calendario y reservas: hecho con un enlace de reserva (general o por tipo); solo un vídeo, a medias y dice qué falta', () => {
+    expect(run({ bookingUrl: 'https://cal.com/general' }).extras).toMatchObject({ status: 'done', need: 'recommended', missing: [] });
     expect(run({ media: { venue: { es: { booking: 'https://cal.com/x' } } } as LeadSettings['media'] }).extras.status).toBe('done');
+    expect(run({ videoUrl: 'https://v.com' }).extras).toMatchObject({ status: 'partial', missing: ['booking'] });
+    expect(run({}).extras).toMatchObject({ status: 'todo', missing: ['booking'] });
   });
 
   it('progreso: cuenta solo los obligatorios (conectar y email)', () => {

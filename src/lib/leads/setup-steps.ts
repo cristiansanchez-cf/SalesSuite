@@ -8,7 +8,7 @@ export type StepStatus = 'todo' | 'partial' | 'done';
 export type StepKey = 'connect' | 'email' | 'messages' | 'whatsapp' | 'extras' | 'privacy';
 export type StepNeed = 'required' | 'recommended' | 'optional';
 /** Lo que falta, por clave (los textos van en i18n). */
-export type Missing = 'lead' | 'resend' | 'fromDomain' | 'sender' | 'notify' | 'texts' | 'signature' | 'waToken' | 'waPhone' | 'waTemplates' | 'waOn';
+export type Missing = 'booking' | 'lead' | 'resend' | 'fromDomain' | 'sender' | 'notify' | 'texts' | 'signature' | 'waToken' | 'waPhone' | 'waTemplates' | 'waOn';
 export interface SetupStep { key: StepKey; need: StepNeed; status: StepStatus; missing: Missing[] }
 
 export interface Domain { name: string; status: string }
@@ -75,7 +75,8 @@ export function leadSetupSteps(x: SetupInput): SetupStep[] {
     { key: 'email', need: 'required', status: statusOf(r.ready, emailMissing.length < 3 && (!!s.fromEmail || !!s.replyTo || !!s.resendKeyHint)), missing: emailMissing },
     { key: 'messages', need: 'recommended', status: statusOf(ownTexts && sig, ownTexts || sig), missing: msgMissing },
     { key: 'whatsapp', need: 'optional', status: statusOf(waOn, !!s.whatsappPhoneId || waTemplates || s.whatsappEnabled), missing: waOn ? [] : waMissing },
-    { key: 'extras', need: 'optional', status: statusOf(!!(s.videoUrl || s.bookingUrl) || hasMedia(s), false), missing: [] },
+    // Calendario y reservas: sin enlace, el botón «Reserva una llamada» de la web no lleva a ningún sitio.
+    { key: 'extras', need: 'recommended', status: statusOf(hasBooking(s), !!s.videoUrl || hasMedia(s)), missing: hasBooking(s) ? [] : ['booking'] },
     // Los plazos llevan valores recomendados desde el principio.
     { key: 'privacy', need: 'optional', status: 'done', missing: [] },
   ];
@@ -85,4 +86,9 @@ export function leadSetupSteps(x: SetupInput): SetupStep[] {
 export function requiredProgress(steps: SetupStep[]) {
   const req = steps.filter((s) => s.need === 'required');
   return { done: req.filter((s) => s.status === 'done').length, total: req.length };
+}
+
+/** Hay enlace de reserva (el general o alguno por tipo e idioma). */
+export function hasBooking(s: LeadSettings): boolean {
+  return !!s.bookingUrl || Object.values(s.media ?? {}).some((byLoc) => Object.values(byLoc ?? {}).some((x) => !!x?.booking));
 }

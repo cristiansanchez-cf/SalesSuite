@@ -57,7 +57,7 @@ ${typesList(g.kinds)}
 - From a phone app: the same, plus context.source: "app".
 - While testing, send "test": true (or test from localhost): it is stored as a test and nothing is sent. Remove it when going live.
 
-Responses: 201 created and 200 duplicate (both are success; the body has next.channel "email" or "whatsapp" to say "we will write to you by email/WhatsApp in a few minutes"), 400 validation errors in "errors", 403 the website is not in the allowed list, 429 too many submissions, 503 lead intake is paused.
+Responses: 201 created and 200 duplicate (both are success; the body has next.channel "email" or "whatsapp" to say "we will write to you by email/WhatsApp in a few minutes") and, if there is one, next.booking_url: then show a «Book a call now» button that opens it in a new tab; if there is no next.booking_url, do NOT show that button (only the thank-you message), 400 validation errors in "errors", 403 the website is not in the allowed list, 429 too many submissions, 503 lead intake is paused.
 
 Allowed websites right now: ${origins}. If the form lives at another address, tell us so we add it.`;
   }
@@ -83,7 +83,7 @@ ${typesList(g.kinds)}
 - Desde una app del móvil: lo mismo, con context.source: "app".
 - Mientras pruebas, manda "test": true (o prueba desde localhost): se guarda como prueba y no se envía nada. Quítalo al publicar.
 
-Respuestas: 201 creado y 200 repetido (las dos son éxito; traen next.channel "email" o "whatsapp" para decir «te escribimos por email/WhatsApp en unos minutos»), 400 errores de validación en "errors", 403 la web no está en la lista permitida, 429 demasiados envíos, 503 la entrada de leads está en pausa.
+Respuestas: 201 creado y 200 repetido (las dos son éxito; traen next.channel "email" o "whatsapp" para decir «te escribimos por email/WhatsApp en unos minutos») y, si lo hay, next.booking_url: entonces enseña un botón «Reserva una llamada ahora» que lo abre en una pestaña nueva; si no viene next.booking_url, NO enseñes ese botón (solo el mensaje de gracias), 400 errores de validación en "errors", 403 la web no está en la lista permitida, 429 demasiados envíos, 503 la entrada de leads está en pausa.
 
 Webs permitidas ahora: ${origins}. Si el formulario está en otra dirección, avísanos para añadirla.`;
 }
