@@ -147,6 +147,16 @@ export function demoCrmDb(actorId: string): CrmDb {
         else s.crm_contact_account.push({ tenant_id: t, contact_id: l.contactId, account_id: l.accountId, role: l.role, created_at: iso() });
       }
     },
+    async dropOrphanContact(id) {
+      const s = db();
+      const c = s.crm_contact.find((x) => x.id === id);
+      if (!c || s.crm_contact_account.some((l) => l.contact_id === id)) return false;
+      if (!(c.owner_id === actorId || isManager(c.tenant_id, actorId))) return false;
+      s.crm_contact = s.crm_contact.filter((x) => x.id !== id);
+      for (const a of s.crm_activity) if (a.contact_id === id) a.contact_id = null;
+      for (const a of s.account) if (a.next_contact_id === id) a.next_contact_id = null;
+      return true;
+    },
     async removeLink(contactId, accountId) {
       const s = db();
       const l = s.crm_contact_account.find((x) => x.contact_id === contactId && x.account_id === accountId);

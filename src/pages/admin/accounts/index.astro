@@ -356,7 +356,7 @@ const panelOpen = nFilters > 0;
       </label>
       <ul class="co-rows" data-testid="accounts">
         {shown.slice(0, shownMax).map((a) => (
-          <li class:list={['co-row', a.state === 'mine' && 'co-row--attention']} data-testid="account" data-name={a.name}>
+          <li class:list={['co-row', a.state === 'mine' && !a.parked && 'co-row--attention']} data-testid="account" data-name={a.name} data-parked={a.parked ? '1' : undefined}>
             <label class="co-row__lead cursor-pointer" title={P.bulk.select(a.name)}>
               <input type="checkbox" class="h-4 w-4 accent-[var(--co-ink)]" name="ids" value={a.id} form="bulk-group" data-bulk aria-label={P.bulk.select(a.name)} />
             </label>

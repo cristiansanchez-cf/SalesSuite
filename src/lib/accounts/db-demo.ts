@@ -293,6 +293,11 @@ export function demoAccountsDb(actorId: string): AccountsDb {
       if (p.facts !== undefined) { if (p.facts.length > 200) throw new Error('check constraint: account_facts_check'); a.facts = JSON.parse(JSON.stringify(p.facts)); }
       applyContact(a, p.contact);
       if (p.next !== undefined) Object.assign(a, { next_step: p.next.step, next_step_at: p.next.at, next_contact_id: p.next.contactId, next_channel: p.next.channel });
+      // = account_claim_to_next: la reserva llega hasta una semana después del próximo paso (como mucho 6 meses).
+      if (a.owner_id && a.status !== 'customer' && a.next_step_at && a.next_step_at !== prev.next_step_at) {
+        const want = Math.min(Date.parse(a.next_step_at) + 7 * 86_400_000, Date.now() + 180 * 86_400_000);
+        if (want > Date.parse(a.claimed_until ?? new Date().toISOString())) a.claimed_until = new Date(want).toISOString();
+      }
       // = account_audit
       if (a.status === 'blocked' && prev.status !== 'blocked') logTouch(a, actorId, 'block', a.blocked_reason);
       else if (prev.status === 'blocked' && a.status !== 'blocked') logTouch(a, actorId, 'unblock');

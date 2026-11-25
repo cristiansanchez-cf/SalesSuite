@@ -9,7 +9,7 @@ const { m: { state: m }, f } = i18n(Astro, accountsMessages);
 const day = (iso: string | null) => f.date(iso, { day: 'numeric', month: 'short' });
 const S = {
   free: { badge: 'co-badge co-badge--soft', label: m.free, text: m.freeText },
-  mine: { badge: 'co-badge co-badge--ink', label: m.mine, text: m.mineText(day(a.claimedUntil)) },
+  mine: { badge: 'co-badge co-badge--ink', label: m.mine, text: a.parked && a.nextStepAt ? m.parkedText(day(a.nextStepAt)) : m.mineText(day(a.claimedUntil)) },
   taken: { badge: 'co-badge co-badge--attention', label: m.taken, text: m.takenText(a.ownerName ?? m.someoneElse, day(a.claimedUntil)) },
   my_customer: { badge: 'co-badge co-badge--signal', label: m.myCustomer, text: m.myCustomerText(day(a.wonAt)) },
   customer: { badge: 'co-badge co-badge--soft', label: m.customer, text: m.customerText(a.wonByName ?? m.someoneElse) },

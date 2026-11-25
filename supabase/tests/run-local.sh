@@ -82,4 +82,5 @@ run supabase/tests/91_account_trial.test.sql
 run supabase/tests/92_products.test.sql
 run supabase/tests/93_dossier_auto_link.test.sql
 run supabase/tests/94_mcp_tokens.test.sql
+run supabase/tests/95_claim_people.test.sql
 echo "OK: migraciones + seed + aserciones RLS/RPC"

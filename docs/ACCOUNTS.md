@@ -11,6 +11,19 @@ El objetivo es que nadie «bombardee» un local que ya trabaja un compañero, qu
 - **Bloqueo:** el admin o jefe/a puede bloquear una cuenta con un motivo («El dueño ha pedido no recibir más comerciales»). Nadie puede reservarla y ninguna venta en ella genera comisión.
 - **Cliente:** al ganar una venta elegible, la cuenta pasa a ser cliente de quien la vendió. Si se deshace la venta, vuelve a estar en trabajo.
 
+## La reserva y el próximo paso (25-nov-2026)
+
+- Si el próximo paso de una empresa tuya cae después de tu reserva («hasta el 20 de enero, nada»), la reserva se alarga
+  hasta una semana después de ese día (como mucho 6 meses): disparador `account_zz_claim_to_next`
+  (`20270129000000_claim_until_next_step.sql`). Nunca la acorta.
+- En la lista, las tuyas con el próximo paso a más de 7 días (`PARKED_DAYS`) no se resaltan ni salen arriba: van detrás
+  de las libres, por fecha, con «Próximo paso el 20 ene · reservada hasta entonces». Arriba quedan las tuyas que piden
+  algo (sin próximo paso o con él esta semana).
+- Personas: al apuntar, la misma persona no se duplica aunque venga con la empresa pegada al nombre («Mireia Havana»),
+  sin tildes o solo con el nombre (`src/lib/crm/same-person.ts`); se completa lo que le falte. La X de «Personas» la
+  quita de la empresa y, si ya no está en ninguna otra, la borra (RPC `crm_contact_drop_orphan`: quien la dio de alta o
+  quien gestiona).
+
 ## Qué ve cada uno
 
 | Estado | Para quien la mira |

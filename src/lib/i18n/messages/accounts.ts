@@ -6,7 +6,7 @@ const es = {
   state: {
     someoneElse: 'otra persona',
     free: 'Libre', freeText: 'Nadie la está trabajando',
-    mine: 'Tuya', mineText: (date: string) => `Reservada para ti hasta el ${date}`,
+    mine: 'Tuya', mineText: (date: string) => `Reservada para ti hasta el ${date}`, parkedText: (date: string) => `Próximo paso el ${date} · reservada hasta entonces`,
     taken: 'De otra persona', takenText: (name: string, date: string) => `La trabaja ${name} hasta el ${date}`,
     myCustomer: 'Tu cliente', myCustomerText: (date: string) => `Cliente tuyo desde el ${date}`,
     customer: 'Cliente', customerText: (name: string) => `Cliente de ${name}`,
@@ -108,7 +108,7 @@ export const accountsMessages = defineMessages({
     state: {
       someoneElse: 'someone else',
       free: 'Free', freeText: 'Nobody is working it',
-      mine: 'Yours', mineText: (date) => `Reserved for you until ${date}`,
+      mine: 'Yours', mineText: (date) => `Reserved for you until ${date}`, parkedText: (date) => `Next step on ${date} · reserved until then`,
       taken: 'Someone else’s', takenText: (name, date) => `${name} is working it until ${date}`,
       myCustomer: 'Your customer', myCustomerText: (date) => `Your customer since ${date}`,
       customer: 'Customer', customerText: (name) => `Customer of ${name}`,
@@ -206,7 +206,7 @@ export const accountsMessages = defineMessages({
     state: {
       someoneElse: 'outra pessoa',
       free: 'Livre', freeText: 'Ninguém está trabalhando nela',
-      mine: 'Sua', mineText: (date) => `Reservada para você até ${date}`,
+      mine: 'Sua', mineText: (date) => `Reservada para você até ${date}`, parkedText: (date) => `Próximo passo a ${date} · reservada até lá`,
       taken: 'De outra pessoa', takenText: (name, date) => `${name} está trabalhando nela até ${date}`,
       myCustomer: 'Seu cliente', myCustomerText: (date) => `Seu cliente desde ${date}`,
       customer: 'Cliente', customerText: (name) => `Cliente de ${name}`,
@@ -304,7 +304,7 @@ export const accountsMessages = defineMessages({
     state: {
       someoneElse: '다른 사람',
       free: '비어 있음', freeText: '담당자가 없습니다',
-      mine: '내 계정', mineText: (date) => `${date}까지 내게 예약됨`,
+      mine: '내 계정', mineText: (date) => `${date}까지 내게 예약됨`, parkedText: (date) => `다음 단계 ${date} · 그때까지 예약됨`,
       taken: '다른 사람 담당', takenText: (name, date) => `${date}까지 ${name} 담당`,
       myCustomer: '내 고객', myCustomerText: (date) => `${date}부터 내 고객`,
       customer: '고객', customerText: (name) => `${name}의 고객`,

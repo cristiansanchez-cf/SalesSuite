@@ -12,6 +12,8 @@ export interface CrmDb {
   insertContacts(tenantId: string, rows: ContactInsert[]): Promise<string[]>;
   updateContact(id: string, p: ContactPatch): Promise<boolean>;
   deleteContact(id: string): Promise<boolean>;
+  /** Borra a la persona si ya no está en ninguna empresa (la suya o quien gestiona; RPC crm_contact_drop_orphan). */
+  dropOrphanContact?(id: string): Promise<boolean>;
   listLinks(tenantId: string, f: { contactIds?: string[]; accountIds?: string[] }): Promise<ContactLink[]>;
   /** Alta o cambio de papel (upsert por persona + empresa). */
   saveLinks(tenantId: string, links: ContactLink[]): Promise<void>;

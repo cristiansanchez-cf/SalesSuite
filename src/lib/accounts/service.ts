@@ -36,11 +36,15 @@ export const rulesSchema = z.object({
   requireAccount: z.boolean(),
 });
 
+/** Con el próximo paso a más de estos días, una empresa tuya está «aparcada» (no se resalta ni sale arriba). */
+export const PARKED_DAYS = 7;
 export interface AccountView extends Account {
   state: AccountState;
   zonePath: string;
   ownerName: string | null;
   wonByName: string | null;
+  /** Tuya pero sin nada que hacer en una semana (el próximo paso es más tarde): no sale arriba ni resaltada. */
+  parked: boolean;
 }
 export interface Colleague { userId: string; name: string; email: string; phone: string | null; role: MemberRecord['role']; zones: string[] }
 /** Filtro de ciudad para «sin ciudad». */
@@ -107,7 +111,9 @@ export function createAccountsService(db: AccountsDb, admin: AdminDb, s: AdminSe
   }
   const label = (m: MemberRecord | undefined) => (m ? m.displayName || m.email : null);
   function view(a: Account, zones: Zone[], members: Map<string, MemberRecord>): AccountView {
-    return { ...a, state: stateFor(a, s.userId, now()), zonePath: zonePath(zones, a.zoneId), ownerName: label(members.get(a.ownerId ?? '')), wonByName: label(members.get(a.wonBy ?? '')) };
+    const state = stateFor(a, s.userId, now());
+    const parked = state === 'mine' && !!a.nextStepAt && Date.parse(a.nextStepAt) > now().getTime() + PARKED_DAYS * 86_400_000;
+    return { ...a, state, parked, zonePath: zonePath(zones, a.zoneId), ownerName: label(members.get(a.ownerId ?? '')), wonByName: label(members.get(a.wonBy ?? '')) };
   }
 
   /** Tipos de cliente del espacio (§21): el principal primero. */
@@ -161,9 +167,12 @@ export function createAccountsService(db: AccountsDb, admin: AdminDb, s: AdminSe
     const v = f.view ?? 'active';
     const all = matching.filter((a) => (v === 'discarded' ? !!a.discardedAt : !a.discardedAt && (v === 'active' || kindOf(a) === v)))
       .map((a) => view(a, t.zones, members));
-    const ORDER: Record<AccountState, number> = { mine: 0, my_customer: 1, free: 2, taken: 3, customer: 4, blocked: 5 };
+    // Arriba, lo tuyo que pide algo (sin próximo paso o con él esta semana); las tuyas con el próximo paso más adelante
+    // («hasta el 20 de enero, nada»), detrás de las libres, por fecha: no tiene sentido verlas arriba todo el rato.
+    const ORDER: Record<AccountState, number> = { mine: 0, my_customer: 1, free: 2, taken: 4, customer: 5, blocked: 6 };
+    const rank = (a: AccountView) => (a.parked ? 3 : ORDER[a.state]);
     const items = all.filter((a) => !f.state || f.state === 'all' || a.state === f.state)
-      .sort((a, b) => ORDER[a.state] - ORDER[b.state] || a.name.localeCompare(b.name, 'es'));
+      .sort((a, b) => rank(a) - rank(b) || (a.parked && b.parked ? String(a.nextStepAt).localeCompare(String(b.nextStepAt)) : 0) || a.name.localeCompare(b.name, 'es'));
     return { items, total: all.length, scope, kinds: counts };
   }
 

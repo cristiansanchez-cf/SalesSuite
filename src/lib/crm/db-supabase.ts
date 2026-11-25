@@ -99,6 +99,11 @@ export function supabaseCrmDb(sb: SupabaseClient): CrmDb {
         check(await sb.from('crm_contact_account').upsert(part.map((l) => ({ tenant_id: t, contact_id: l.contactId, account_id: l.accountId, role: l.role })), { onConflict: 'contact_id,account_id' }));
       }
     },
+    async dropOrphanContact(id) {
+      const r = await sb.rpc('crm_contact_drop_orphan', { p_contact: id });
+      if (r.error) { console.warn('[crm] drop orphan', r.error.message); return false; }
+      return r.data === true;
+    },
     async removeLink(contactId, accountId) {
       return (check(await sb.from('crm_contact_account').delete().eq('contact_id', contactId).eq('account_id', accountId).select('contact_id')) ?? []).length > 0;
     },

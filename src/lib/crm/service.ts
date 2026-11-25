@@ -26,6 +26,7 @@ import { requestLocale } from '../i18n/request';
 import { cleanTaxId, fixtureWebsite, realWebsite, type Socials, type WebsiteApi } from './website';
 import { unreachable, type WebAudit } from './web-audit';
 import { cleanFocus, readFocus, type ResearchFocus } from './research-focus';
+import { samePerson, withoutCompany } from './same-person';
 import { areaQuery, markCandidates, nameKey, slimPlace, RADIUS, type Candidate } from './prospect';
 import { claudeNotes, fixtureNotes, matchAccounts, nameScore, sanitizePeople, NOTE_CONTACT_KEYS, type NoteItem, type NotesApi } from './notes';
 import { claudeCleanup, fixtureCleanup, sanitizeCleanup, type CleanupApi, type CleanupContext, type CleanupInput, type CleanupSuggestion } from './cleanup';
@@ -318,6 +319,8 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     requireUse();
     await ownContact(contactId);
     if (!(await db.removeLink(contactId, accountId))) throw new AdminError(404, 'Persona no encontrada');
+    // Si ya no está en ninguna otra empresa, fuera del todo (criterio de Cristian: no dejar morralla en la base de datos).
+    if (db.dropOrphanContact) await db.dropOrphanContact(contactId).catch(() => false);
   }
 
   // ---------------------------------------------------------------- empresas: personas, grupo y locales
@@ -1953,10 +1956,14 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
   async function notePeople(accountId: string, people: Array<{ name: string; role?: string | null; phone?: string | null; email?: string | null; instagram?: string | null; linkedin?: string | null; note?: string | null }>) {
     const links = await db.listLinks(t, { accountIds: [accountId] });
     const linked = links.length ? await db.listContacts(t, { ids: links.map((l) => l.contactId), limit: 500 }) : [];
-    for (const p of people) {
+    const company = (await accounts.getAccount(accountId))?.name ?? '';
+    for (const p0 of people) {
+      // Sin la empresa pegada detrás del nombre («Mireia Havana» → «Mireia»), y la que ya está aunque se llame un poco
+      // distinto (mismo teléfono, sin tildes, o solo el nombre): antes se duplicaba (same-person.ts).
+      const p = { ...p0, name: withoutCompany(p0.name, company) };
       const key = nameKey(p.name);
       const info = { phone: p.phone ?? null, email: p.email ?? null, instagram: p.instagram ?? null, linkedin: p.linkedin ?? null };
-      let c = linked.find((x) => nameKey(x.name) === key) ?? null;
+      let c = linked.find((x) => samePerson(x, p, company)) ?? null;
       const isNew = !c;
       if (!c) c = (await db.listContacts(t, { q: p.name, limit: 20 })).find((x) => nameKey(x.name) === key) ?? null;
       try {
@@ -1966,9 +1973,11 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
           if (p.note && !c.notes) patch.notes = p.note;
           if (Object.keys(patch).length) await db.updateContact(c.id, patch).catch(() => false);
           if (isNew) await db.saveLinks(t, [{ contactId: c.id, accountId, role: p.role ?? null }]);
+          else if (p.role && !links.find((l) => l.contactId === c!.id)?.role) await db.saveLinks(t, [{ contactId: c.id, accountId, role: p.role }]).catch(() => undefined);
         } else {
           const [cid] = await db.insertContacts(t, [{ name: p.name, ...info, city: null, notes: p.note ?? null, fields: {}, tags: [], ownerId: s.userId, importId: null }]);
           await db.saveLinks(t, [{ contactId: cid, accountId, role: p.role ?? null }]);
+          linked.push({ ...(await db.getContact(cid))! });
         }
       } catch (e) { mapError(e); }
     }
