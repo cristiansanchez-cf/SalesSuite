@@ -227,12 +227,14 @@ con `ASSISTANT_AGENDA_TEMPLATES`). Mientras Meta no la tenga aprobada (132001), 
 
 | Nombre | Idioma | Texto | Botones (respuesta rápida) |
 |---|---|---|---|
-| `equipo_agenda_es` | es | Buenos días, {{1}}. Esto es lo que tienes en el CRM: {{2}}. ¿Te preparo los mensajes? | «Sí, prepáralos» · «Más tarde» |
-| `equipo_agenda_en` | en | Good morning, {{1}}. This is what you have in the CRM: {{2}}. Shall I draft the messages? | «Yes, draft them» · «Later» |
-| `equipo_agenda_fr` | fr | Bonjour {{1}}. Voici ce que vous avez dans le CRM : {{2}}. Je prépare les messages ? | «Oui, prépare-les» · «Plus tard» |
+| `equipo_agenda_es` | es | Recordatorio de tu cuenta, {{1}}: estas son tus tareas programadas en el CRM: {{2}}. Elige si preparo los mensajes ahora o más tarde. | «Sí, prepáralos» · «Más tarde» |
+| `equipo_agenda_en` | en | Account reminder, {{1}}: these are your scheduled tasks in the CRM: {{2}}. Choose whether I draft the messages now or later. | «Yes, draft them» · «Later» |
+| `equipo_agenda_fr` | fr | Rappel de votre compte, {{1}} : voici vos tâches prévues dans le CRM : {{2}}. Choisissez si je prépare les messages maintenant ou plus tard. | «Oui, prépare-les» · «Plus tard» |
 
 Ejemplo de {{2}}: «hoy: Club Sol (Llamar a Marta), Ghecko (atrasado) · mañana: La Parada · esta semana: Sala Marina (vie)»
-(`agendaLine` en `src/lib/assistant/reminders.ts`: en una línea, como pide Meta).
+(`agendaLine` en `src/lib/assistant/reminders.ts`: en una línea, como pide Meta). Con «Buenos días… ¿Te preparo los
+mensajes?» Meta avisó de que la rechazaría como Utility (la veía Marketing); con el arranque «Recordatorio de tu cuenta»
+y «Elige si…», como la de `equipo_recordatorio_es` (aprobada), sí.
 
 Idioma en Meta: el CRM manda «Español (España)» (`es_ES`); si Meta dice que no existe en ese idioma (132001), prueba
 «Español» (`es`). Vale cualquiera de los dos.
