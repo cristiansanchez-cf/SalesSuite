@@ -1,20 +1,9 @@
 ---
-import ThemedShell from '~/layouts/ThemedShell.astro';
-import Section from '~/components/Section.astro';
-import { publicRepository } from '~/lib/data';
-
+/**
+ * La raíz de cada espacio (enjoy.ventas.cofundo.io/): no hay nada público que ver aquí (las propuestas van por su
+ * enlace /d/<token>), así que lleva a la consola; sin sesión, la consola lleva a entrar y luego vuelve.
+ */
 const { tenant } = Astro.locals;
 if (!tenant) return Astro.rewrite('/404');
-const mode = publicRepository().mode;
+return Astro.redirect('/admin', 302);
 ---
-<ThemedShell title="Dossiers" tenantName={tenant.name} theme={tenant.themeTokens}>
-  <Section>
-    <h1 class="font-display text-5xl font-extrabold">{tenant.name}</h1>
-    <p class="mt-4 text-muted">Los dossiers se comparten por enlace privado (<code>/d/&lt;token&gt;</code>).</p>
-    {mode === 'demo' && (
-      <p class="mt-6 rounded-card border border-line bg-surface p-4 text-sm">
-        Modo DEMO (sin Supabase). Prueba <a class="text-primary underline" href="/d/demo-sala-x-7Qm2">/d/demo-sala-x-7Qm2</a>.
-      </p>
-    )}
-  </Section>
-</ThemedShell>
