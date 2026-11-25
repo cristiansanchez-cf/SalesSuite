@@ -164,6 +164,10 @@ contacto y cancela lo automático pendiente. Hay que suscribir ese campo en la a
 Webhooks → `smb_message_echoes`). La confirmación de Aceptar recuerda: «Si ya le has escrito tú por WhatsApp, quita la
 casilla».
 
+**Aviso de respuestas**: cuando un lead contesta por WhatsApp se avisa por email **una vez por conversación**: su
+primera respuesta o la primera tras 12 horas de silencio (`replyWorthNotifying`, `QUIET_HOURS`); no si le estás
+escribiendo tú desde tu WhatsApp (coexistencia). Todos los mensajes quedan igualmente en su historial.
+
 **En bloque** (bandeja): casillas por lead, «Seleccionar todos» y «Aceptar seleccionados» / «Rechazar seleccionados»
 con una sola confirmación (para «todos menos estos»: seleccionar todos y quitar los que se quedan).
 
