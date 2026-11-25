@@ -691,3 +691,24 @@ describe('lo que escribes tú desde la app de WhatsApp Business (coexistencia)',
     expect((await svc.accept(id, { whatsapp: true })).why).toBe('already');
   });
 });
+
+describe('aviso de respuestas por WhatsApp: uno por conversación', () => {
+  test('la primera respuesta avisa; las siguientes seguidas, no; tras 12 h de silencio, otra vez; si le escribes tú, no', async () => {
+    const { replyWorthNotifying } = await import('./inbound');
+    const t = (h: number) => new Date(Date.parse('2026-11-24T10:00:00Z') + h * 3_600_000);
+    expect(replyWorthNotifying({ lastInboundAt: null, facts: {} }, t(0))).toBe(true);
+    expect(replyWorthNotifying({ lastInboundAt: t(0).toISOString(), facts: {} }, t(0.5))).toBe(false);
+    expect(replyWorthNotifying({ lastInboundAt: t(0).toISOString(), facts: {} }, t(13))).toBe(true);
+    expect(replyWorthNotifying({ lastInboundAt: null, facts: { lastManualAt: t(0).toISOString() } }, t(1))).toBe(false);
+  });
+  test('de punta a punta: tres mensajes seguidos → un solo email de aviso', async () => {
+    resetDemoLeads();
+    const s = { ...demoLeadsStore().settings[0], whatsappEnabled: true, whatsappPhoneId: '123456789', whatsappTemplates: { wa1: { es: 't1' } } };
+    demoLeadsStore().settings = [s];
+    await intake({ db: demoLeadsDb(), tenant: { id: ENJOY, name: 'Enjoy the Club' }, settings: s, now: new Date('2026-11-24T10:00:00Z'), origin: 'https://enjoytheclub.es', ip: '9.9.9.9', secret: 's', baseUrl: 'https://x', whatsappReady: true, rand: () => 0.5 }, v2());
+    const before = demoLeadsStore().msgs.filter((m) => m.step === 'notify').length;
+    const msg = (id: string, min: number, text: string) => ({ phoneId: '123456789', from: '+34600123123', text, at: new Date(Date.parse('2026-11-24T11:00:00Z') + min * 60_000), id });
+    await handleInbound(demoLeadsDb(), [msg('a', 0, 'Hola'), msg('b', 1, 'Tenemos un local'), msg('c', 3, 'Venga vale perfecto')], new Date('2026-11-24T11:05:00Z'));
+    expect(demoLeadsStore().msgs.filter((m) => m.step === 'notify').length - before).toBe(s.notifyEmails.length);
+  });
+});

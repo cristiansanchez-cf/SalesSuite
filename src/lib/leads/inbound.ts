@@ -10,6 +10,15 @@ import { isStopWord } from './whatsapp';
  * Lo que la empresa le escribe al lead desde su app de WhatsApp Business (coexistencia): queda en su historial, cuenta
  * como primer contacto y para lo automático (no se le manda el WhatsApp de bienvenida encima de su mensaje).
  */
+/** Horas de silencio tras las que una respuesta vuelve a avisar. */
+export const QUIET_HOURS = 12;
+/** ¿Avisamos de esta respuesta? Su primera, o tras QUIET_HOURS sin hablar (ni él ni tú desde tu WhatsApp). */
+export function replyWorthNotifying(lead: { lastInboundAt: string | null; facts: Record<string, unknown> }, at: Date): boolean {
+  const quiet = QUIET_HOURS * 3_600_000;
+  const recent = (iso: unknown) => typeof iso === 'string' && at.getTime() - Date.parse(iso) < quiet;
+  return !recent(lead.lastInboundAt) && !recent(lead.facts.lastManualAt);
+}
+
 export async function handleEchoes(db: LeadsDb, echoes: Echo[], now: Date): Promise<number> {
   let matched = 0;
   for (const m of echoes) {
@@ -27,7 +36,7 @@ export async function handleEchoes(db: LeadsDb, echoes: Echo[], now: Date): Prom
       patch.stage = 'contacted'; patch.stageAt = at;
       await db.addEvent({ tenantId: lead.tenantId, leadId: lead.id, at, kind: 'stage', fromStage: 'new', toStage: 'contacted', data: { auto: true, channel: 'whatsapp' } });
     }
-    if (lead.facts.waAwaiting) patch.facts = { ...lead.facts, waAwaiting: false };
+    patch.facts = { ...lead.facts, waAwaiting: false, lastManualAt: at };
     if (Object.keys(patch).length) await db.updateLead(lead.id, patch);
   }
   return matched;
@@ -56,9 +65,12 @@ export async function handleInbound(db: LeadsDb, msgs: Inbound[], now: Date): Pr
       await db.suppress(lead.tenantId, 'whatsapp', lead.phoneE164, 'Pidió por WhatsApp que no le escribamos');
       await db.addEvent({ tenantId: lead.tenantId, leadId: lead.id, at, kind: 'suppressed', data: { channel: 'whatsapp', text: m.text } });
     }
-    // Aviso a quien atiende: le toca a una persona.
-    await db.enqueue(s.notifyEmails.map((to) => ({ tenantId: lead.tenantId, leadId: lead.id, channel: 'email' as const, step: 'notify' as const, toAddr: to, sendAt: now.toISOString(),
-      payload: { kind: 'reply', text: m.text.slice(0, 500), base: lead.facts.base ?? '', brandName: s.brand } })));
+    // Aviso a quien atiende: le toca a una persona. Uno por conversación, no uno por mensaje: solo si es su primera
+    // respuesta o vuelve a escribir tras QUIET horas de silencio, y nunca si ya le estás escribiendo tú desde tu WhatsApp.
+    if (replyWorthNotifying(lead, m.at)) {
+      await db.enqueue(s.notifyEmails.map((to) => ({ tenantId: lead.tenantId, leadId: lead.id, channel: 'email' as const, step: 'notify' as const, toAddr: to, sendAt: now.toISOString(),
+        payload: { kind: 'reply', text: m.text.slice(0, 500), base: lead.facts.base ?? '', brandName: s.brand } })));
+    }
   }
   return { matched, unknown };
 }
