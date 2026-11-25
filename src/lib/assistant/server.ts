@@ -55,7 +55,8 @@ export async function reminderDeps(wa: WhatsApp | null, leadsSettings: (tenantId
   const base = await assistantDeps(db, wa, now);
   // Con el número del asistente, el recordatorio sale de ese número (docs/ASSISTANT.md §Un número para todas las empresas).
   const hub = hubConfig();
-  return { db: rdb, assistant: db, wa: hub ? hubWhatsApp(wa) : wa, now, settings: leadsSettings, actAs: base.actAs, hub };
+  const { deliveryStore } = await import('./delivery');
+  return { db: rdb, assistant: db, wa: hub ? hubWhatsApp(wa) : wa, now, settings: leadsSettings, actAs: base.actAs, hub, delivery: await deliveryStore().catch(() => null) };
 }
 
 /**

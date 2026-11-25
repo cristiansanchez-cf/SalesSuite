@@ -28,6 +28,7 @@ export interface ReminderDb {
   sentUsers(days: string[]): Promise<Set<string>>;
   mark(userId: string, tenantId: string, day: string, items: number): Promise<void>;
 }
+import type { DeliveryStore } from './delivery';
 export interface ReminderDeps {
   db: ReminderDb; assistant: AssistantDb; wa: WhatsApp | null; now: Date;
   settings(tenantId: string): Promise<LeadSettings | null>;
@@ -38,6 +39,8 @@ export interface ReminderDeps {
    * no, de la primera que tenga). Queda elegida esa empresa, para que su «sí» vaya a ella.
    */
   hub?: HubConfig | null;
+  /** Para seguir qué pasa con cada envío (wa_delivery). */
+  delivery?: DeliveryStore | null;
 }
 
 /** Lo que toca hoy en sus empresas, en el orden de «Hoy», con lo justo para proponer el mensaje. */
@@ -98,11 +101,15 @@ export async function remindOne(d: ReminderDeps, m: ReminderMember, day: string,
       const items = await reminderItems(admin);
       if (!items.length) {
         // Nada pendiente: si hay plantilla para eso, se le dice («hoy no tienes nada pendiente»); si no, nada.
-        if (emptyTemplate) await d.wa!.sendTemplate(phoneId!, to, emptyTemplate, locale, [firstName(m.name) || '👋']);
+        if (emptyTemplate) {
+          const sent = await d.wa!.sendTemplate(phoneId!, to, emptyTemplate, locale, [firstName(m.name) || '👋']);
+          if (sent?.id) await d.delivery?.track({ wamid: sent.id, tenantId: m.tenantId, userId: m.userId, kind: 'reminder' }).catch(() => {});
+        }
         await d.db.mark(m.userId, m.tenantId, day, 0);
         return { status: 'empty', told: !!emptyTemplate };
       }
-      await d.wa!.sendTemplate(phoneId!, to, template!, locale, [firstName(m.name) || '👋', String(items.length), namesLine(items.map((i) => i.name), locale)]);
+      const sent = await d.wa!.sendTemplate(phoneId!, to, template!, locale, [firstName(m.name) || '👋', String(items.length), namesLine(items.map((i) => i.name), locale)]);
+      if (sent?.id) await d.delivery?.track({ wamid: sent.id, tenantId: m.tenantId, userId: m.userId, kind: 'reminder' }).catch(() => {});
       // La conversación queda esperando su «sí» (o lo que diga).
       const conv = await d.assistant.get(m.tenantId, m.userId);
       await d.assistant.save(m.tenantId, m.userId, { ...conv, state: { step: 'reminder', at: d.now.toISOString(), items } }, conv.version);

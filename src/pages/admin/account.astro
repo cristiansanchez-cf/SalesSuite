@@ -22,6 +22,7 @@ import { dropCalendar, hasCalendar, myCalendarToken } from '~/lib/calendar/feed'
 import { calendarMessages } from '~/lib/i18n/messages/calendar';
 import { mcpMessages } from '~/lib/i18n/messages/mcp';
 import { requestOrigin } from '~/lib/http';
+import { deliveryStore, failureReason } from '~/lib/assistant/delivery';
 
 const { admin } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
@@ -161,6 +162,8 @@ const spacePhones = assistant && assistant.mode !== 'off' ? await myAssistantPho
 const calToken = admin.session.role === 'partner' ? null : await hasCalendar(admin).catch(() => null);
 const calUrl = calToken ? `${requestOrigin(Astro.request, Astro.url)}/cal/${calToken}.ics` : null;
 
+// Qué pasó con el último recordatorio (Meta lo confirma por el webhook): entregado, leído o por qué no llegó.
+const lastDelivery = waRemind && admin.session.role !== 'partner' ? await (await deliveryStore().catch(() => null))?.last(admin.session.userId, 'reminder').catch(() => null) ?? null : null;
 ---
 <AdminLayout title={m.account.title}>
   <PageHeader eyebrow={m.account.eyebrow} title={setup ? m.account.welcome : m.account.title} lede={setup ? m.account.welcomeLede : admin.session.email} />
@@ -333,7 +336,7 @@ const calUrl = calToken ? `${requestOrigin(Astro.request, Astro.url)}/cal/${calT
   {!setup && admin.session.role !== 'partner' && waRemind && (() => {
     const RT = remindTestMessages[locale];
     return (
-      <form method="post" class="co-card mt-3 grid max-w-lg gap-2" data-testid="wa-test">
+      <form method="post" id="wa-test" class="co-card mt-3 grid max-w-lg gap-2 scroll-mt-6" data-testid="wa-test">
         <input type="hidden" name="action" value="wa-test" />
         {waTest?.ok && <Alert kind="success" title={waTest.ok} />}
         {waTest?.info && <Alert kind="info" title={waTest.info} />}
@@ -342,6 +345,13 @@ const calUrl = calToken ? `${requestOrigin(Astro.request, Astro.url)}/cal/${calT
           <button class="co-btn co-btn--ghost co-btn--sm" data-testid="wa-test-run"><Icon name="whatsapp" size={14} />{RT.button}</button>
           <span class="co-help">{RT.help}</span>
         </div>
+        {lastDelivery && (
+          <div class:list={['co-inset grid gap-1 !p-3 text-sm', lastDelivery.status === 'failed' && 'co-inset--warn']} data-testid="wa-delivery" data-status={lastDelivery.status}>
+            <span class="co-meta">{RT.last(new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(lastDelivery.at)))}</span>
+            <strong>{lastDelivery.status === 'failed' ? RT.failed2(failureReason(lastDelivery.error, locale)) : RT.delivery[lastDelivery.status]}</strong>
+            {lastDelivery.status !== 'read' && lastDelivery.status !== 'failed' && <a class="co-btn co-btn--ghost co-btn--sm w-fit" href="/admin/account#wa-test" data-testid="wa-delivery-refresh">{RT.refresh}</a>}
+          </div>
+        )}
       </form>
     );
   })()}

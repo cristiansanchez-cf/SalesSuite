@@ -61,4 +61,12 @@ from public.lead_settings s where s.tenant_id = :'tid';
 select l.day, t.slug, count(*) as personas, count(*) filter (where l.items > 0) as con_algo, max(l.sent_at) as ultimo
 from public.wa_reminder_log l join public.tenant t on t.id = l.tenant_id
 where l.day >= current_date - 10 group by l.day, t.slug order by l.day desc, t.slug;
+\echo '== Qué dijo Meta de los últimos envíos del asistente (wa_delivery): cuándo · tipo · estado · motivo'
+select to_regclass('public.wa_delivery') is not null as hay_delivery \gset
+\if :hay_delivery
+select d.created_at, d.kind, d.status, left(coalesce(d.error, ''), 160) as motivo
+from public.wa_delivery d order by d.created_at desc limit 12;
+\else
+\echo 'Falta la migración 20270127 (wa_delivery).'
+\endif
 commit;

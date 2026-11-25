@@ -8,6 +8,7 @@ import { digitsOf, processAssistant, teamMember } from '~/lib/assistant/process'
 import { hubConfig, hubWhatsApp } from '~/lib/assistant/hub-config';
 import { processHub } from '~/lib/assistant/hub';
 import type { Member } from '~/lib/assistant/db';
+import { deliveryStore } from '~/lib/assistant/delivery';
 import { handleInbound, handleEchoes } from '~/lib/leads/inbound';
 import { json, leadsRuntime } from '~/lib/leads/server';
 import { parseWebhook, validSignature, type Inbound } from '~/lib/leads/whatsapp';
@@ -77,6 +78,11 @@ export const POST: APIRoute = async ({ request }) => {
     const r = await handleInbound(rt.db, leads, new Date());
     const manual = echoes.length ? await handleEchoes(rt.db, echoes, new Date()) : 0;
     for (const s of statuses.filter((x) => x.status === 'failed')) console.warn('[whatsapp] entrega fallida', s.id, s.error);
+    // Lo que pasa con los WhatsApp del asistente (recordatorios): se guarda para decirlo en «Probarlo ahora».
+    if (statuses.length) {
+      const store = await deliveryStore().catch(() => null);
+      for (const s of statuses) await store?.update(s.id, s.status, s.error).catch(() => {});
+    }
     return json({ ok: true, ...r, manual, assistant: team.length + hubTeam.length });
   } catch (e) {
     console.error('[whatsapp]', e instanceof Error ? e.message : e);

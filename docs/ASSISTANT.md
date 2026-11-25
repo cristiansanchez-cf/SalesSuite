@@ -247,3 +247,12 @@ Una pregunta corta como «¿qué tengo para hoy?», «qué me toca hoy», «qué
 MCP (`crm.today({ week: true })`): lo que se enfría, lo atrasado y lo de hoy y, debajo, mañana y el resto de la semana.
 Si hoy no hay nada, lo dice y enseña la semana; si tampoco, lo dice. No toca lo que estuviera a medias.
 
+
+## ¿Ha llegado el recordatorio? (wa_delivery)
+Meta acepta el envío al momento, pero si luego no lo entrega lo dice después por el webhook (`statuses`). Cada
+recordatorio queda en `wa_delivery` con su último estado (aceptado → enviado → entregado → leído, o fallido con el
+código de Meta) y Mi cuenta → «Probarlo ahora» lo enseña debajo, con el motivo en palabras (`failureReason`: 131042 sin
+método de pago en la cuenta de WhatsApp del asistente, 131026 número que no puede recibirlo, 132001 plantilla sin
+aprobar en ese idioma, 133010 número sin registrar…). Si se queda en «aceptado», Meta no está avisando de las entregas:
+revisa que la app de Meta del número del asistente tenga el webhook (`/api/v1/whatsapp/webhook`) con el campo
+`messages`. El informe «Producción → recordatorios» enseña los últimos estados.

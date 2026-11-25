@@ -175,8 +175,8 @@ export function parseWebhook(body: unknown): { inbound: Inbound[]; statuses: Sta
         if (to) echoes.push({ phoneId, to: `+${to}`, text: String(text).slice(0, 4000), at: new Date(Number(m.timestamp ?? 0) * 1000 || Date.now()), id: String(m.id ?? '') });
       }
       for (const st of (v.statuses as Record<string, unknown>[] | undefined) ?? []) {
-        const err = (st.errors as { title?: string; message?: string }[] | undefined)?.[0];
-        statuses.push({ phoneId, id: String(st.id ?? ''), status: String(st.status ?? ''), error: err ? String(err.message ?? err.title ?? '').slice(0, 300) : null });
+        const err = (st.errors as { code?: number; title?: string; message?: string; error_data?: { details?: string } }[] | undefined)?.[0];
+        statuses.push({ phoneId, id: String(st.id ?? ''), status: String(st.status ?? ''), error: err ? `${err.code ?? ''} ${String(err.error_data?.details ?? err.message ?? err.title ?? '')}`.trim().slice(0, 300) : null });
       }
     }
   }
