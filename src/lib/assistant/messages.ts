@@ -4,10 +4,10 @@ import type { AgendaItem } from './flow';
 
 interface Why { bucket: 'cooling' | 'overdue' | 'today'; cooling: number | null; last: { outcome: string; at: string } | null }
 interface Prop { name: string; contact: string | null; why: string; step: string | null; draft: string | null }
-interface Sum { name: string; isNew: boolean; channel: string; outcome: string; interaction: string | null; keyFacts: string[]; nextStep: string | null; nextDays: number | null; nextTime?: string | null; people?: string[]; qual?: string[]; agreement?: string | null; trialUntil?: string | null; discard?: string | null }
+interface Sum { name: string; isNew: boolean; channel: string; outcome: string; interaction: string | null; keyFacts: string[]; nextStep: string | null; nextDays: number | null; nextTime?: string | null; people?: string[]; qual?: string[]; agreement?: string | null; trialUntil?: string | null; discard?: string | null; facts?: string[]; later?: Array<{ step: string; day: string }> }
 /** «20 de enero» (el día tal cual, sin zona). */
 const dayOf = (d: string, loc: string) => new Date(`${d}T12:00:00Z`).toLocaleDateString(loc, { day: 'numeric', month: 'long', timeZone: 'UTC' });
-const clip = (s: string, n = 600) => (s.length > n ? `${s.slice(0, n - 1)}…` : s);
+const clip = (s: string, n = 3000) => (s.length > n ? `${s.slice(0, n - 1)}…` : s);
 
 const es = {
   agenda: (items: AgendaItem[]) => {
@@ -20,14 +20,18 @@ const es = {
   },
   help: 'Hola 👋 Soy el asistente de Cofundo. Cuéntame (por texto o audio) con quién has hablado y qué ha pasado, y lo apunto en su ficha. También puedes reenviarme los mensajes de un cliente o mandarme una captura de la conversación. Nada se guarda sin que me digas «Guardar».',
   willSave: 'Esto es lo que guardo:',
+  clientAudio: 'Audio del cliente (sus palabras)',
+  buttonsAsk: '¿Qué hago con esto?',
   summary: (s: Sum) => [`*${s.name}*${s.isNew ? ' (nueva)' : ''}`, `${s.channel} · ${s.outcome}`, s.interaction ? `«${clip(s.interaction)}»` : '',
     s.keyFacts.length ? `Lo que sabemos: ${s.keyFacts.slice(0, 3).join('; ')}` : '',
+      ...(s.facts ?? []).slice(0, 12).map((f) => `• ${clip(f, 400)}`),
     ...(s.people ?? []).slice(0, 5).map((p) => `👤 ${p}`),
     s.qual?.length ? `📋 Cualificación: ${s.qual.join(' · ')}` : '',
     s.discard ? `🚫 Se descarta: ${s.discard}` : '',
-    s.agreement ? `🤝 Cierre con acuerdo: ${clip(s.agreement, 400)}` : '',
+    s.agreement ? `🤝 Cierre con acuerdo: ${clip(s.agreement, 1500)}` : '',
     s.trialUntil ? `⏳ En prueba hasta el ${dayOf(s.trialUntil, 'es-ES')}` : '',
-      s.nextStep || s.nextDays != null ? `Próximo paso: ${s.nextStep ?? '—'}${s.nextDays != null ? ` (en ${s.nextDays} ${s.nextDays === 1 ? 'día' : 'días'}${s.nextTime ? `, a las ${s.nextTime}` : ''})` : ''}` : ''].filter(Boolean).join('\n'),
+      s.nextStep || s.nextDays != null ? `Próximo paso: ${s.nextStep ?? '—'}${s.nextDays != null ? ` (en ${s.nextDays} ${s.nextDays === 1 ? 'día' : 'días'}${s.nextTime ? `, a las ${s.nextTime}` : ''})` : ''}` : '',
+      ...(s.later ?? []).map((x) => `Después: ${x.step} (${dayOf(x.day, 'es-ES')})`)].filter(Boolean).join('\n'),
   save: 'Guardar', change: 'Cambiar',
   whichOne: (venue: string, opts: string[], create: string) => opts.length
     ? `¿Cuál es «${venue}»?\n${opts.join('\n')}\n0) Crear «${create}»\n\nResponde con el número (o escribe el nombre bien).`
@@ -42,7 +46,7 @@ const es = {
   changed: 'Vale, no guardo nada. Mándamelo otra vez con lo que cambie.',
   askChange: '¿Qué cambio? Dímelo (o mándame un audio) y lo corrijo; lo demás se queda como estaba.',
   askOtherCompany: '¿De qué empresa es entonces? Escríbeme su nombre.',
-  correction: 'Corrección de quien lo cuenta (manda sobre lo anterior)',
+  correction: 'Lo que añade o corrige quien lo cuenta (se suma a lo anterior; si lo contradice, manda esto)',
   convo: 'Conversación',
   askPlace: (name: string) => `📍 ¿Dónde está *${name}*? Escríbeme la ciudad (o «no sé»).`,
   whichPlace: (name: string, opts: string[]) => `📍 ¿Dónde está *${name}*?\n${opts.join('\n')}\n\nResponde con el número (o escribe la ciudad otra vez, o «no sé»).`,
@@ -120,14 +124,18 @@ export const assistantMessages = defineMessages({
     },
     help: 'Hi 👋 I am the Cofundo assistant. Tell me (by text or voice note) who you talked to and what happened, and I will log it on their record. You can also forward me a client’s messages or send me a screenshot of the chat. Nothing is saved until you say “Save”.',
     willSave: 'This is what I will save:',
+    clientAudio: 'Voice note from the client (their words)',
+    buttonsAsk: 'What shall I do with this?',
     summary: (s) => [`*${s.name}*${s.isNew ? ' (new)' : ''}`, `${s.channel} · ${s.outcome}`, s.interaction ? `“${clip(s.interaction)}”` : '',
       s.keyFacts.length ? `What we know: ${s.keyFacts.slice(0, 3).join('; ')}` : '',
+      ...(s.facts ?? []).slice(0, 12).map((f) => `• ${clip(f, 400)}`),
       ...(s.people ?? []).slice(0, 5).map((p) => `👤 ${p}`),
       s.qual?.length ? `📋 Qualification: ${s.qual.join(' · ')}` : '',
       s.discard ? `🚫 To be discarded: ${s.discard}` : '',
-    s.agreement ? `🤝 Closed with an agreement: ${clip(s.agreement, 400)}` : '',
+    s.agreement ? `🤝 Closed with an agreement: ${clip(s.agreement, 1500)}` : '',
     s.trialUntil ? `⏳ On trial until ${dayOf(s.trialUntil, 'en-GB')}` : '',
-      s.nextStep || s.nextDays != null ? `Next step: ${s.nextStep ?? '—'}${s.nextDays != null ? ` (in ${s.nextDays} ${s.nextDays === 1 ? 'day' : 'days'}${s.nextTime ? `, at ${s.nextTime}` : ''})` : ''}` : ''].filter(Boolean).join('\n'),
+      s.nextStep || s.nextDays != null ? `Next step: ${s.nextStep ?? '—'}${s.nextDays != null ? ` (in ${s.nextDays} ${s.nextDays === 1 ? 'day' : 'days'}${s.nextTime ? `, at ${s.nextTime}` : ''})` : ''}` : '',
+      ...(s.later ?? []).map((x) => `Later: ${x.step} (${dayOf(x.day, 'en-GB')})`)].filter(Boolean).join('\n'),
     save: 'Save', change: 'Change',
     whichOne: (venue, opts, create) => opts.length
       ? `Which one is “${venue}”?\n${opts.join('\n')}\n0) Create “${create}”\n\nReply with the number (or type the name properly).`
@@ -142,7 +150,7 @@ export const assistantMessages = defineMessages({
     changed: 'OK, I will not save anything. Send it again with the changes.',
     askChange: 'What should I change? Tell me (or send a voice note) and I will fix it; the rest stays as it was.',
     askOtherCompany: 'Which company is it then? Type its name.',
-    correction: 'Correction from the person telling it (it overrides the above)',
+    correction: 'What the person adds or corrects (it adds to the above; where it contradicts it, this wins)',
     convo: 'Conversation',
     askPlace: (name) => `📍 Where is *${name}*? Type the city (or “don’t know”).`,
     whichPlace: (name, opts) => `📍 Where is *${name}*?\n${opts.join('\n')}\n\nReply with the number (or type the city again, or “don’t know”).`,
@@ -216,14 +224,18 @@ export const assistantMessages = defineMessages({
     },
     help: 'Olá 👋 Sou o assistente da Cofundo. Conta-me (por texto ou áudio) com quem falaste e o que aconteceu, e eu registo na ficha. Também podes reencaminhar-me as mensagens de um cliente ou mandar-me uma captura da conversa. Nada se guarda sem dizeres «Guardar».',
     willSave: 'Isto é o que vou guardar:',
+    clientAudio: 'Áudio do cliente (as palavras dele)',
+    buttonsAsk: 'O que faço com isto?',
     summary: (s) => [`*${s.name}*${s.isNew ? ' (nova)' : ''}`, `${s.channel} · ${s.outcome}`, s.interaction ? `«${clip(s.interaction)}»` : '',
       s.keyFacts.length ? `O que sabemos: ${s.keyFacts.slice(0, 3).join('; ')}` : '',
+      ...(s.facts ?? []).slice(0, 12).map((f) => `• ${clip(f, 400)}`),
       ...(s.people ?? []).slice(0, 5).map((p) => `👤 ${p}`),
       s.qual?.length ? `📋 Qualificação: ${s.qual.join(' · ')}` : '',
       s.discard ? `🚫 Descarta-se: ${s.discard}` : '',
-    s.agreement ? `🤝 Fechada com acordo: ${clip(s.agreement, 400)}` : '',
+    s.agreement ? `🤝 Fechada com acordo: ${clip(s.agreement, 1500)}` : '',
     s.trialUntil ? `⏳ Em teste até ${dayOf(s.trialUntil, 'pt-PT')}` : '',
-      s.nextStep || s.nextDays != null ? `Próximo passo: ${s.nextStep ?? '—'}${s.nextDays != null ? ` (em ${s.nextDays} ${s.nextDays === 1 ? 'dia' : 'dias'}${s.nextTime ? `, às ${s.nextTime}` : ''})` : ''}` : ''].filter(Boolean).join('\n'),
+      s.nextStep || s.nextDays != null ? `Próximo passo: ${s.nextStep ?? '—'}${s.nextDays != null ? ` (em ${s.nextDays} ${s.nextDays === 1 ? 'dia' : 'dias'}${s.nextTime ? `, às ${s.nextTime}` : ''})` : ''}` : '',
+      ...(s.later ?? []).map((x) => `Depois: ${x.step} (${dayOf(x.day, 'pt-PT')})`)].filter(Boolean).join('\n'),
     save: 'Guardar', change: 'Mudar',
     whichOne: (venue, opts, create) => opts.length
       ? `Qual é «${venue}»?\n${opts.join('\n')}\n0) Criar «${create}»\n\nResponde com o número (ou escreve bem o nome).`
@@ -238,7 +250,7 @@ export const assistantMessages = defineMessages({
     changed: 'Está bem, não guardo nada. Manda outra vez com o que muda.',
     askChange: 'O que mudo? Diz-me (ou manda um áudio) e corrijo; o resto fica como estava.',
     askOtherCompany: 'De que empresa é então? Escreve o nome.',
-    correction: 'Correção de quem conta (manda sobre o anterior)',
+    correction: 'O que acrescenta ou corrige quem conta (soma-se ao anterior; se o contradiz, manda isto)',
     convo: 'Conversa',
     askPlace: (name) => `📍 Onde fica *${name}*? Escreve a cidade (ou «não sei»).`,
     whichPlace: (name, opts) => `📍 Onde fica *${name}*?\n${opts.join('\n')}\n\nResponde com o número (ou escreve a cidade outra vez, ou «não sei»).`,
@@ -312,14 +324,18 @@ export const assistantMessages = defineMessages({
     },
     help: '안녕하세요 👋 Cofundo 어시스턴트입니다. 누구와 이야기했고 무슨 일이 있었는지 (글이나 음성으로) 알려주시면 기록에 남길게요. 고객의 메시지를 전달하거나 대화 캡처를 보내도 됩니다. «저장»이라고 하기 전에는 아무것도 저장하지 않아요.',
     willSave: '이렇게 저장할게요:',
+    clientAudio: '고객의 음성 메시지 (고객의 말)',
+    buttonsAsk: '이걸 어떻게 할까요?',
     summary: (s) => [`*${s.name}*${s.isNew ? ' (새 회사)' : ''}`, `${s.channel} · ${s.outcome}`, s.interaction ? `«${clip(s.interaction)}»` : '',
       s.keyFacts.length ? `알고 있는 것: ${s.keyFacts.slice(0, 3).join('; ')}` : '',
+      ...(s.facts ?? []).slice(0, 12).map((f) => `• ${clip(f, 400)}`),
       ...(s.people ?? []).slice(0, 5).map((p) => `👤 ${p}`),
       s.qual?.length ? `📋 자격: ${s.qual.join(' · ')}` : '',
       s.discard ? `🚫 제외: ${s.discard}` : '',
-    s.agreement ? `🤝 계약으로 성사: ${clip(s.agreement, 400)}` : '',
+    s.agreement ? `🤝 계약으로 성사: ${clip(s.agreement, 1500)}` : '',
     s.trialUntil ? `⏳ ${dayOf(s.trialUntil, 'ko-KR')}까지 체험 중` : '',
-      s.nextStep || s.nextDays != null ? `다음 단계: ${s.nextStep ?? '—'}${s.nextDays != null ? ` (${s.nextDays}일 후${s.nextTime ? ` ${s.nextTime}` : ''})` : ''}` : ''].filter(Boolean).join('\n'),
+      s.nextStep || s.nextDays != null ? `다음 단계: ${s.nextStep ?? '—'}${s.nextDays != null ? ` (${s.nextDays}일 후${s.nextTime ? ` ${s.nextTime}` : ''})` : ''}` : '',
+      ...(s.later ?? []).map((x) => `나중에: ${x.step} (${dayOf(x.day, 'ko-KR')})`)].filter(Boolean).join('\n'),
     save: '저장', change: '수정',
     whichOne: (venue, opts, create) => opts.length
       ? `«${venue}»은(는) 어느 곳인가요?\n${opts.join('\n')}\n0) «${create}» 새로 만들기\n\n번호로 답하거나 이름을 정확히 적어 주세요.`
@@ -334,7 +350,7 @@ export const assistantMessages = defineMessages({
     changed: '네, 저장하지 않을게요. 바뀐 내용으로 다시 보내 주세요.',
     askChange: '무엇을 바꿀까요? 말씀해 주시면 (음성도 좋아요) 고칠게요. 나머지는 그대로 둡니다.',
     askOtherCompany: '그럼 어느 회사인가요? 이름을 써 주세요.',
-    correction: '말하는 사람의 수정 (앞의 내용보다 우선)',
+    correction: '말하는 사람이 덧붙이거나 고친 내용 (앞의 내용에 더하고, 어긋나면 이것이 우선)',
     convo: '대화',
     askPlace: (name) => `📍 *${name}*은(는) 어디에 있나요? 도시를 써 주세요 (모르면 «모름»).`,
     whichPlace: (name, opts) => `📍 *${name}*은(는) 어디에 있나요?\n${opts.join('\n')}\n\n번호로 답하거나 도시를 다시 써 주세요 (모르면 «모름»).`,

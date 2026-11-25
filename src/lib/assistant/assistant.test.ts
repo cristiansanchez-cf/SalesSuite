@@ -697,8 +697,12 @@ describe('de punta a punta (demo)', () => {
     const member = { tenantId: ENJOY, userId: REP };
     await processAssistant({ ...deps(), now: morning }, '123', member, msg('r1', { kind: 'button', buttonId: 'Sí, prepáralos', text: 'Sí, prepáralos' }));
     const sol = demoDb().account.find((a) => a.tenant_id === ENJOY && a.name === 'Club Sol')!;
-    const card = sent.find((x) => x.text.includes('*Club Sol*'))!;
-    expect(card.text).toContain('Propuesta de mensaje');
+    // Primero la agenda entera (hoy, mañana, esta semana); luego una propuesta por cada una de hoy.
+    const ag = sent.findIndex((x) => x.text.includes('*Lo de hoy*'));
+    const ci = sent.findIndex((x) => x.text.includes('*Club Sol*') && x.text.includes('Propuesta de mensaje'));
+    expect(ag).toBeGreaterThanOrEqual(0);
+    expect(ci).toBeGreaterThan(ag);
+    const card = sent[ci]!;
     expect(card.buttons).toEqual([`done:${sol.id}`, `later:${sol.id}`]);
     const before = demoDb().crm_activity.filter((a) => a.account_id === sol.id).length;
     await processAssistant({ ...deps(), now: morning }, '123', member, msg('r2', { kind: 'button', buttonId: `done:${sol.id}`, text: 'Hecho' }));
@@ -766,7 +770,8 @@ describe('un número para todas las empresas (docs/ASSISTANT.md)', () => {
 
   test('la configuración: el número y las plantillas del recordatorio', () => {
     process.env.ASSISTANT_WHATSAPP_PHONE_ID = HUB;
-    expect(hubConfig()).toEqual({ phoneId: HUB, templates: { es: 'equipo_recordatorio_es', en: 'equipo_recordatorio_en', fr: 'equipo_recordatorio_fr' } });
+    expect(hubConfig()).toEqual({ phoneId: HUB, templates: { es: 'equipo_recordatorio_es', en: 'equipo_recordatorio_en', fr: 'equipo_recordatorio_fr' },
+      agenda: { es: 'equipo_agenda_es', en: 'equipo_agenda_en', fr: 'equipo_agenda_fr' } });
     expect(parseTemplates('es=asistente_hoy_es, fr=asistente_fr, xx=nada, en=mal nombre').es).toBe('asistente_hoy_es');
     delete process.env.ASSISTANT_WHATSAPP_PHONE_ID;
     expect(hubConfig()).toBeNull();

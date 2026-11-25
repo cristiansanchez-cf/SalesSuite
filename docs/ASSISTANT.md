@@ -220,6 +220,20 @@ pasada. Lo que hay que dar de alta en Meta (WhatsApp Manager → Plantillas):
 | `equipo_recordatorio_en` | en | Hi {{1}}, you have {{2}} follow-ups due in the CRM today: {{3}}. Shall I draft a message for each one? | «Yes, draft them» · «Later» |
 | `equipo_recordatorio_fr` | fr | Bonjour {{1}}, vous avez {{2}} relances à faire aujourd'hui dans le CRM : {{3}}. Je vous propose un message pour chacune ? | «Oui, prépare-les» · «Plus tard» |
 
+**La agenda (recomendada, 25-nov-2026):** en vez de «hoy tienes N seguimientos (nombres)», un resumen de hoy, mañana y
+esta semana, aunque hoy no haya nada que hacer. Sale del número del asistente con `equipo_agenda_es/en/fr` (otros nombres
+con `ASSISTANT_AGENDA_TEMPLATES`). Mientras Meta no la tenga aprobada (132001), sale la de arriba, con la misma agenda en
+{{3}}, y solo si hay algo hoy. Al decir que sí, primero le llega la agenda entera y luego una propuesta por cada una de hoy.
+
+| Nombre | Idioma | Texto | Botones (respuesta rápida) |
+|---|---|---|---|
+| `equipo_agenda_es` | es | Buenos días, {{1}}. Esto es lo que tienes en el CRM: {{2}}. ¿Te preparo los mensajes? | «Sí, prepáralos» · «Más tarde» |
+| `equipo_agenda_en` | en | Good morning, {{1}}. This is what you have in the CRM: {{2}}. Shall I draft the messages? | «Yes, draft them» · «Later» |
+| `equipo_agenda_fr` | fr | Bonjour {{1}}. Voici ce que vous avez dans le CRM : {{2}}. Je prépare les messages ? | «Oui, prépare-les» · «Plus tard» |
+
+Ejemplo de {{2}}: «hoy: Club Sol (Llamar a Marta), Ghecko (atrasado) · mañana: La Parada · esta semana: Sala Marina (vie)»
+(`agendaLine` en `src/lib/assistant/reminders.ts`: en una línea, como pide Meta).
+
 Idioma en Meta: el CRM manda «Español (España)» (`es_ES`); si Meta dice que no existe en ese idioma (132001), prueba
 «Español» (`es`). Vale cualquiera de los dos.
 
@@ -240,6 +254,23 @@ pregunta espera su respuesta todo el día (14 horas).
 
 - Documentos (PDF) y fotos que no son conversaciones.
 - Ver en «Qué ha funcionado» qué frases y aperturas acaban en cita o en venta (las conversaciones ya se guardan literales).
+
+## Mensajes largos, varias cosas que hacer y audios de clientes (25-nov-2026)
+
+- **Nada se corta:** WhatsApp corta el texto de un mensaje con botones a 1.024 caracteres. Si el resumen es más largo,
+  sale entero en mensajes normales (de hasta ~3.800, cortando por párrafos) y los botones van al final, con el último
+  párrafo o «¿Qué hago con esto?» (`plan` en `src/lib/assistant/process.ts`). El resumen enseña también todo lo que
+  sabemos (`facts`), no solo lo más importante.
+- **Varias cosas que hacer** («le llamo en semana y media para fidelizar y en enero le ofrezco la suscripción»): la IA
+  separa la más cercana (próximo paso) de las demás (`later_steps`, cada una en cuántos días). Las demás quedan en la
+  ficha, en «Después», bajo el próximo paso (facts de `kind: 'plan'` con su día, sin migración). Cuando se hace o se
+  quita el próximo paso, o «Hoy» ve que una ya toca antes que el que hay, pasa a ser el próximo paso (`settlePlans` en
+  `src/lib/crm/service.ts`); el que había, si tenía texto, vuelve a la cola con su día. Lo mismo por el MCP.
+- **Lo que manda después del resumen** («lo que saco de aquí es… vamos a hacer X e Y») se suma a lo que contó: un audio
+  largo no renombra ni cambia la ciudad (eso solo con una corrección corta).
+- **Audios reenviados de clientes:** «Hablé con el de la Bresh y me dijo esto:» + su audio reenviado → el audio son
+  las palabras del cliente («Audio del cliente (sus palabras): «…»»), y va como los mensajes reenviados: junto con lo que
+  contó delante (al escribir «listo») o, sin nada delante, pregunta de qué empresa es. Si ya estaba el resumen, se suma.
 
 ## «¿Qué tengo para hoy?»
 Una pregunta corta como «¿qué tengo para hoy?», «qué me toca hoy», «qué tengo esta semana», «mi agenda» o «lo de hoy»

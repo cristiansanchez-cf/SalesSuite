@@ -67,6 +67,8 @@ export interface AccountsDb {
   getRules(tenantId: string): Promise<AccountRules>;
   saveRules(tenantId: string, r: AccountRules): Promise<void>;
   listAccounts(tenantId: string, f: AccountFilter): Promise<Account[]>;
+  /** Las que tienen algo para después (facts de kind 'plan'), con sus facts: lo que «Hoy» mira para subirlo a próximo paso. */
+  withPlans?(tenantId: string, ownerId?: string): Promise<Array<{ id: string; facts: Account['facts'] }>>;
   /** Todas las del espacio, con pocas columnas (AccountRef), ordenadas por nombre. */
   listAccountIndex(tenantId: string, limit: number): Promise<AccountRef[]>;
   getAccount(id: string): Promise<Account | null>;

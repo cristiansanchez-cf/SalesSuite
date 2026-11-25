@@ -115,6 +115,11 @@ export function supabaseAccountsDb(sb: SupabaseClient): AccountsDb {
         return q.order('name').order('id');
       }, f.limit)).map(toAccount);
     },
+    async withPlans(t, ownerId) {
+      let q = sb.from('account').select('id, facts').eq('tenant_id', t).contains('facts', [{ kind: 'plan' }]);
+      if (ownerId) q = q.eq('owner_id', ownerId);
+      return (check(await q.limit(2000)) as Row[]).map((r) => ({ id: r.id as string, facts: Array.isArray(r.facts) ? (r.facts as Account['facts']) : [] }));
+    },
     async listAccountIndex(t, limit) {
       return (await paged(() => sb.from('account').select(REF_COLS).eq('tenant_id', t).order('name').order('id'), limit)).map(toRef);
     },

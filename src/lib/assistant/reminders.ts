@@ -13,7 +13,7 @@ import { msgLocale } from '../leads/templates';
 import { localClock } from '../notify/daily';
 import type { AssistantDb } from './db';
 import type { HubConfig } from './hub-config';
-import type { ReminderItem } from './flow';
+import type { AgendaItem, ReminderItem } from './flow';
 import { withUsageScope } from '../usage/meter';
 
 export const REMIND_FROM = 9;
@@ -43,9 +43,14 @@ export interface ReminderDeps {
   delivery?: DeliveryStore | null;
 }
 
+type TodayList = Awaited<ReturnType<AdminContext['crm']['today']>>;
+/** La agenda (hoy, mañana y esta semana), lo mismo que «¿Qué tengo para hoy?» y lo_de_hoy del MCP. */
+export function agendaOf(t: TodayList): AgendaItem[] {
+  return t.items.slice(0, 30).map((i) => ({ name: i.name, bucket: i.bucket as AgendaItem['bucket'], cooling: i.cooling, step: i.nextStep, at: i.nextStepAt, contact: i.contactName }));
+}
 /** Lo que toca hoy en sus empresas, en el orden de «Hoy», con lo justo para proponer el mensaje. */
-export async function reminderItems(admin: AdminContext): Promise<ReminderItem[]> {
-  const t = await admin.crm.today();
+export async function reminderItems(admin: AdminContext, list?: TodayList): Promise<ReminderItem[]> {
+  const t = list ?? await admin.crm.today();
   return t.items.filter((i) => i.bucket === 'cooling' || i.bucket === 'overdue' || i.bucket === 'today').slice(0, MAX_ITEMS).map((i) => ({
     accountId: i.id, name: i.name, bucket: i.bucket as ReminderItem['bucket'], cooling: i.cooling, contactName: i.contactName, step: i.nextStep ?? null,
     channel: (i.nextChannel as string | null) ?? null, last: i.last ? { outcome: i.last.outcome, note: i.last.note?.slice(0, 600) ?? null, at: i.last.happenedAt } : null,
@@ -61,6 +66,38 @@ export function namesLine(names: string[], locale: string): string {
   if (names.length <= 3) return names.length > 1 ? `${names.slice(0, -1).join(', ')} ${and} ${names.at(-1)}` : names[0] ?? '';
   return `${names.slice(0, 3).join(', ')} ${and} ${more(names.length - 3)}`;
 }
+
+const AG = {
+  es: { today: 'hoy', tomorrow: 'mañana', week: 'esta semana', cooling: 'se enfría', overdue: 'atrasado', and: 'y', more: (n: number) => `${n} más` },
+  en: { today: 'today', tomorrow: 'tomorrow', week: 'this week', cooling: 'cooling down', overdue: 'overdue', and: 'and', more: (n: number) => `${n} more` },
+  fr: { today: "aujourd'hui", tomorrow: 'demain', week: 'cette semaine', cooling: 'refroidit', overdue: 'en retard', and: 'et', more: (n: number) => `${n} autres` },
+};
+/**
+ * La agenda en una línea, para la plantilla (WhatsApp no deja saltos de línea en sus variables): «hoy: Club Sol
+ * (llamar a Juan), Sala Marina (atrasado) · mañana: Ghecko · esta semana: La Parada (vie) y 2 más».
+ */
+export function agendaLine(items: AgendaItem[], locale: string, max = 700, timeZone = 'Europe/Madrid'): string {
+  const l = msgLocale(locale);
+  const W = AG[l as keyof typeof AG] ?? AG.es;
+  const tag = (i: AgendaItem) => {
+    const step = i.step ? i.step.replace(/\s+/g, ' ').trim().slice(0, 50) : '';
+    const day = i.bucket === 'week' && i.at ? new Intl.DateTimeFormat(l === 'en' ? 'en-GB' : l === 'fr' ? 'fr-FR' : 'es-ES', { weekday: 'short', timeZone }).format(new Date(i.at)).replace('.', '') : '';
+    const extra = [i.bucket === 'cooling' ? W.cooling : i.bucket === 'overdue' ? W.overdue : '', day, step].filter(Boolean).join(', ');
+    return `${i.name}${extra ? ` (${extra})` : ''}`;
+  };
+  const group = (label: string, xs: AgendaItem[]) => {
+    if (!xs.length) return '';
+    const shown = xs.slice(0, 3).map(tag);
+    return `${label}: ${shown.join(', ')}${xs.length > 3 ? ` ${W.and} ${W.more(xs.length - 3)}` : ''}`;
+  };
+  const line = [group(W.today, items.filter((i) => ['cooling', 'overdue', 'today'].includes(i.bucket))),
+    group(W.tomorrow, items.filter((i) => i.bucket === 'tomorrow')), group(W.week, items.filter((i) => i.bucket === 'week'))].filter(Boolean).join(' · ');
+  // Sin saltos ni tabuladores ni más de 4 espacios seguidos (Meta lo rechaza).
+  const flat = line.replace(/[\r\n\t]+/g, ' ').replace(/ {2,}/g, ' ');
+  return flat.length > max ? `${flat.slice(0, max - 1)}…` : flat;
+}
+/** Meta no tiene esa plantilla (aún no se ha creado o aprobado): se usa la de antes. */
+const noTemplate = (e: unknown) => /132001|does not exist|132000|template name/i.test(e instanceof Error ? e.message : String(e));
 
 export interface ReminderResult { sent: number; empty: number; skipped: number; failed: number }
 /** Qué ha pasado con el recordatorio de una persona (para «Probarlo ahora» en Mi cuenta). */
@@ -98,7 +135,28 @@ export async function remindOne(d: ReminderDeps, m: ReminderMember, day: string,
     return await withUsageScope({ tenantId: m.tenantId, userId: m.userId }, async (): Promise<ReminderOutcome> => {
       const admin = await d.actAs(m.tenantId, m.userId);
       if (!admin) return { status: 'skipped' };
-      const items = await reminderItems(admin);
+      const list = await admin.crm.today({ week: true });
+      const items = await reminderItems(admin, { ...list, items: list.items.filter((i) => i.bucket !== 'tomorrow' && i.bucket !== 'week') });
+      const agenda = agendaOf(list);
+      // La agenda (hoy, mañana, esta semana): con su plantilla, aunque hoy no haya nada. Si Meta aún no la tiene, la de
+      // antes («hoy tienes N seguimientos»), solo si hay algo hoy.
+      const agendaTpl = d.hub?.agenda?.[locale as keyof NonNullable<HubConfig['agenda']>] ?? d.hub?.agenda?.es;
+      let sentAgenda: { id?: string | null } | null = null;
+      if (agendaTpl && agenda.length) {
+        try { sentAgenda = (await d.wa!.sendTemplate(phoneId!, to, agendaTpl, locale, [firstName(m.name) || '👋', agendaLine(agenda, locale, 700, m.timezone)])) ?? { }; }
+        catch (e) { if (!noTemplate(e)) throw e; }
+      }
+      if (sentAgenda) {
+        if (sentAgenda.id) await d.delivery?.track({ wamid: sentAgenda.id, tenantId: m.tenantId, userId: m.userId, kind: 'reminder' }).catch(() => {});
+        const conv = await d.assistant.get(m.tenantId, m.userId);
+        await d.assistant.save(m.tenantId, m.userId, { ...conv, state: { step: 'reminder', at: d.now.toISOString(), items, agenda } }, conv.version);
+        await d.db.mark(m.userId, m.tenantId, day, agenda.length);
+        if (d.hub) {
+          const prev = await d.assistant.session(m.userId).catch(() => null);
+          await d.assistant.saveSession(m.userId, { tenantId: m.tenantId, chosenAt: d.now.toISOString(), askedAt: null, pending: prev?.pending ?? [] });
+        }
+        return { status: 'sent', items: agenda.length };
+      }
       if (!items.length) {
         // Nada pendiente: si hay plantilla para eso, se le dice («hoy no tienes nada pendiente»); si no, nada.
         if (emptyTemplate) {
@@ -108,11 +166,11 @@ export async function remindOne(d: ReminderDeps, m: ReminderMember, day: string,
         await d.db.mark(m.userId, m.tenantId, day, 0);
         return { status: 'empty', told: !!emptyTemplate };
       }
-      const sent = await d.wa!.sendTemplate(phoneId!, to, template!, locale, [firstName(m.name) || '👋', String(items.length), namesLine(items.map((i) => i.name), locale)]);
+      const sent = await d.wa!.sendTemplate(phoneId!, to, template!, locale, [firstName(m.name) || '👋', String(items.length), agendaLine(agenda, locale, 500, m.timezone) || namesLine(items.map((i) => i.name), locale)]);
       if (sent?.id) await d.delivery?.track({ wamid: sent.id, tenantId: m.tenantId, userId: m.userId, kind: 'reminder' }).catch(() => {});
       // La conversación queda esperando su «sí» (o lo que diga).
       const conv = await d.assistant.get(m.tenantId, m.userId);
-      await d.assistant.save(m.tenantId, m.userId, { ...conv, state: { step: 'reminder', at: d.now.toISOString(), items } }, conv.version);
+      await d.assistant.save(m.tenantId, m.userId, { ...conv, state: { step: 'reminder', at: d.now.toISOString(), items, agenda } }, conv.version);
       await d.db.mark(m.userId, m.tenantId, day, items.length);
       if (d.hub) {
         // Su «sí» va a esta empresa: queda elegida para hoy.

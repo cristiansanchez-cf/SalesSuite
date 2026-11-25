@@ -38,7 +38,7 @@ const HOUR = /^([01]\d|2[0-3]):[0-5]\d$/;
 function rowFromItem(it: NoteItem) {
   return {
     interaction: it.interaction, keyFacts: it.keyFacts.slice(0, 5), facts: it.facts.slice(0, 40), fit: it.fit, fields: it.fields, channel: it.channel,
-    outcome: it.outcome, day: it.day, qualification: it.qualification, nextStep: it.nextStep, nextDays: it.nextDays, nextTime: it.nextTime ?? null,
+    outcome: it.outcome, day: it.day, qualification: it.qualification, nextStep: it.nextStep, nextDays: it.nextDays, nextTime: it.nextTime ?? null, laterSteps: it.laterSteps ?? [],
     agreement: it.agreement ?? null, agreementPackages: it.agreementPackages ?? [], agreementPrice: it.agreementPrice ?? null, trialUntil: it.trialUntil ?? null,
     discard: it.discard ?? null, discardNote: it.discard ? it.discardWhy ?? null : null, worksAt: [], people: it.people ?? [], contact: it.contact ?? {},
   };
@@ -232,7 +232,7 @@ export function buildMcpServer(ctx: () => Promise<AdminContext>, info: { space: 
         candidatas: it.candidates.slice(0, 5).map((c) => ({ id: c.id, nombre: c.name, ciudad: c.zone || null, coincidencia: Math.round(c.score * 100) / 100, descartada: c.discarded || undefined })),
         resumen: {
           interaccion: it.interaction, canal: it.channel, resultado: it.outcome, dia: it.day,
-          proximo_paso: it.nextStep, en_dias: it.nextDays, hora: it.nextTime ?? null,
+          proximo_paso: it.nextStep, en_dias: it.nextDays, hora: it.nextTime ?? null, despues: (it.laterSteps ?? []).map((x) => ({ que: x.step, en_dias: x.days })),
           cualificacion: it.qualLabels ?? [], lo_importante: it.keyFacts, datos: it.facts, encaje: it.fit,
           personas: (it.people ?? []).map((p) => p.name), acuerdo: it.agreementLabel ?? it.agreement ?? null, prueba_hasta: it.trialUntil ?? null, descartar: it.discard ?? null,
         },

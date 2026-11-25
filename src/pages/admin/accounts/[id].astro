@@ -226,6 +226,9 @@ const primary = tl.actors[0];
 const fallback = primary ? { name: primary.name, phone: primary.phone, email: primary.email, instagram: primary.instagram, linkedin: primary.linkedin } : undefined;
 const sug = tl.suggestion;
 const nextAt = tl.next?.at ? new Date(tl.next.at) : null;
+// Lo de después (kind 'plan', con su día) va con el próximo paso; «Lo que sabemos» es lo demás.
+const plans = a.facts.filter((x) => x.kind === 'plan' && x.due).sort((x, y) => x.due!.localeCompare(y.due!));
+const known = a.facts.filter((x) => x.kind !== 'plan');
 const googleResults = googleBox.r;
 const G = priorityMessages[locale].google;
 const PS = priorityMessages[locale];
@@ -451,12 +454,12 @@ const STATE_ALERT = {
           <h2 class="co-entity">{NT.factsTitle}</h2>
           <a class="co-meta underline" href={`/admin/accounts/apuntar`} data-testid="facts-note">{NT.factsNote}</a>
         </div>
-        {a.facts.length === 0 && <p class="co-meta" data-testid="facts-empty">{NT.factsEmpty}</p>}
+        {known.length === 0 && <p class="co-meta" data-testid="facts-empty">{NT.factsEmpty}</p>}
         {(() => {
           // Lo importante, en tarjetas grandes; lo que le encaja; el resto en lista corta (lo demás, plegado).
-          const keyF = a.facts.filter((x) => x.key);
-          const fitF = a.facts.filter((x) => !x.key && x.kind === 'fit');
-          const rest = a.facts.filter((x) => !x.key && x.kind !== 'fit');
+          const keyF = known.filter((x) => x.key);
+          const fitF = known.filter((x) => !x.key && x.kind === 'fit');
+          const rest = known.filter((x) => !x.key && x.kind !== 'fit');
           const tools = (x: (typeof a.facts)[number]) => canQualify && (
             <span class="flex shrink-0 items-center gap-1 opacity-60 transition group-hover:opacity-100 focus-within:opacity-100">
               <form method="post" action="#facts" data-async="facts" data-async-quiet>
@@ -548,6 +551,25 @@ const STATE_ALERT = {
               {tl.next.step && <p class="co-body" data-ugc>{tl.next.step}</p>}
             </>
           ) : <p class="co-meta">{F.follow.noNext}</p>}
+          {plans.length > 0 && (
+            <div class="grid gap-1 border-t border-[color:var(--co-line)] pt-2" data-testid="next-later">
+              <p class="co-meta" title={F.follow.queuedHint}>{F.follow.queued}</p>
+              <ul class="m-0 grid gap-1 p-0">
+                {plans.map((x) => (
+                  <li class="flex list-none items-start gap-2" data-testid="plan">
+                    <span class="co-tag whitespace-nowrap">{fmt.date(`${x.due}T12:00:00Z`, { day: 'numeric', month: 'short', year: x.due!.slice(0, 4) !== String(new Date().getFullYear()) ? 'numeric' : undefined, timeZone: 'UTC' })}</span>
+                    <span class="co-body flex-1" data-ugc>{x.text}</span>
+                    {canQualify && (
+                      <form method="post" action="#follow">
+                        <input type="hidden" name="action" value="fact-remove" /><input type="hidden" name="factId" value={x.id} />
+                        <button class="co-btn co-btn--quiet co-btn--icon co-btn--sm" type="submit" aria-label={NT.factRemove} title={NT.factRemove} data-testid="plan-remove"><Icon name="x" size={12} /></button>
+                      </form>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
           {sug.reason !== 'closed' && (!tl.next || tl.next.channel !== sug.channel || tl.next.contactId !== sug.contactId) && (
             <p class="co-meta" data-testid="suggestion">{F.follow.suggested}: {sug.reason === 'retry' ? F.reasons.retry(sug.attempt) : F.reasons[sug.reason]}{sug.channel ? ` · ${F.channels[sug.channel]}` : ''}{sug.contactId ? ` · ${actorName(sug.contactId)}` : ''}</p>
           )}

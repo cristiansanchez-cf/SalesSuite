@@ -252,6 +252,10 @@ export function demoAccountsDb(actorId: string): AccountsDb {
         .sort((a, b) => a.name.localeCompare(b.name, 'es'))
         .slice(0, f.limit).map(toAccount);
     },
+    async withPlans(t, ownerId) {
+      return db().account.filter((a) => a.tenant_id === t && (!ownerId || a.owner_id === ownerId)).map(toAccount)
+        .filter((a) => a.facts.some((f) => f.kind === 'plan')).map((a) => ({ id: a.id, facts: a.facts }));
+    },
     async listAccountIndex(t, limit) {
       return db().account.filter((a) => a.tenant_id === t).sort((a, b) => a.name.localeCompare(b.name, 'es')).slice(0, limit)
         .map(toAccount).map((a) => Object.fromEntries(ACCOUNT_REF_KEYS.map((k) => [k, a[k]])) as AccountRef);

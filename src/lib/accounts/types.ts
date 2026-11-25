@@ -65,7 +65,11 @@ export interface Sweep {
 }
 /** Un dato clave de una empresa: «fact» (cómo es) o «fit» (qué le encaja de lo que vendemos). */
 /** Un punto de «Lo que sabemos». `key`: de lo más importante para vender (sale arriba, en grande). */
-export interface AccountFact { id: string; text: string; kind: 'fact' | 'fit'; at: string; by: string | null; key?: boolean }
+/**
+ * Lo que sabemos de la empresa. kind 'plan': algo que hacer más adelante (además del próximo paso), con su día (`due`,
+ * AAAA-MM-DD): «en enero, ofrecerle la suscripción». Pasa a ser el próximo paso cuando le toca (service.settlePlans).
+ */
+export interface AccountFact { id: string; text: string; kind: 'fact' | 'fit' | 'plan'; at: string; by: string | null; key?: boolean; due?: string }
 export interface ZoneAssignment { userId: string; zoneId: string }
 export interface AccountRules { claimDays: number; strictZones: boolean; requireAccount: boolean }
 export const DEFAULT_RULES: AccountRules = { claimDays: 30, strictZones: false, requireAccount: false };

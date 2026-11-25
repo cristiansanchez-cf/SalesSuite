@@ -64,7 +64,8 @@ export interface ReminderItem {
 export type Incoming =
   | { kind: 'text'; text: string; forwarded?: boolean }
   | { kind: 'button'; id: string }
-  | { kind: 'audio'; text: string | null }
+  /** forwarded: un audio reenviado (de un cliente): son sus palabras, no lo que cuenta quien escribe. */
+  | { kind: 'audio'; text: string | null; forwarded?: boolean }
   /** Captura de una conversación (screenshot.ts): sus líneas («Nosotros: …»), el nombre de arriba y el pie de foto. */
   | { kind: 'image'; lines: string[] | null; contact: string; caption: string; channel: string; ready: boolean }
   /** Tarjeta de contacto compartida, en texto («Contacto compartido: Jorge · Teléfono: …»). */
@@ -92,7 +93,8 @@ export type State =
   /** Ha compartido una tarjeta de contacto: se espera quién es y de qué empresa («el encargado del 12 Torremolinos»). */
   | { step: 'card'; at: string; card: string }
   | { step: 'forward-pick'; at: string; texts: string[]; query: string; candidates: Candidate[]; channel?: string }
-  | { step: 'reminder'; at: string; items: ReminderItem[] }
+  /** agenda: lo de hoy, mañana y esta semana que llevaba el recordatorio (se enseña entero al decir que sí). */
+  | { step: 'reminder'; at: string; items: ReminderItem[]; agenda?: AgendaItem[] }
   /** Recién guardado: «se llama solo X» o «está en Murcia, no en Madrid» arreglan eso mismo (media hora). */
   | { step: 'saved'; at: string; saved: Array<{ id: string; name: string }>; ask?: { id: string; name: string } }
   /** Arreglar fichas: el resumen de cambios (Guardar / Cambiar) y, si una empresa tiene varias parecidas, cuál es. */
@@ -127,7 +129,7 @@ function rowOf(p: Pending) {
   return {
     accountId: p.choice?.accountId ?? null, create: p.choice?.create ?? null, interaction: it.interaction, keyFacts: it.keyFacts.slice(0, 5), facts: it.facts.slice(0, 40),
     fit: it.fit, fields: it.fields, channel: it.channel, outcome: it.outcome, day: it.day, qualification: it.qualification, nextStep: it.nextStep,
-    nextDays: it.nextDays, nextTime: it.nextTime ?? null, agreement: it.agreement ?? null, agreementPackages: it.agreementPackages ?? [], agreementPrice: it.agreementPrice ?? null, trialUntil: it.trialUntil ?? null,
+    nextDays: it.nextDays, nextTime: it.nextTime ?? null, laterSteps: it.laterSteps ?? [], agreement: it.agreement ?? null, agreementPackages: it.agreementPackages ?? [], agreementPrice: it.agreementPrice ?? null, trialUntil: it.trialUntil ?? null,
     // Descartar (no les interesa, no encaja…): se ve en el resumen y se hace al pulsar Guardar; así nadie vuelve a venderles lo mismo.
     discard: it.discard ?? null, discardNote: it.discard ? it.discardWhy ?? null : null, worksAt: [], people: it.people ?? [], contact: it.contact ?? {},
     // Dónde está la empresa nueva (lo convierte en zona opsFor.apply, como el buscador de ciudades del CRM).
@@ -158,12 +160,14 @@ export function tooThin(t: string): string | null {
 }
 /** «He hablado con X… ahora te paso los mensajes»: lo que viene después va con esto. */
 const ANNOUNCE = /(te (paso|mando|env[ií]o|pego|reenv[ií]o|adjunto)|ahora te|luego te|a continuaci[oó]n|i.?ll (send|forward|paste)|here (are|is)|vou (te )?(mandar|enviar|passar|colar)|já te (mando|passo))/iu;
-const CHAT_NOUN = /(mensaje|conversaci|chat|captura|pantallazo|whats|messages?|conversation|screenshots?|mensage|conversa)/iu;
+const CHAT_NOUN = /(mensaje|conversaci|chat|captura|pantallazo|whats|audio|nota de voz|messages?|conversation|screenshots?|voice note|mensage|conversa|áudio)/iu;
 // Solo un aviso corto, y al final («…ahora te paso los mensajes»): en un audio largo, «te paso» es parte de lo que cuenta.
+/** «…y me dijo esto:», «escucha lo que me ha mandado»: lo que viene (un audio o sus mensajes reenviados) son sus palabras. */
+const SAID_THIS = /(?:me\s+(?:dijo|ha\s+dicho|cont[oó]|ha\s+contado|coment[oó]|ha\s+comentado|mand[oó]|ha\s+mandado|escribi[oó]|ha\s+escrito|respondi[oó]|ha\s+respondido|contest[oó]|ha\s+contestado)\s+(?:esto|lo\s+siguiente|este\s+audio)|esto\s+es\s+lo\s+que\s+me\s+(?:dijo|ha\s+dicho)|escucha\s+(?:esto|lo\s+que)|(?:te\s+)?(?:reenv[ií]o|paso|mando)\s+(?:el|su|un)\s+audio|(?:he|she)\s+(?:told|said)\s+(?:me\s+)?this|(?:me\s+)?disse\s+isto)\s*[:.…]*\s*$/iu;
 export const announcesChat = (t: string) => {
   if (t.length > 300 || pastedChat(t).length) return false;
   const tail = t.slice(-160);
-  return ANNOUNCE.test(tail) && CHAT_NOUN.test(tail);
+  return (ANNOUNCE.test(tail) && CHAT_NOUN.test(tail)) || SAID_THIS.test(tail.trim());
 };
 /**
  * Pegó a medias: WhatsApp solo deja pegar todos los mensajes copiados si la caja está vacía; si antes escribió «he
@@ -253,7 +257,7 @@ export async function handle(d: FlowDeps, msg: Incoming, prev: State): Promise<F
     if (!keep.length) return { state: idle, replies: [say(T.nothingLeft)] };
     const lines = keep.map((p) => T.summary({
       name: p.choice!.name, isNew: !p.choice!.accountId, channel: T.channels[p.item.channel] ?? p.item.channel, outcome: T.outcomes[p.item.outcome] ?? p.item.outcome,
-      interaction: p.item.interaction, keyFacts: p.item.keyFacts, qual: p.item.qualLabels ?? [], people: (p.item.people ?? []).map((x) => [x.name, x.role, x.phone, x.email].filter(Boolean).join(' · ')), nextStep: p.item.nextStep, nextDays: p.item.nextDays, nextTime: p.item.nextTime ?? null, agreement: p.item.agreement ? [p.item.agreementLabel, p.item.agreement].filter(Boolean).join(' — ') : null, trialUntil: p.item.trialUntil ?? null,
+      interaction: p.item.interaction, keyFacts: p.item.keyFacts, facts: p.item.facts, later: (p.item.laterSteps ?? []).map((x) => ({ step: x.step, day: new Date(d.now.getTime() + x.days * 86_400_000).toISOString().slice(0, 10) })), qual: p.item.qualLabels ?? [], people: (p.item.people ?? []).map((x) => [x.name, x.role, x.phone, x.email].filter(Boolean).join(' · ')), nextStep: p.item.nextStep, nextDays: p.item.nextDays, nextTime: p.item.nextTime ?? null, agreement: p.item.agreement ? [p.item.agreementLabel, p.item.agreement].filter(Boolean).join(' — ') : null, trialUntil: p.item.trialUntil ?? null,
       discard: p.item.discard ? `${T.discards[p.item.discard] ?? p.item.discard}${p.item.discardWhy ? ` (${p.item.discardWhy})` : ''}` : null,
     }) + (!p.choice!.accountId && p.place ? `\n📍 ${p.place.label}` : ''));
     return { state: { step: 'confirm', at, pending, ...from }, replies: [say(`${T.willSave}\n\n${lines.join('\n\n')}`, [{ id: 'save', title: T.save }, { id: 'change', title: T.change }])] };
@@ -436,7 +440,11 @@ export async function handle(d: FlowDeps, msg: Incoming, prev: State): Promise<F
     const said = (msg.kind === 'button' ? msg.id : msg.text).trim();
     // Solo respuestas cortas: «Sí, hoy he hablado con Club Sol…» es algo nuevo que apuntar.
     if (msg.kind === 'button' || short(said)) {
-      if (new RegExp(`^(s[ií]|prep[aá]ra(los|me)?|vale|ok|dale|venga|claro|yes|sure|sim|oui|네|좋아)${END}`, 'iu').test(said)) return prepare(state.items);
+      if (new RegExp(`^(s[ií]|prep[aá]ra(los|me)?|vale|ok|dale|venga|claro|yes|sure|sim|oui|네|좋아)${END}`, 'iu').test(said)) {
+        // Primero la agenda entera (hoy, mañana, esta semana) y luego una propuesta por cada una de hoy.
+        const r = await prepare(state.items);
+        return state.agenda ? { ...r, replies: [say(T.agenda(state.agenda)), ...r.replies] } : r;
+      }
       if (new RegExp(`^(m[aá]s tarde|luego|ahora no|later|not now|plus tard|mais tarde|depois|no|não|nao|나중에)${END}`, 'iu').test(said)) return { state: idle, replies: [say(T.remindLater)] };
     }
   }
@@ -485,6 +493,15 @@ export async function handle(d: FlowDeps, msg: Incoming, prev: State): Promise<F
   const heard = msg.kind === 'audio' ? [say(T.heard(text))] : [];
   const withHeard = (r: FlowResult): FlowResult => ({ ...r, replies: [...heard, ...r.replies] });
   if (!text) return { state, replies: [say(T.help)] };
+  // ---- Audio reenviado (de un cliente: «hablé con el de la Bresh y me dijo esto:» + su audio): son sus palabras. Va
+  // como los mensajes reenviados, con lo que contó delante; si ya estaba el resumen, se suma a lo que contó.
+  if (msg.kind === 'audio' && msg.forwarded) {
+    const said = `${T.clientAudio}: «${text}»`;
+    if (state.step === 'forward' || state.step === 'forward-pick') return { state: { ...state, at, texts: [...state.texts, said].slice(-MAX_FORWARDED) }, replies: heard };
+    if (state.step === 'context') return { state: { step: 'forward', at, texts: [said], intro: state.intro }, replies: [...heard, say(T.joining)] };
+    if (state.step === 'confirm' && state.source) return withHeard(await note(`${state.source}\n\n${said}`, state.pending));
+    return { state: { step: 'forward', at, texts: [said] }, replies: [...heard, say(T.forwardedAsk)] };
+  }
   // ---- «¿Qué tengo para hoy?»: la agenda (si hoy no hay nada, la semana). No cambia lo que estuviera a medias.
   if (!(msg.kind === 'text' && msg.forwarded) && d.ops.agenda && text.length <= 60 && AGENDA.test(text)) {
     try { return withHeard({ state, replies: [say(T.agenda(await d.ops.agenda()))] }); } catch { return withHeard({ state, replies: [say(T.failedOne)] }); }
@@ -627,10 +644,11 @@ export async function handle(d: FlowDeps, msg: Incoming, prev: State): Promise<F
       // La conversación que faltaba: se añade a lo que contó (no es una corrección).
       if (state.source && pastedChat(text).length >= 2) return withHeard(await note(`${state.source}\n\n${text}`, state.pending));
       // Otra cosa, con lo anterior delante: es una corrección («la parada está en Almería»), no algo nuevo.
-      if (state.source) return withHeard(await note(`${state.source}\n\n${T.correction}: ${text}`, state.pending, undefined, text));
+      // Un audio largo («lo que saco de aquí es… vamos a hacer X e Y») se suma a lo de antes: no renombra ni mueve nada.
+      if (state.source) return withHeard(await note(`${state.source}\n\n${T.correction}: ${text}`, state.pending, undefined, story ? undefined : text));
       break; // reenviados: se apunta como algo nuevo
     case 'amend':
-      return withHeard(await note(`${state.source}\n\n${T.correction}: ${text}`, state.pending, undefined, text));
+      return withHeard(await note(`${state.source}\n\n${T.correction}: ${text}`, state.pending, undefined, story ? undefined : text));
     case 'place': {
       const pending = [...state.pending];
       const p = pending[state.i]!;

@@ -782,12 +782,15 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
       const g = (await db.listAgreements(t, [accountId]).catch(() => [])).find((x) => x.status === 'active');
       if (g?.checkinDays) {
         await accounts.updateAccount(accountId, { next: { step: CHECKIN_STEP, at: dayIn(g.checkinDays), contactId: v.contactId ?? null, channel: null } }).catch(() => false);
+        await settlePlans(accountId).catch(() => false);
         return null;
       }
     }
     const [acts, actors, fresh] = await Promise.all([db.listActivities(t, [accountId], 200), actorsOf(accountId), accounts.getAccount(accountId)]);
     const sug = suggestNext({ activities: acts, actors, company: reachOf(fresh ?? a), now: new Date() });
     await accounts.updateAccount(accountId, { next: { step: null, at: sug.at?.toISOString() ?? null, contactId: sug.contactId, channel: sug.channel } }).catch(() => false);
+    // Si lo de después toca antes que el seguimiento de la regla, va primero.
+    if (await settlePlans(accountId).catch(() => false)) return null;
     return sug;
   }
   /**
@@ -808,6 +811,25 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     if (byDomain.length === 1) return { accountId: byDomain[0]!, contactId: contactOnly, how: 'domain' };
     return { accountId: null, contactId: contactOnly, how: null };
   }
+  /**
+   * Lo de después (facts de kind 'plan', con su día): el más cercano pasa a ser el próximo paso si no hay ninguno o si
+   * le toca antes que el que hay. Si el que había era un paso con texto, vuelve a la cola con su día (no se pierde).
+   */
+  async function settlePlans(accountId: string, given?: Account | null): Promise<boolean> {
+    const a = given ?? await accounts.getAccount(accountId);
+    if (!a || a.tenantId !== t) return false;
+    const plans = a.facts.filter((f) => f.kind === 'plan' && f.due && /^\d{4}-\d{2}-\d{2}$/.test(f.due)).sort((x, y) => x.due!.localeCompare(y.due!));
+    const p = plans[0];
+    if (!p) return false;
+    const curDay = a.nextStepAt ? localDay(new Date(a.nextStepAt)) : null;
+    if (curDay && curDay <= p.due!) return false;
+    // Los pasos que pone el CRM solo (ver cómo va, fin de la prueba) se vuelven a poner solos: no van a la cola.
+    const back: AccountFact[] = a.nextStep && curDay && a.nextStep !== CHECKIN_STEP && a.nextStep !== TRIAL_STEP ? [{ id: crypto.randomUUID(), text: a.nextStep, kind: 'plan', at: new Date().toISOString(), by: s.userId, due: curDay }] : [];
+    try {
+      const next = parse(nextStepSchema, { at: p.due, step: p.text, contactId: a.nextContactId ?? null, channel: a.nextChannel ?? null });
+      return await accounts.updateAccount(accountId, { facts: [...a.facts.filter((f) => f.id !== p.id), ...back].slice(0, 200), next: { step: next.step ?? null, at: next.at, contactId: next.contactId ?? null, channel: next.channel ?? null } });
+    } catch { return false; }
+  }
   async function setNextStep(accountId: string, input: unknown | null) {
     requireUse();
     const v = input ? parse(nextStepSchema, input) : null;
@@ -816,6 +838,8 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
       ok = await accounts.updateAccount(accountId, { next: v ? { step: v.step ?? null, at: v.at, contactId: v.contactId ?? null, channel: v.channel ?? null } : { step: null, at: null, contactId: null, channel: null } });
     } catch (e) { mapError(e); }
     if (!ok) throw new AdminError(403, 'Solo quien la trabaja o un/a gerente puede editarla');
+    // Quitado (o hecho): lo siguiente de la cola, si lo hay. Si pone uno a mano, se respeta.
+    if (!v?.at && !v?.step) await settlePlans(accountId).catch(() => false);
   }
   // ---- Importar desde Notion (§48): lo que necesita la importación, además de lo de importar un CSV. Solo admin.
   /** El cuerpo de la página de origen de una empresa (con su formato), si se importó. */
@@ -871,7 +895,20 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
   async function today(opts: { all?: boolean; week?: boolean } = {}) {
     requireUse();
     const now = new Date();
-    const all = await accounts.listAccounts(t, { ownerId: opts.all && perms.manageAccounts ? undefined : s.userId, limit: 5000 });
+    let all = await accounts.listAccounts(t, { ownerId: opts.all && perms.manageAccounts ? undefined : s.userId, limit: 5000 });
+    // Lo de después que ya toca (y va antes que el próximo paso que hay): pasa a ser el próximo paso.
+    const todayDay = localDay(now);
+    const plans = accounts.withPlans ? await accounts.withPlans(t, opts.all && perms.manageAccounts ? undefined : s.userId).catch(() => []) : [];
+    const factsOf = new Map(plans.map((x) => [x.id, x.facts]));
+    const due = all.filter((a) => (factsOf.get(a.id) ?? []).some((f) => f.kind === 'plan' && f.due && f.due <= todayDay && (!a.nextStepAt || localDay(new Date(a.nextStepAt)) > f.due))).slice(0, 50);
+    if (due.length) {
+      const moved = new Set<string>();
+      for (const a of due) if (await settlePlans(a.id, { ...a, facts: factsOf.get(a.id) ?? [] }).catch(() => false)) moved.add(a.id);
+      if (moved.size) {
+        const fresh = new Map((await accounts.listAccounts(t, { ids: [...moved], limit: moved.size }).catch(() => [])).map((a) => [a.id, a]));
+        all = all.map((a) => fresh.get(a.id) ?? a);
+      }
+    }
     // Lo que se enfría (contestó y llevamos 3 días laborables sin hacer nada) va primero, aunque no tenga próximo paso.
     const cool = await cooling(all);
     const weekEnd = now.getTime() + 7 * 86_400_000;
@@ -1849,7 +1886,10 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
         venue: chosen.name, interaction: inter ? inter.slice(0, 4000) : facts.length || keyFacts.length ? null : clean.slice(0, 4000), keyFacts, facts,
         fit: items.map((it) => it.fit).filter(Boolean).join(' · ') || null, fields: fv,
         channel: items[0]?.channel ?? 'visit', outcome: items[0]?.outcome ?? 'note', day: items[0]?.day ?? null,
-        qualification: q, nextStep: first?.nextStep ?? null, nextDays: first?.nextDays ?? null,
+        qualification: q, nextStep: first?.nextStep ?? null, nextDays: first?.nextDays ?? null, nextTime: first?.nextTime ?? null,
+        // Todo lo demás que hay que hacer (de los otros elementos y lo de después), sin perder nada.
+        laterSteps: [...items.filter((it) => it !== first && it.nextStep && it.nextDays != null).map((it) => ({ step: it.nextStep!, days: it.nextDays! })),
+          ...items.flatMap((it) => it.laterSteps ?? [])].sort((x, y) => x.days - y.days).slice(0, 10),
         discard: items.find((it) => it.discard)?.discard ?? null, discardWhy: items.find((it) => it.discard)?.discardWhy ?? null,
         entity: items.find((it) => it.entity)?.entity ?? null, worksAt: items.flatMap((it) => it.worksAt).slice(0, 12),
         people: sanitizePeople(items.flatMap((it) => it.people)),
@@ -1879,6 +1919,8 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     nextStep: z.string().trim().max(300).nullable().optional().transform((v) => v || null),
     nextDays: z.number().int().min(0).max(365).nullable().optional(),
     nextTime: z.string().max(10).nullable().optional(),
+    /** Lo que hay que hacer más adelante (además del próximo paso): queda en la ficha y pasa a próximo paso cuando toca. */
+    laterSteps: z.array(z.object({ step: z.string().trim().min(1).max(300), days: z.number().int().min(0).max(365) })).max(10).default([]),
     /** Cerró con un acuerdo: las condiciones (docs/CLIENTS.md). */
     agreement: z.string().trim().max(4000).nullable().optional().transform((v) => v || null),
     /** Y con qué paquetes y a qué precio al mes (si lo dijo; si no, el normal). */
@@ -1961,7 +2003,8 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
         const when = r.day ? `${r.day}T12:00:00.000Z` : new Date().toISOString();
         const added: AccountFact[] = [...r.keyFacts.map((text) => ({ id: crypto.randomUUID(), text, kind: 'fact' as const, at: when, by: s.userId, key: true })),
           ...(r.fit ? [{ id: crypto.randomUUID(), text: r.fit, kind: 'fit' as const, at: when, by: s.userId }] : []),
-          ...r.facts.map((text) => ({ id: crypto.randomUUID(), text, kind: 'fact' as const, at: when, by: s.userId }))];
+          ...r.facts.map((text) => ({ id: crypto.randomUUID(), text, kind: 'fact' as const, at: when, by: s.userId })),
+          ...r.laterSteps.map((x) => ({ id: crypto.randomUUID(), text: x.step, kind: 'plan' as const, at: new Date().toISOString(), by: s.userId, due: localDay(new Date(Date.now() + x.days * 86_400_000), tzNow) }))];
         if (added.length) patch.facts = [...added, ...a.facts].slice(0, 200);
         if (Object.keys(r.fields).length) {
           const accFields = (await fields()).filter((f) => f.target === 'account' && !f.archivedAt);
@@ -2000,6 +2043,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
         if (r.trialUntil && !r.discard) {
           try { await startTrial(id, { preset: 'custom', endsOn: r.trialUntil }); trial = r.trialUntil; } catch (e) { trialError = e instanceof AdminError ? e.message : 'No se ha podido'; }
         }
+        await settlePlans(id).catch(() => undefined);
         out.push({ accountId: id, name, ok: true, ...(agreement ? { agreement } : {}), ...(trial ? { trial } : {}), ...(trialError ? { trialError } : {}), ...(r.discard ? { discarded: true } : {}) });
       } catch (e) {
         out.push({ accountId: id, name: name || r.create || '', ok: false, error: e instanceof AdminError ? e.message : 'No se ha podido' });

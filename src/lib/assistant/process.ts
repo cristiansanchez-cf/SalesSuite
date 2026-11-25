@@ -122,8 +122,8 @@ export function opsFor(admin: AdminContext, o: { drafter?: Drafter | null; local
       return { name: account.name, nextAt: next?.at ? new Date(next.at).toISOString() : null };
     },
     async agenda() {
-      const r = await admin.crm.today({ week: true });
-      return r.items.slice(0, 30).map((i) => ({ name: i.name, bucket: i.bucket as 'today', cooling: i.cooling, step: i.nextStep, at: i.nextStepAt, contact: i.contactName }));
+      const { agendaOf } = await import('./reminders');
+      return agendaOf(await admin.crm.today({ week: true }));
     },
     async leadOk(leadId) {
       const { leadsFor } = await import('../leads/service');
@@ -145,9 +145,44 @@ export function opsFor(admin: AdminContext, o: { drafter?: Drafter | null; local
   };
 }
 
-async function send(wa: WhatsApp, phoneId: string, to: string, r: Reply) {
-  if (r.buttons?.length && wa.sendButtons) await wa.sendButtons(phoneId, to, r.text, r.buttons);
-  else if (wa.sendText) await wa.sendText(phoneId, to, r.text);
+/** WhatsApp corta el texto de un mensaje con botones a 1.024 caracteres y uno normal a 4.096. */
+export const BUTTON_BODY_MAX = 1000;
+const TEXT_MAX = 3800;
+/** Un texto largo en trozos que caben en un mensaje, cortando por párrafos (y, si un párrafo no cabe, por líneas o frases). */
+export function chunks(text: string, max = TEXT_MAX): string[] {
+  const out: string[] = [];
+  let cur = '';
+  const push = (piece: string, sep: string) => {
+    if (!cur) cur = piece;
+    else if (cur.length + sep.length + piece.length <= max) cur += sep + piece;
+    else { out.push(cur); cur = piece; }
+  };
+  for (const para of text.split(/\n{2,}/)) {
+    if (para.length <= max) { push(para, '\n\n'); continue; }
+    for (const ln of para.split('\n')) {
+      if (ln.length <= max) { push(ln, '\n'); continue; }
+      for (const bit of ln.match(new RegExp(`[\\s\\S]{1,${max}}(?=\\s|$)|[\\s\\S]{1,${max}}`, 'g')) ?? []) push(bit.trim(), ' ');
+    }
+  }
+  if (cur) out.push(cur);
+  return out.filter((x) => x.trim());
+}
+/**
+ * Lo que se manda por cada respuesta: un mensaje con botones solo si su texto cabe; si no (un resumen largo), el texto
+ * entero en mensajes normales y luego los botones con el último párrafo (o una pregunta corta). Antes se cortaba.
+ */
+export function plan(r: Reply, ask: string): Array<{ text: string; buttons?: Reply['buttons'] }> {
+  if (!r.buttons?.length) return chunks(r.text).map((text) => ({ text }));
+  if (r.text.length <= BUTTON_BODY_MAX) return [{ text: r.text, buttons: r.buttons }];
+  const paras = r.text.split(/\n{2,}/);
+  const last = paras.length > 1 && paras[paras.length - 1]!.length <= BUTTON_BODY_MAX ? paras.pop()! : null;
+  return [...chunks(paras.join('\n\n')).map((text) => ({ text })), { text: last ?? ask, buttons: r.buttons }];
+}
+async function send(wa: WhatsApp, phoneId: string, to: string, r: Reply, ask: string) {
+  for (const m of plan(r, ask)) {
+    if (m.buttons?.length && wa.sendButtons) await wa.sendButtons(phoneId, to, m.text, m.buttons);
+    else if (wa.sendText) await wa.sendText(phoneId, to, m.text);
+  }
 }
 
 export type AssistantResult = 'handled' | 'duplicate' | 'not_member';
@@ -179,7 +214,7 @@ async function processInScope(d: AssistantDeps, phoneId: string, member: Member,
     if (d.transcribe && m.mediaId && d.wa?.media) {
       try { text = (await d.transcribe(await d.wa.media(m.mediaId), locale)) || null; } catch (e) { console.warn('[assistant] audio', e instanceof Error ? e.message : e); }
     }
-    incoming = { kind: 'audio', text };
+    incoming = { kind: 'audio', text, forwarded: !!m.forwarded };
   } else if (m.kind === 'image') {
     // Captura de una conversación: la conversación literal (quién dijo qué) y el nombre de arriba.
     let shot: Awaited<ReturnType<ScreenshotReader>> = null;
@@ -203,11 +238,11 @@ async function processInScope(d: AssistantDeps, phoneId: string, member: Member,
     if (await d.db.save(tenantId, userId, { state: r.state, seen: [...conv.seen, m.id].filter(Boolean), version: conv.version }, conv.version)) break;
     conv = await d.db.get(tenantId, userId);
     if (m.id && conv.seen.includes(m.id)) return 'duplicate';
-    if (incoming.kind === 'text' && incoming.forwarded) r = await handle({ ops, now: d.now, locale }, incoming, conv.state);
+    if ((incoming.kind === 'text' || incoming.kind === 'audio') && incoming.forwarded) r = await handle({ ops, now: d.now, locale }, incoming, conv.state);
   }
   if (d.wa) {
     for (const reply of r.replies) {
-      try { await send(d.wa, phoneId, m.from, reply); } catch (e) { console.error('[assistant] responder', e instanceof Error ? e.message : e); }
+      try { await send(d.wa, phoneId, m.from, reply, T0.buttonsAsk); } catch (e) { console.error('[assistant] responder', e instanceof Error ? e.message : e); }
     }
   }
   return 'handled';
