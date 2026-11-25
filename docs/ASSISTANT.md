@@ -273,6 +273,10 @@ pregunta espera su respuesta todo el día (14 horas).
 - **Audios reenviados de clientes:** «Hablé con el de la Bresh y me dijo esto:» + su audio reenviado → el audio son
   las palabras del cliente («Audio del cliente (sus palabras): «…»»), y va como los mensajes reenviados: junto con lo que
   contó delante (al escribir «listo») o, sin nada delante, pregunta de qué empresa es. Si ya estaba el resumen, se suma.
+  Caso Bresh (25-nov): «…me escribió un audio que te puedo pasar a continuación» también se espera cuando acaba de
+  guardar otra cosa (antes, en ese rato, se apuntaba solo y a medias); tras «Cambiar» o eligiendo la empresa, el audio
+  se suma a lo que contó; y si al preguntar de qué empresa es contesta más que el nombre («Bresh, habrá que hablarles en
+  2027 y por correo»), se apunta con eso (la IA saca la empresa y el próximo paso) y el audio queda literal.
 
 ## «¿Qué tengo para hoy?»
 Una pregunta corta como «¿qué tengo para hoy?», «qué me toca hoy», «qué tengo esta semana», «mi agenda» o «lo de hoy»

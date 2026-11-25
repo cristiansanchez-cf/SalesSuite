@@ -499,7 +499,8 @@ export async function handle(d: FlowDeps, msg: Incoming, prev: State): Promise<F
     const said = `${T.clientAudio}: «${text}»`;
     if (state.step === 'forward' || state.step === 'forward-pick') return { state: { ...state, at, texts: [...state.texts, said].slice(-MAX_FORWARDED) }, replies: heard };
     if (state.step === 'context') return { state: { step: 'forward', at, texts: [said], intro: state.intro }, replies: [...heard, say(T.joining)] };
-    if (state.step === 'confirm' && state.source) return withHeard(await note(`${state.source}\n\n${said}`, state.pending));
+    // Con el resumen delante (o tras «Cambiar», o eligiendo la empresa): se suma a lo que contó.
+    if ((state.step === 'confirm' || state.step === 'amend' || state.step === 'pick' || state.step === 'place') && state.source) return withHeard(await note(`${state.source}\n\n${said}`, state.pending));
     return { state: { step: 'forward', at, texts: [said] }, replies: [...heard, say(T.forwardedAsk)] };
   }
   // ---- «¿Qué tengo para hoy?»: la agenda (si hoy no hay nada, la semana). No cambia lo que estuviera a medias.
@@ -528,6 +529,14 @@ export async function handle(d: FlowDeps, msg: Incoming, prev: State): Promise<F
   }
   if (isCancel(text)) return { state: idle, replies: [say(T.cancelled)] };
   if (state.step === 'idle' && isHelp(text)) return { state, replies: [say(T.help)] };
+  // Algo nuevo (sin nada a medias, o recién guardado otra cosa). «He hablado con X… ahora te paso su audio / los
+  // mensajes»: se espera para juntarlo (caso Bresh: con lo guardado justo antes, esto se apuntaba solo y a medias).
+  if (state.step === 'idle' || state.step === 'saved') {
+    if (announcesChat(text)) return withHeard({ state: { step: 'context', at, intro: text }, replies: [say(T.waitChat)] });
+    // Muy poco («he estado hablando con X»): se pregunta de qué antes de guardar nada.
+    const who = state.step === 'idle' ? tooThin(text) : null;
+    if (who != null) return withHeard({ state: { step: 'context', at, intro: text }, replies: [say(T.tellMore(who))] });
+  }
 
   /** Cambiar el nombre y/o la ciudad de una empresa (la que diga, o la recién guardada). */
   const applyEdit = async (target: { id: string; name: string }, change: string, keep: State): Promise<FlowResult | null> => {
@@ -678,6 +687,12 @@ export async function handle(d: FlowDeps, msg: Incoming, prev: State): Promise<F
       return withHeard(next(pending, { source: state.source }));
     }
     case 'forward':
+      // Más que un nombre («Bresh, es un audio de Alejandro… habrá que hablarles en 2027 y por correo»): lo que cuenta
+      // va con los mensajes (la IA saca la empresa, el próximo paso…) y la conversación queda literal.
+      if (words > 4) {
+        const lit = state.texts.flatMap((x) => x.split('\n')).filter(Boolean);
+        return withHeard(await note(`${text}\n\n${state.texts.join('\n')}`, [], lit));
+      }
       return withHeard(await forwardSearch(state.texts, text, state.channel));
     case 'forward-pick': {
       const n = numberOf(text);
@@ -686,12 +701,5 @@ export async function handle(d: FlowDeps, msg: Incoming, prev: State): Promise<F
       return withHeard(await forwardSearch(state.texts, text, state.channel));
     }
   }
-  // Muy poco («he estado hablando con X»): se pregunta de qué antes de guardar nada.
-  if (state.step === 'idle' && !announcesChat(text)) {
-    const who = tooThin(text);
-    if (who != null) return withHeard({ state: { step: 'context', at, intro: text }, replies: [say(T.tellMore(who))] });
-  }
-  // «He hablado con X… ahora te paso los mensajes»: se espera la conversación para juntarla.
-  if (state.step === 'idle' && announcesChat(text)) return withHeard({ state: { step: 'context', at, intro: text }, replies: [say(T.waitChat)] });
   return withHeard(await note(text));
 }

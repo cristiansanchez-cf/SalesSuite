@@ -130,6 +130,45 @@ describe('el asistente', () => {
     expect(s.pending[0]!.item.interaction).toContain('Audio del cliente (sus palabras): «Nos interesa, pero hasta marzo no podemos»');
   });
 
+  test('caso Bresh: recién guardado otra cosa, «te paso su audio a continuación» espera el audio', async () => {
+    const got: string[] = [];
+    const o = ops(got);
+    const saved: State = { step: 'saved', at: NOW.toISOString(), saved: [{ id: 'x', name: 'Club Sol' }] };
+    const a = await run(o, { kind: 'audio', text: 'Estuve hablando con Brother, que es... ¿cómo se llama? Se llama Alejandro. Alejandro de Breach. Y básicamente me escribió un audio que te puedo pasar ahora a continuación. Y ahora te digo mis apreciaciones sobre eso.' }, saved);
+    expect(a.state.step).toBe('context');
+    expect(got).toHaveLength(0);
+    const b = await run(o, { kind: 'audio', text: 'Ahora mismo no te puedo atender, el año que viene hablamos', forwarded: true }, a.state);
+    expect(b.state.step).toBe('forward');
+    // Sus apreciaciones: se junta todo (lo que contó, el audio literal y lo que saca de ello).
+    const c = await run(o, { kind: 'audio', text: 'Lo que saco es que hay que hablarles en 2027 y por correo' }, b.state);
+    expect(c.state.step).toBe('confirm');
+    expect(got.at(-1)).toContain('Alejandro de Breach');
+    expect(got.at(-1)).toContain('hablarles en 2027');
+    expect((c.state as Extract<State, { step: 'confirm' }>).pending[0]!.item.interaction).toContain('Audio del cliente (sus palabras)');
+  });
+
+  test('tras «Cambiar», el audio reenviado se suma a lo que contó (no pregunta de qué empresa es)', async () => {
+    const got: string[] = [];
+    const o = ops(got);
+    const a = await run(o, { kind: 'text', text: 'He hablado con Alejandro de Bresh, le interesa más adelante' });
+    const b = await run(o, { kind: 'button', id: 'change' }, a.state);
+    expect(b.state.step).toBe('amend');
+    const c = await run(o, { kind: 'audio', text: 'El año que viene hablamos', forwarded: true }, b.state);
+    expect(c.state.step).toBe('confirm');
+    expect(got.at(-1)).toContain('He hablado con Alejandro de Bresh');
+    expect(got.at(-1)).toContain('El año que viene hablamos');
+  });
+
+  test('al preguntar de qué empresa es, si cuenta más que el nombre, se apunta con eso', async () => {
+    const got: string[] = [];
+    const o = ops(got);
+    const a = await run(o, { kind: 'audio', text: 'El año que viene hablamos', forwarded: true });
+    const b = await run(o, { kind: 'text', text: 'Bresh es un audio de Alejandro que me mandó, tendremos que hablarles en 2027 y por correo' }, a.state);
+    expect(b.state.step).toBe('confirm');
+    expect(got.at(-1)).toContain('tendremos que hablarles en 2027');
+    expect(got.at(-1)).toContain('El año que viene hablamos');
+  });
+
   test('audio reenviado sin nada delante: pregunta de qué empresa es', async () => {
     const r = await run(ops(), { kind: 'audio', text: 'Hola, ¿cuándo venís a montar la pantalla?', forwarded: true });
     expect(r.state.step).toBe('forward');
