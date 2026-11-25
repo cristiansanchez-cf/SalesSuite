@@ -15,6 +15,7 @@ import type { AssistantDb } from './db';
 import type { HubConfig } from './hub-config';
 import type { AgendaItem, ReminderItem } from './flow';
 import { withUsageScope } from '../usage/meter';
+import { learningStore, logQuietly } from '../learning/store';
 
 export const REMIND_FROM = 9;
 export const REMIND_TO = 12;
@@ -155,6 +156,7 @@ export async function remindOne(d: ReminderDeps, m: ReminderMember, day: string,
           const prev = await d.assistant.session(m.userId).catch(() => null);
           await d.assistant.saveSession(m.userId, { tenantId: m.tenantId, chosenAt: d.now.toISOString(), askedAt: null, pending: prev?.pending ?? [] });
         }
+        await logQuietly(learningStore(), [{ tenantId: m.tenantId, userId: m.userId, dir: 'out', kind: 'template', text: `${agendaTpl}: ${agendaLine(agenda, locale, 700, m.timezone)}`, step: 'reminder' }]);
         return { status: 'sent', items: agenda.length };
       }
       if (!items.length) {
@@ -177,6 +179,7 @@ export async function remindOne(d: ReminderDeps, m: ReminderMember, day: string,
         const prev = await d.assistant.session(m.userId).catch(() => null);
         await d.assistant.saveSession(m.userId, { tenantId: m.tenantId, chosenAt: d.now.toISOString(), askedAt: null, pending: prev?.pending ?? [] });
       }
+      await logQuietly(learningStore(), [{ tenantId: m.tenantId, userId: m.userId, dir: 'out', kind: 'template', text: `${template}: ${items.map((i) => i.name).join(', ')}`, step: 'reminder' }]);
       return { status: 'sent', items: items.length };
     });
   } catch (e) {

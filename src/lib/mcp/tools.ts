@@ -56,8 +56,18 @@ export const INSTRUCTIONS = (space: string) => `Eres el asistente del CRM de ven
  * El servidor con sus herramientas. `ctx` monta el contexto de la persona (se llama solo al usar una herramienta).
  * Los errores del CRM (AdminError) vuelven como texto para la IA, en el idioma de la persona.
  */
-export function buildMcpServer(ctx: () => Promise<AdminContext>, info: { space: string; locale: Locale }): McpServer {
+export function buildMcpServer(ctx: () => Promise<AdminContext>, info: { space: string; locale: Locale; log?: (tool: string, args: unknown, result: { text: string; isError: boolean }) => void }): McpServer {
   const server = new McpServer({ name: MCP_NAME, version: MCP_VERSION }, { instructions: INSTRUCTIONS(info.space) });
+  // Aprender de las conversaciones (docs/APRENDIZAJE.md): cada herramienta que usa su IA, con lo que pidió y lo que salió.
+  if (info.log) {
+    const reg = server.registerTool.bind(server) as (...a: unknown[]) => unknown;
+    (server as unknown as { registerTool: (...a: unknown[]) => unknown }).registerTool = (name: unknown, cfg: unknown, cb: unknown) =>
+      reg(name, cfg, async (args: unknown, extra: unknown) => {
+        const r = await (cb as (a: unknown, e: unknown) => Promise<{ content?: Array<{ text?: string }>; isError?: boolean }>)(args, extra);
+        try { info.log!(String(name), args, { text: (r.content ?? []).map((c) => c.text ?? '').join('\n'), isError: !!r.isError }); } catch { /* nunca rompe la herramienta */ }
+        return r;
+      });
+  }
   const run = <A>(fn: (admin: AdminContext, args: A) => Promise<Json>) => async (args: A) => {
     try { return out(await fn(await ctx(), args)); } catch (e) {
       if (e instanceof AdminError) return fail([e.message, ...(e.details ?? [])].join('\n'));

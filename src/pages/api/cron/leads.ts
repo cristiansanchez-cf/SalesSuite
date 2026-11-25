@@ -38,5 +38,16 @@ export const GET: APIRoute = async ({ request }) => {
       if (deps) reminders = (await runReminders(deps)).sent;
     } catch (e) { console.error('[reminders]', e instanceof Error ? e.message : e); }
   }
-  return Response.json({ ok: true, ...r, purged, reminders, email: !!rt.mailer, whatsapp: !!rt.whatsapp });
+  // Aprender de las conversaciones (docs/APRENDIZAJE.md): una vez al día se mira si toca la revisión (cada 3 días).
+  let review: string | null = null;
+  const forceReview = new URL(request.url).searchParams.get('review') === 'force';
+  if ((now.getUTCHours() === 5 && now.getUTCMinutes() % 10 === 0 && now.getUTCMinutes() < 10) || forceReview) {
+    try {
+      const { learningStore } = await import('~/lib/learning/store');
+      const { learningTick, reviewAi } = await import('~/lib/learning/review');
+      const store = learningStore();
+      if (store) review = await learningTick(store, reviewAi(), now, forceReview);
+    } catch (e) { console.error('[learning]', e instanceof Error ? e.message : e); }
+  }
+  return Response.json({ ok: true, ...r, purged, reminders, review: !!review, email: !!rt.mailer, whatsapp: !!rt.whatsapp });
 };

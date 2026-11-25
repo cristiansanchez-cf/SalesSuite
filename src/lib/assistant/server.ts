@@ -42,6 +42,8 @@ export async function assistantDeps(db: AssistantDb, wa: WhatsApp | null, now = 
     screenshot: env('AI_RESEARCH_FIXTURE') === '1' ? fixtureScreenshotReader : env('ANTHROPIC_API_KEY') ? claudeScreenshotReader(env('ANTHROPIC_API_KEY')!) : null,
     edits: env('AI_RESEARCH_FIXTURE') === '1' ? fixtureEditReader : env('ANTHROPIC_API_KEY') ? claudeEditReader(env('ANTHROPIC_API_KEY')!) : null,
     actAs: async (tenantId, userId) => { const t = await tenantById(tenantId); return t ? contextAs(t, userId) : null; },
+    // Aprender de las conversaciones (docs/APRENDIZAJE.md): cada mensaje, para revisarlo cada pocos días.
+    learning: (await import('../learning/store')).learningStore(),
   };
 }
 

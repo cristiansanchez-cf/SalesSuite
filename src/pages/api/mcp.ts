@@ -45,7 +45,11 @@ export const POST: APIRoute = async ({ request, url }) => {
     return a;
   }));
   return withRequestLocale(locale, async () => {
-    const server = buildMcpServer(ctx, { space: tenant.name, locale });
+    const { learningStore, logQuietly } = await import('~/lib/learning/store');
+    const learning = learningStore();
+    const server = buildMcpServer(ctx, { space: tenant.name, locale, ...(learning ? { log: (tool: string, args: unknown, res: { text: string; isError: boolean }) => {
+      void logQuietly(learning, [{ tenantId: owner.tenantId, userId: owner.userId, dir: res.isError ? 'error' : 'mcp', kind: tool, text: JSON.stringify(args ?? {}).slice(0, 4000), meta: { result: res.text.slice(0, 3000) } }]);
+    } } : {}) });
     const transport = new WebStandardStreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: true });
     await server.connect(transport);
     try { return withCors(await transport.handleRequest(request)); } finally { void server.close().catch(() => {}); }

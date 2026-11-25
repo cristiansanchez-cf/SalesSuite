@@ -9,6 +9,7 @@ import { cleanupContext } from '../crm/research-context';
 import { env } from '../env';
 import { claudeDrafter, fixtureDrafter, type Drafter } from './draft';
 import type { Inbound, WhatsApp } from '../leads/whatsapp';
+import { logQuietly, type LearningStore, type LogRow } from '../learning/store';
 import type { AssistantDb, Member } from './db';
 import { handle, type AssistantOps, type Incoming, type Reply } from './flow';
 import type { Transcriber } from './transcribe';
@@ -28,6 +29,8 @@ export interface AssistantDeps {
   edits?: EditReader | null;
   actAs: (tenantId: string, userId: string) => Promise<AdminContext | null>;
   now: Date;
+  /** Aprender de las conversaciones (docs/APRENDIZAJE.md): se guarda cada mensaje y lo que se contesta. */
+  learning?: LearningStore | null;
 }
 export const digitsOf = (phone: string) => phone.replace(/\D/g, '');
 
@@ -178,6 +181,15 @@ export function plan(r: Reply, ask: string): Array<{ text: string; buttons?: Rep
   const last = paras.length > 1 && paras[paras.length - 1]!.length <= BUTTON_BODY_MAX ? paras.pop()! : null;
   return [...chunks(paras.join('\n\n')).map((text) => ({ text })), { text: last ?? ask, buttons: r.buttons }];
 }
+/** Lo que llegó, para el registro (docs/APRENDIZAJE.md). */
+const kindOf = (x: Incoming) => (x.kind === 'text' && x.forwarded ? 'forwarded' : x.kind === 'audio' && x.forwarded ? 'forwarded-audio' : x.kind);
+function textOf(x: Incoming): string {
+  if (x.kind === 'text' || x.kind === 'contact') return x.text;
+  if (x.kind === 'audio') return x.text ?? '';
+  if (x.kind === 'button') return x.id;
+  if (x.kind === 'image') return [x.caption, ...(x.lines ?? [])].filter(Boolean).join('\n');
+  return '';
+}
 async function send(wa: WhatsApp, phoneId: string, to: string, r: Reply, ask: string) {
   for (const m of plan(r, ask)) {
     if (m.buttons?.length && wa.sendButtons) await wa.sendButtons(phoneId, to, m.text, m.buttons);
@@ -240,10 +252,20 @@ async function processInScope(d: AssistantDeps, phoneId: string, member: Member,
     if (m.id && conv.seen.includes(m.id)) return 'duplicate';
     if ((incoming.kind === 'text' || incoming.kind === 'audio') && incoming.forwarded) r = await handle({ ops, now: d.now, locale }, incoming, conv.state);
   }
+  const log: LogRow[] = [{ tenantId, userId, dir: 'in', kind: kindOf(incoming), text: textOf(incoming), step: conv.state.step,
+    meta: { after: r.state.step, ...(incoming.kind === 'audio' && !incoming.text ? { transcribed: false } : {}) } }];
   if (d.wa) {
     for (const reply of r.replies) {
-      try { await send(d.wa, phoneId, m.from, reply, T0.buttonsAsk); } catch (e) { console.error('[assistant] responder', e instanceof Error ? e.message : e); }
+      try { await send(d.wa, phoneId, m.from, reply, T0.buttonsAsk); } catch (e) {
+        const error = e instanceof Error ? e.message : String(e);
+        console.error('[assistant] responder', error);
+        log.push({ tenantId, userId, dir: 'error', kind: 'send', text: error.slice(0, 2000), step: r.state.step });
+      }
     }
   }
+  for (const reply of r.replies) log.push({ tenantId, userId, dir: 'out', kind: reply.buttons?.length ? 'buttons' : 'text', text: reply.text, step: r.state.step, meta: reply.buttons?.length ? { buttons: reply.buttons.map((b) => b.title) } : {} });
+  // Con hora de cada uno, en orden (lo que manda y luego lo que se le contesta).
+  const t0 = Date.now();
+  await logQuietly(d.learning ?? null, log.map((x, i) => ({ ...x, at: new Date(t0 + i).toISOString() })));
   return 'handled';
 }

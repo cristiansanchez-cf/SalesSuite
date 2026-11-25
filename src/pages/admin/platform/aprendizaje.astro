@@ -1,0 +1,194 @@
+---
+/**
+ * Aprender de las conversaciones (docs/APRENDIZAJE.md): solo el superadmin. Arriba, la última revisión de la IA (qué
+ * problemas tiene el equipo beta con el asistente y qué proponemos); debajo, las conversaciones tal cual, por persona.
+ * «Revisar ahora» la hace en el momento (si no, sola cada 3 días desde el cron).
+ */
+import AdminLayout from '~/layouts/AdminLayout.astro';
+import Icon from '~/components/ui/Icon.astro';
+import { i18n } from '~/lib/i18n';
+import { learningMessages } from '~/lib/i18n/messages/learning';
+import { learningOn, learningStore, type Review } from '~/lib/learning/store';
+import { conversations, reviewAi, runReview, reviewDue } from '~/lib/learning/review';
+
+const { admin } = Astro.locals;
+if (!admin) return Astro.redirect('/admin/login');
+if (!admin.session.superadmin) return Astro.rewrite('/admin/forbidden');
+const { m, locale } = i18n(Astro, learningMessages);
+const tag = locale === 'en' ? 'en-GB' : locale === 'pt' ? 'pt-PT' : locale === 'ko' ? 'ko-KR' : 'es-ES';
+const day = (iso: string) => new Intl.DateTimeFormat(tag, { day: 'numeric', month: 'short', timeZone: 'Europe/Madrid' }).format(new Date(iso));
+const time = (iso: string) => new Intl.DateTimeFormat(tag, { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Madrid' }).format(new Date(iso));
+const store = learningStore();
+const now = new Date();
+
+let flash: string | null = Astro.url.searchParams.get('ok') === 'ran' ? m.ran : Astro.url.searchParams.get('ok') === 'none' ? m.nothingToReview : null;
+let error: string | null = null;
+if (Astro.request.method === 'POST' && store) {
+  const fd = await Astro.request.formData();
+  if (fd.get('action') === 'run') {
+    try {
+      const { from } = await reviewDue(store, now);
+      const id = await runReview(store, reviewAi(), now, { from });
+      return Astro.redirect(`/admin/platform/aprendizaje?ok=${id ? 'ran' : 'none'}`, 303);
+    } catch (e) { error = e instanceof Error ? e.message : String(e); }
+  }
+}
+
+const days = Math.min(30, Math.max(1, Number(Astro.url.searchParams.get('d')) || 7));
+const who = Astro.url.searchParams.get('u') || undefined;
+const pickId = Astro.url.searchParams.get('r');
+let ready = !!store;
+let reviews: Review[] = [];
+let logs: Awaited<ReturnType<NonNullable<typeof store>['list']>> = [];
+let people: Array<{ userId: string; name: string | null; messages: number }> = [];
+const since = new Date(now.getTime() - days * 86_400_000).toISOString();
+if (store) {
+  try {
+    [reviews, logs, people] = await Promise.all([store.reviews(20), store.list({ from: since, userId: who, limit: 3000 }), store.people(since)]);
+  } catch { ready = false; }
+}
+const shown = (pickId ? reviews.find((r) => r.id === pickId) : null) ?? reviews[0] ?? null;
+const convs = conversations(logs).reverse();
+const metricKeys = ['people', 'conversations', 'messagesIn', 'audios', 'saved', 'changes', 'cancelled', 'audiosNotHeard', 'forwarded', 'screenshots', 'companyPicks', 'agenda', 'mcpCalls', 'reminders', 'errors'];
+const sevClass: Record<string, string> = { high: 'co-row--attention', medium: '', low: '' };
+const href = (o: { d?: number; u?: string | null; r?: string | null }) => {
+  const q = new URLSearchParams();
+  if ((o.d ?? days) !== 7) q.set('d', String(o.d ?? days));
+  const u = o.u === undefined ? who : o.u;
+  if (u) q.set('u', u);
+  const r = o.r === undefined ? pickId : o.r;
+  if (r) q.set('r', r);
+  const s = q.toString();
+  return `/admin/platform/aprendizaje${s ? `?${s}` : ''}#convos`;
+};
+---
+<AdminLayout title={m.title} wide>
+  <div class="mx-auto grid max-w-6xl grid-cols-[minmax(0,1fr)] gap-8 pb-10" data-testid="learning">
+    <header class="grid gap-2">
+      <a class="co-meta inline-flex items-center gap-1" href="/admin/platform"><Icon name="chevron-left" size={14} />{m.back}</a>
+      <p class="text-eyebrow">{m.eyebrow}</p>
+      <h1 class="co-page-title !text-5xl">{m.title}</h1>
+      <p class="co-lede !text-lg">{m.lede}</p>
+    </header>
+
+    {!learningOn() && <p class="co-alert co-alert--info m-0">{m.off}</p>}
+    {learningOn() && !ready && <p class="co-alert co-alert--info m-0" data-testid="learning-not-ready">{m.notReady}</p>}
+    {flash && <p class="co-alert co-alert--success m-0" role="status" data-testid="learning-flash">{flash}</p>}
+    {error && <p class="co-alert co-alert--failure m-0" role="alert">{error}</p>}
+
+    {ready && (
+      <section class="grid gap-4" data-testid="learning-review">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div class="grid gap-1">
+            <h2 class="co-entity !text-2xl">{m.latest}</h2>
+            {shown && <p class="co-meta m-0">{m.period(day(shown.periodFrom), day(shown.periodTo))} · {shown.model ?? ''}</p>}
+          </div>
+          <form method="post" data-testid="learning-run-form" onsubmit="this.querySelector('button').disabled=true;this.querySelector('[data-running]').hidden=false">
+            <input type="hidden" name="action" value="run" />
+            <button class="co-btn co-btn--primary" type="submit" data-testid="learning-run"><Icon name="sparkles" size={16} />{m.runNow}</button>
+            <span class="co-meta ml-2" data-running hidden>{m.running}</span>
+          </form>
+        </div>
+
+        {!shown && <p class="co-meta" data-testid="learning-no-reviews">{m.noReviews}</p>}
+        {shown && (
+          <>
+            <div class="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-5" data-testid="learning-metrics">
+              {metricKeys.filter((k) => shown.metrics[k] !== undefined).map((k) => (
+                <div class="co-card grid !p-4"><span class="co-figure text-3xl">{String(shown.metrics[k])}</span><span class="co-meta">{m.metrics[k] ?? k}</span></div>
+              ))}
+            </div>
+            {shown.error && <p class="co-alert co-alert--failure m-0">{m.failed}: {shown.error}</p>}
+            {shown.report && (
+              <>
+                <div class="co-card grid gap-3 !p-5">
+                  <h3 class="co-entity !text-lg m-0">{m.summary}</h3>
+                  <p class="co-body m-0" data-ugc>{shown.report.summary}</p>
+                  {shown.report.usage.length > 0 && (
+                    <>
+                      <h4 class="text-eyebrow m-0">{m.usage}</h4>
+                      <ul class="m-0 grid gap-1 pl-5">{shown.report.usage.map((u) => <li data-ugc>{u}</li>)}</ul>
+                    </>
+                  )}
+                </div>
+                <h3 class="co-entity !text-xl m-0">{m.findings}</h3>
+                <div class="grid gap-3" data-testid="learning-findings">
+                  {shown.report.findings.map((f) => (
+                    <article class:list={['co-card grid gap-2 !p-5', sevClass[f.severity]]} data-testid="finding" data-kind={f.kind} data-severity={f.severity}>
+                      <div class="flex flex-wrap items-center gap-2">
+                        <span class="co-tag">{m.kinds[f.kind] ?? f.kind}</span>
+                        <span class="co-tag">{m.sev[f.severity] ?? f.severity}</span>
+                        <span class="co-meta">{m.times(f.times, f.people)}</span>
+                      </div>
+                      <h4 class="co-entity !text-lg m-0" data-ugc>{f.title}</h4>
+                      <p class="co-body m-0" data-ugc>{f.what}</p>
+                      {f.examples.length > 0 && (
+                        <details>
+                          <summary class="co-meta cursor-pointer">{m.examples} ({f.examples.length})</summary>
+                          <ul class="m-0 mt-2 grid gap-2 pl-0">
+                            {f.examples.map((e) => <li class="co-inset list-none !p-3"><span class="co-meta block">{e.who}</span><span data-ugc>«{e.quote}»</span></li>)}
+                          </ul>
+                        </details>
+                      )}
+                      {f.cause && <p class="m-0"><b>{m.cause}:</b> <span data-ugc>{f.cause}</span></p>}
+                      {f.proposal && <p class="m-0"><b>{m.proposal}:</b> <span data-ugc>{f.proposal}</span></p>}
+                    </article>
+                  ))}
+                </div>
+              </>
+            )}
+          </>
+        )}
+
+        {reviews.length > 1 && (
+          <details class="co-card !p-4">
+            <summary class="co-entity cursor-pointer">{m.history} ({reviews.length - 1})</summary>
+            <ul class="m-0 mt-3 grid gap-1 pl-0">
+              {reviews.map((r) => (
+                <li class="list-none"><a href={href({ r: r.id }).replace('#convos', '')} aria-current={shown?.id === r.id ? 'true' : undefined}>{m.period(day(r.periodFrom), day(r.periodTo))}</a> · <span class="co-meta">{r.conversations} {m.convos.toLowerCase()}{r.report ? ` · ${r.report.findings.length}` : ''}{r.error ? ` · ${m.failed}` : ''}</span></li>
+              ))}
+            </ul>
+          </details>
+        )}
+      </section>
+    )}
+
+    {ready && (
+      <section id="convos" class="grid gap-4" data-testid="learning-convos">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <h2 class="co-entity !text-2xl m-0">{m.convos}</h2>
+          <div class="flex flex-wrap gap-2">
+            {[3, 7, 30].map((n) => <a class:list={['co-btn co-btn--sm', n === days ? 'co-btn--primary' : 'co-btn--ghost']} href={href({ d: n })}>{m.days(n)}</a>)}
+          </div>
+        </div>
+        <div class="flex flex-wrap gap-2" data-testid="learning-people">
+          <a class:list={['co-tag no-underline', !who && 'co-tag--match']} href={href({ u: null })}>{m.everyone}</a>
+          {people.map((p) => <a class:list={['co-tag no-underline', who === p.userId && 'co-tag--match']} href={href({ u: p.userId })}>{p.name || '—'} · {p.messages}</a>)}
+        </div>
+        {convs.length === 0 && <p class="co-meta" data-testid="learning-empty">{m.empty}</p>}
+        {convs.map((c) => (
+          <details class="co-card !p-4" data-testid="convo">
+            <summary class="cursor-pointer">
+              <span class="co-entity">{c.who}</span>{c.space && <span class="co-meta"> · {c.space}</span>}
+              <span class="co-meta"> · {day(c.from)} {time(c.from)} · {c.entries.length}</span>
+            </summary>
+            <ol class="m-0 mt-3 grid gap-2 p-0">
+              {c.entries.map((e) => (
+                <li class:list={['list-none max-w-[85%] rounded-2xl px-3 py-2 text-sm', e.dir === 'in' ? 'justify-self-end bg-[color:var(--co-signal-soft)]' : e.dir === 'error' ? 'co-row--attention co-inset' : 'co-inset']} data-dir={e.dir}>
+                  <span class="co-meta block text-xs">
+                    {e.dir === 'in' ? m.person : e.dir === 'out' ? m.bot : e.dir === 'mcp' ? `${m.mcp} · ${e.kind}` : `${m.error} · ${e.kind}`}
+                    {e.dir === 'in' && e.kind !== 'text' && ` · ${e.kind}`}{e.meta?.transcribed === false && ` · ${m.notHeard}`}
+                    {' · '}{time(e.at)}{e.dir === 'in' && e.step && ` · ${m.steps(e.step, String(e.meta?.after ?? '?'))}`}
+                  </span>
+                  <span class="whitespace-pre-wrap break-words" data-ugc>{e.text}</span>
+                  {Array.isArray(e.meta?.buttons) && <span class="co-meta block text-xs">{m.buttons}: {(e.meta.buttons as string[]).join(' / ')}</span>}
+                  {e.meta?.result !== undefined && <details><summary class="co-meta text-xs cursor-pointer">{m.result}</summary><span class="whitespace-pre-wrap break-words text-xs" data-ugc>{String(e.meta.result)}</span></details>}
+                </li>
+              ))}
+            </ol>
+          </details>
+        ))}
+      </section>
+    )}
+  </div>
+</AdminLayout>

@@ -17,6 +17,8 @@ import { i18n } from '~/lib/i18n';
 import { orgMessages } from '~/lib/i18n/messages/org';
 import { costsMessages } from '~/lib/i18n/messages/costs';
 import { monthOf, usd } from '~/lib/usage/report';
+import { learningMessages } from '~/lib/i18n/messages/learning';
+import { learningStore } from '~/lib/learning/store';
 
 const { admin, tenant } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
@@ -56,6 +58,9 @@ const WS = leadsMessages[locale0].waStatus;
 // Lo que lleva gastado cada espacio este mes (docs/COSTES.md); si falla, la página sale igual sin ello.
 const { m: cm, locale } = i18n(Astro, costsMessages);
 const costs = await admin.org.costs(monthOf(new Date())).catch(() => null);
+// Aprender de las conversaciones (docs/APRENDIZAJE.md): la última revisión, para el acceso.
+const LM = learningMessages[locale0];
+const lastReview = await learningStore()?.reviews(1).then((r) => r[0] ?? null).catch(() => null) ?? null;
 const costOf = new Map((costs?.report.tenants ?? []).map((t) => [t.id, t]));
 const money$ = (n: number) => usd(n, locale === 'en' ? 'en-GB' : locale === 'pt' ? 'pt-PT' : locale === 'ko' ? 'ko-KR' : 'es-ES');
 const createdSlug = Astro.url.searchParams.get('ok') === 'created' ? Astro.url.searchParams.get('s') : null;
@@ -81,6 +86,11 @@ const total = spaces.reduce((a, x) => ({ members: a.members + x.members, dossier
         <span class="co-btn co-btn--ghost co-btn--sm">{cm.detail} <Icon name="chevron-right" size={14} /></span>
       </a>
     )}
+
+    <a class="co-card flex flex-wrap items-center justify-between gap-3 !p-5 no-underline" href="/admin/platform/aprendizaje" data-testid="platform-learning">
+      <span class="grid"><span class="co-entity !text-xl">{LM.title}</span><span class="co-meta">{lastReview ? LM.cardMeta(lastReview.report?.findings.length ?? 0, new Intl.DateTimeFormat(locale0 === 'en' ? 'en-GB' : 'es-ES', { day: 'numeric', month: 'short' }).format(new Date(lastReview.createdAt))) : LM.cardNone}</span></span>
+      <span class="co-btn co-btn--ghost co-btn--sm">{cm.detail} <Icon name="chevron-right" size={14} /></span>
+    </a>
 
     {created && (
       <div class="co-alert co-alert--success grid gap-2" role="status" data-testid="space-created">
