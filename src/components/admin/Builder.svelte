@@ -765,6 +765,326 @@
         </details>
       </section>
 
+      <!-- módulos: arrastrar para ordenar o desde «Añadir» -->
+      <section class={card}>
+        <h2 class="mb-1 co-card-title">{t.modules.title}</h2>
+        <p class="co-meta mb-3">{t.quick.dragHint}</p>
+        {#if recipe && editable}
+          <div class="mb-4 grid gap-3 rounded-[var(--console-radius-control)] border-2 border-[color:var(--co-signal)] p-4" data-testid="preset">
+            <div><p class="co-card-title">{t.preset.title}</p><p class="co-meta">{t.preset.lede}</p></div>
+            {#if s.templates?.some((x) => x.note)}
+              <div class="grid gap-1.5" data-testid="preset-ready">
+                <p class="text-sm font-semibold">{t.preset.ready} <span class="co-meta font-normal">· {t.preset.readyHint}</span></p>
+                <div class="grid gap-2 sm:grid-cols-2">
+                  {#each s.templates.filter((x) => x.note) as tpl (tpl.id)}
+                    <button type="button" class="co-inset grid gap-0.5 text-left hover:!border-[color:var(--co-signal)]" disabled={busy} onclick={() => applyTemplate(tpl)} data-testid="preset-tpl">
+                      <span class="font-semibold">{tpl.name}</span><span class="co-meta">{tpl.note}</span>
+                    </button>
+                  {/each}
+                </div>
+              </div>
+            {/if}
+            {#if s.templates?.some((x) => !x.note)}
+              <div class="grid gap-1.5" data-testid="preset-saved">
+                <p class="text-sm font-semibold">{t.preset.saved} <span class="co-meta font-normal">· {t.preset.useSaved}</span></p>
+                <div class="flex flex-wrap gap-2">
+                  {#each s.templates.filter((x) => !x.note) as tpl (tpl.id)}
+                    <span class="inline-flex items-center gap-1">
+                      <button type="button" class="co-chip" disabled={busy} onclick={() => applyTemplate(tpl)} data-testid="preset-tpl">{tpl.name}</button>
+                      {#if tpl.mine}<button type="button" class="text-xs text-muted" disabled={busy} onclick={() => run({ op: 'deleteTemplate', templateId: tpl.id })} aria-label={t.preset.remove(tpl.name)}>✕</button>{/if}
+                    </span>
+                  {/each}
+                </div>
+              </div>
+            {/if}
+            {#if recipe.hasVisual}
+              <p class="text-sm font-semibold">{t.preset.mode}</p>
+              <div class="grid gap-2 sm:grid-cols-2">
+                {#each [['full', t.preset.full, t.preset.fullHint], ['visual', t.preset.visual, t.preset.visualHint]] as [k, label, hint] (k)}
+                  <button type="button" class="co-inset grid gap-0.5 text-left {presetMode === k ? '!border-[color:var(--co-signal)] ring-2 ring-[color:var(--co-signal)]' : ''}" aria-pressed={presetMode === k} onclick={() => (presetMode = k as 'full' | 'visual')} data-testid="preset-mode-{k}">
+                    <span class="font-semibold">{label}</span><span class="co-meta">{hint}</span>
+                  </button>
+                {/each}
+              </div>
+            {/if}
+            {#each recipe.choices.filter((c) => shows(c.when)) as ch (ch.key)}
+              <div class="grid gap-1.5" data-testid="preset-choice-{ch.key}">
+                <p class="text-sm font-semibold">{ch.label}</p>
+                {#if ch.hint}<p class="co-meta -mt-1">{ch.hint}</p>{/if}
+                <div class="grid gap-2 sm:grid-cols-2">
+                  {#each ch.options as o (o.key)}
+                    <button type="button" class="co-inset grid gap-0.5 text-left {chosen(ch.key) === o.key ? '!border-[color:var(--co-signal)] ring-2 ring-[color:var(--co-signal)]' : ''}" aria-pressed={chosen(ch.key) === o.key} onclick={() => pickOption(ch.key, o.key)} data-testid="preset-opt-{ch.key}-{o.key}">
+                      <span class="font-semibold">{o.label}</span>{#if o.hint}<span class="co-meta">{o.hint}</span>{/if}
+                    </button>
+                  {/each}
+                </div>
+              </div>
+            {/each}
+            {#if recipe.questions.some((q) => shows(q.when))}
+              <p class="text-sm font-semibold">{t.preset.questions}</p>
+              <ul class="grid gap-1.5 p-0">
+                {#each recipe.questions.filter((q) => shows(q.when)) as q (q.key)}
+                  <li class="list-none"><label class="flex items-start gap-2 text-sm">
+                    <input type="checkbox" class="mt-0.5" checked={presetAnswers.includes(q.key)} onchange={() => toggleAnswer(q.key)} data-testid="preset-q-{q.key}" />
+                    <span><span class="font-semibold">{q.label}</span>{#if q.hint}<span class="co-meta block">{q.hint}</span>{/if}</span>
+                  </label></li>
+                {/each}
+              </ul>
+            {/if}
+            <div class="flex flex-wrap items-center gap-3">
+              <button class="co-btn co-btn--primary co-btn--sm" disabled={busy} onclick={applyPreset} data-testid="preset-apply">{presetDone ? t.preset.reapply : t.preset.apply}</button>
+              {#if s.items.length}<span class="co-meta">{t.preset.warn}</span>{/if}
+            </div>
+            {#if presetDone}
+              <form class="flex flex-wrap items-end gap-2 border-t border-line pt-3" onsubmit={(e) => { e.preventDefault(); saveTemplate(); }} data-testid="preset-save">
+                <label class="grid flex-1 gap-1 text-sm"><span class="font-semibold">{t.preset.saveAs}</span>
+                  <input class="co-input" maxlength="60" required bind:value={templateName} placeholder={t.preset.namePh} data-testid="preset-save-name" />
+                </label>
+                <button class="co-btn co-btn--sm" type="submit" disabled={busy || !templateName.trim()}>{t.preset.save}</button>
+              </form>
+            {/if}
+          </div>
+        {/if}
+        {#if s.items.length === 0 && editable}
+          <div class="mb-3 grid gap-3 rounded-[var(--console-radius-control)] bg-surface p-4" data-testid="quick-start">
+            <p class="text-eyebrow">{t.quick.title}</p>
+            {#if market.segments.length}
+              <p class="text-sm font-semibold">{t.quick.sector}</p>
+              <div class="co-chips">
+                {#each market.segments as sg (sg.id)}
+                  <button type="button" class="co-chip" aria-pressed={d.segmentId === sg.id} onclick={() => run({ op: 'setSegment', segmentId: sg.id })}>{sg.name}</button>
+                {/each}
+              </div>
+            {/if}
+            <div class="flex flex-wrap gap-2">
+              {#if recommended.length}<button class="co-btn co-btn--primary co-btn--sm" disabled={busy} onclick={() => addMany(recommended)} data-testid="add-recommended">{t.quick.recommended(recommended.length)}</button>{/if}
+              {#if s.catalog.length}<button class="{btn}" disabled={busy} onclick={() => addMany(s.catalog)} data-testid="add-all">{t.quick.all(s.catalog.length)}</button>{/if}
+            </div>
+          </div>
+        {/if}
+        <ol
+          class="space-y-2 p-0 {s.items.length === 0 ? 'drop-empty' : 'min-h-[3rem]'}"
+          use:dndzone={{ items: list, type: 'module', flipDurationMs: 150, dragDisabled: !editable || busy, dropTargetStyle: { outline: '2px dashed var(--co-signal)', outlineOffset: '4px', borderRadius: '12px' } }}
+          onconsider={onConsider}
+          onfinalize={onFinalize}
+          data-testid="items"
+        >
+          {#each list as item, idx (item.id)}
+            <li class="list-none rounded-[var(--console-radius-control)] {item.cat ? 'border-2 border-dashed border-[color:var(--co-signal)] p-3 font-semibold' : `border border-[var(--console-card-border)] bg-[var(--console-surface)] ${item.visible ? '' : 'opacity-60'}`}" animate:flip={{ duration: 150 }} data-testid={item.cat ? undefined : 'item'} data-item-key={item.moduleKey}>
+              {#if item.cat}{item.moduleName}{:else}
+              <div class="flex items-center gap-2 p-2 pl-3">
+                <span class="cursor-grab select-none text-muted" aria-hidden="true">⠿</span>
+                <div class="min-w-0 flex-1">
+                  <p class="truncate font-semibold">{item.moduleName}</p>
+                  {#if typeof item.propOverrides?.title === 'string' && item.propOverrides.title !== item.moduleName}<p class="truncate text-xs text-muted" data-testid="item-title">{String(item.propOverrides.title).replace(/\{company\}/g, d.prospectCompany || '…')}</p>{/if}
+                  {#if !item.visible || item.price}<p class="truncate text-xs text-muted">
+                    {#if !item.visible}<span class="font-semibold">{t.modules.hidden}</span>{/if}
+                    {#if item.price}{!item.visible ? ' · ' : ''}{item.price.formatted}{/if}
+                  </p>{/if}
+                </div>
+                <button class="co-btn co-btn--sm {openTexts === item.id ? 'co-btn--primary' : 'co-btn--quiet'}" onclick={() => (openTexts = openTexts === item.id ? null : item.id)} aria-expanded={openTexts === item.id} aria-label={t.texts.open(item.moduleName)} data-testid="edit-texts">✎ {t.texts.button}</button>
+                <button class={iconBtn} disabled={!editable || idx === 0} onclick={() => move(item, -1)} aria-label={t.modules.moveUp(item.moduleName)}>↑</button>
+                <button class={iconBtn} disabled={!editable || idx === list.length - 1} onclick={() => move(item, 1)} aria-label={t.modules.moveDown(item.moduleName)}>↓</button>
+                <button class={iconBtn} disabled={!editable} onclick={() => run({ op: 'setVisible', itemId: item.id, visible: !item.visible })} aria-label={item.visible ? t.modules.hide(item.moduleName) : t.modules.show(item.moduleName)} aria-pressed={!item.visible} data-testid="toggle-visible">{item.visible ? '👁' : '◌'}</button>
+                <button class={iconBtn} disabled={!editable} onclick={() => remove(item)} aria-label={t.modules.remove(item.moduleName)}>✕</button>
+                {#if s.customPrices}<button class={iconBtn} onclick={() => toggleProps(item)} aria-expanded={openProps === item.id} aria-label="{t.advanced}: {item.moduleName}" title={t.advanced}>⋯</button>{/if}
+              </div>
+              {#if item.error}<p class="co-alert co-alert--rejection mx-3 mb-2 text-xs">{t.modules.invalid} {item.error}</p>{/if}
+              <!-- Segunda fila solo si tiene algo (precio por módulo o versión nueva): nada de huecos vacíos. -->
+              {#if (d.priceMode === 'per_module' && s.customPrices) || item.upgradeTo}
+              <div class="flex flex-wrap items-center gap-2 border-t border-line px-3 py-2 text-sm">
+                {#if d.priceMode === 'per_module' && s.customPrices}
+                  <label class="flex items-center gap-2">
+                    <span class="text-muted">{t.modules.price}</span>
+                    <input class="co-input !w-28 !min-h-[32px] !py-1" inputmode="decimal" value={item.priceOverride ?? ''} disabled={!editable}
+                      placeholder={item.defaultPrice != null ? String(item.defaultPrice) : '—'} onchange={(e) => saveItemPrice(item, e.currentTarget.value)}
+                      aria-label={t.modules.priceOf(item.moduleName)} data-testid="item-price-input" />
+                  </label>
+                {/if}
+                {#if item.upgradeTo}
+                  <button class={btn} disabled={!editable} onclick={() => run({ op: 'upgradeItem', itemId: item.id })}>{t.modules.upgrade(item.upgradeTo.version)}</button>
+                {/if}
+              </div>
+              {/if}
+              {#if item.blockType === 'cost-math'}
+                <!-- «Lo que ya te cuesta»: las cifras que dio el cliente. Sin ninguna, la diapositiva no sale. -->
+                <div class="grid gap-2 border-t border-line px-3 py-2 text-sm sm:grid-cols-3" data-testid="cost-form">
+                  {#each [['perNight', t.cost.perNight], ['nightsPerMonth', t.cost.nights], ['sundayHours', t.cost.hours]] as [k, label] (k)}
+                    <label class="grid gap-1"><span class="text-xs text-muted">{label}</span>
+                      <input class="co-input !min-h-[32px] !py-1" inputmode="decimal" disabled={!editable} value={item.propOverrides?.[k] ?? ''}
+                        onchange={(e) => saveCost(item, k, e.currentTarget.value)} data-testid="cost-{k}" />
+                    </label>
+                  {/each}
+                  <p class="co-meta sm:col-span-3">{t.cost.help}</p>
+                </div>
+              {/if}
+              {#if item.blockType === 'live-screen'}
+                <LiveScenes {item} photos={media.photos ?? []} hasVideo={!!media.video} {editable} t={t.scenes} onsave={(sc) => saveScenes(item, sc)} />
+              {/if}
+              {#if openTexts === item.id}
+                <TextsEditor {item} {editable} t={t.texts} onsave={(o) => saveTexts(item, o)} onclose={() => (openTexts = null)} />
+              {/if}
+              {#if openProps === item.id}
+                <div class="space-y-2 border-t border-line p-3 text-sm">
+                  <p class="text-xs text-muted">{t.modules.propsHelp}</p>
+                  <textarea class="{field} h-40 font-mono text-xs" bind:value={propsDraft} disabled={!editable} spellcheck="false"></textarea>
+                  {#if propsError}<p class="co-alert co-alert--rejection text-xs">{propsError}</p>{/if}
+                  <details class="text-xs"><summary class="cursor-pointer text-muted">{t.modules.catalogValues}</summary><pre class="mt-1 max-h-48 overflow-auto rounded-lg bg-surface p-2">{JSON.stringify(item.defaultProps, null, 2)}</pre></details>
+                  {#if editable}<button class="co-btn co-btn--primary co-btn--sm" onclick={() => saveProps(item)}>{t.modules.saveProps}</button>{/if}
+                </div>
+              {/if}
+              {/if}
+            </li>
+          {/each}
+        </ol>
+        {#if editable && cat.length}
+          <p class="text-eyebrow mb-2 mt-5">{t.quick.add}</p>
+          <ul
+            class="grid gap-2 p-0 sm:grid-cols-2"
+            use:dndzone={{ items: cat, type: 'module', dropFromOthersDisabled: true, flipDurationMs: 150, dragDisabled: busy, dropTargetStyle: {} }}
+            onconsider={onCatConsider}
+            onfinalize={onCatFinalize}
+            data-testid="catalog"
+          >
+            {#each cat as c (c.id)}
+              <li class="co-row list-none !items-center !p-3" animate:flip={{ duration: 150 }}>
+                <span class="cursor-grab select-none text-muted" aria-hidden="true">⠿</span>
+                <span class="min-w-0 flex-1">
+                  <span class="block truncate font-semibold">{c.moduleName}</span>
+                  {#if c.description}<span class="block truncate text-xs text-muted">{c.description}</span>{/if}
+                </span>
+                <button class={iconBtn} disabled={busy} onclick={() => run({ op: 'addItem', moduleVersionId: c.versionId })} aria-label={t.catalog.addNamed(c.moduleName)} data-testid="add-{c.moduleKey}">＋</button>
+              </li>
+            {/each}
+          </ul>
+        {/if}
+      </section>
+
+      <!-- precio: lo que vale (y los paquetes) justo después del contenido -->
+      {#if !deck}
+      <details class={card} data-testid="price-panel" open={d.priceMode !== 'none' || !!s.partnerAccount || !!d.priceOptionId}>
+        <summary class="flex cursor-pointer items-center justify-between gap-3">
+          <span class="co-card-title">{t.price.title}</span>
+          <span class="text-sm">{#if s.total}{#if s.total.before}<s class="text-muted">{s.total.before.formatted}</s> {/if}<strong data-testid="total">{s.total.formatted}</strong>{:else}<span class="text-muted">{t.price.modeNone}</span>{/if}</span>
+        </summary>
+        <div class="mt-3 grid gap-5">
+        {#if s.partnerAccount}
+          <p class="co-alert co-alert--info mb-3 block" data-testid="partner-account">
+            {t.price.account} <strong>{s.partnerAccount.name}</strong> · {t.policy[s.partnerAccount.pricePolicy]}{s.partnerAccount.pricePolicy === 'adjusted' && s.partnerAccount.priceAdjustPct != null ? t.price.overList(`${s.partnerAccount.priceAdjustPct > 0 ? '+' : ''}${s.partnerAccount.priceAdjustPct}`) : ''}
+            {#if s.pricesLocked}
+              <span class="mt-1 block text-muted">{t.price.locked}{s.partnerAccount.pricePolicy === 'hidden' ? t.price.lockedHidden : ''}</span>
+            {:else}
+              <span class="mt-1 block text-muted">{t.price.partner}</span>
+            {/if}
+          </p>
+        {/if}
+        {#if !s.pricesLocked}
+          <!-- Tarifas: las fija la empresa; aquí solo se eligen -->
+          <div class="grid gap-2">
+            {#if s.priceOptions.length === 0 && !s.customPrices}<p class="co-meta">{t.tariff.empty}</p>{/if}
+            {#if s.priceOptions.length}<p class="co-field">{t.tariff.what}</p>{/if}
+            <div class="co-chips" data-testid="price-kinds">
+              <button type="button" class="co-chip" aria-pressed={!d.priceOptionId && d.priceMode === 'none' && !customOpen} disabled={!editable} onclick={() => { pickedKind = null; customOpen = false; run({ op: 'setPriceOption', priceOptionId: null }); }} data-testid="price-option-none">{t.tariff.none}</button>
+              {#each shownKinds as x (x.k)}
+                <button type="button" class="co-chip" aria-pressed={activeKind === x.k} disabled={!editable} onclick={() => pickKind(x.k)} data-testid="price-kind" data-kind={x.k}>{x.k}</button>
+              {/each}
+              {#if shownKinds.length < kinds.length}<button type="button" class="co-chip co-chip--quiet" onclick={() => (allKinds = true)} data-testid="price-kinds-more">{t.tariff.otherSectors}</button>{/if}
+              {#if s.customPrices}<button type="button" class="co-chip" aria-pressed={customOpen || (!d.priceOptionId && d.priceMode !== 'none')} disabled={!editable} onclick={() => (customOpen = !customOpen)} data-testid="price-custom">{t.tariff.custom}</button>{/if}
+            </div>
+            {#if activeKind && s.priceOptions.filter((o) => kindOf(o) === activeKind && !o.quoteOnly).length > 1}
+              <div class="co-chips mt-1" data-testid="price-options">
+                {#each s.priceOptions.filter((o) => kindOf(o) === activeKind && !o.quoteOnly) as o (o.id)}
+                  <button type="button" class="co-chip" aria-pressed={d.priceOptionId === o.id} disabled={!editable} onclick={() => d.priceOptionId !== o.id && run({ op: 'setPriceOption', priceOptionId: o.id })} data-testid="price-option" data-label={o.label}>{o.kind && o.label.startsWith(o.kind + ' · ') ? o.label.slice(o.kind.length + 3) : o.label} · <strong>{money(o.amount, o.currency)}{t.tariff.period[o.period] ?? ''}</strong></button>
+                {/each}
+              </div>
+            {/if}
+            {#if activeKind}
+              {#each s.priceOptions.filter((o) => kindOf(o) === activeKind && o.quoteOnly) as o (o.id)}
+                <p class="co-alert co-alert--attention mt-1 !py-2 text-sm" data-testid="price-quote-only"><strong>{o.label}</strong>{o.amount > 0 ? ` · ${t.tariff.from(money(o.amount, o.currency))}` : ''} — {o.note ?? t.tariff.quoteOnly}</p>
+              {/each}
+            {/if}
+          </div>
+          {#if s.customPrices && (customOpen || (!d.priceOptionId && d.priceMode !== 'none'))}
+            <div class="grid gap-3 rounded-[var(--console-radius-control)] bg-surface p-3">
+        <div class="co-segmented" role="radiogroup" aria-label={t.price.mode}>
+          {#each [['none', t.price.modeNone], ['total', t.price.modeTotal], ['per_module', t.price.modePerModule]] as [mode, label]}
+            <button
+              role="radio" aria-checked={d.priceMode === mode} disabled={!editable}
+              onclick={() => d.priceMode !== mode && run({ op: 'update', patch: { priceMode: mode as 'none' | 'total' | 'per_module' } })}
+              data-testid={`price-mode-${mode}`}
+            >{label}</button>
+          {/each}
+        </div>
+        <div class="mt-3 grid gap-3 sm:grid-cols-2">
+          {#if d.priceMode === 'total'}
+            <label class="text-sm font-medium">{t.price.totalPrice}
+              <input class={field} inputmode="decimal" value={d.totalPrice ?? ''} disabled={!editable} placeholder="0" onchange={(e) => saveTotal(e.currentTarget.value)} data-testid="total-price" />
+            </label>
+          {/if}
+          {#if d.priceMode !== 'none'}
+            <label class="text-sm font-medium">{t.price.currency}
+              <select class={field} value={d.currency} disabled={!editable} onchange={(e) => saveField('currency', e.currentTarget.value)}>
+                {#each CURRENCIES as c}<option>{c}</option>{/each}
+              </select>
+            </label>
+          {/if}
+        </div>
+        {#if d.priceMode === 'per_module'}<p class="mt-2 text-xs text-muted">{t.price.perModuleHelp}</p>{/if}
+            </div>
+          {/if}
+          {#if d.priceMode !== 'none' && (coupons.length || d.discount)}
+            <div class="grid gap-2">
+              <p class="co-field">{t.tariff.discount}</p>
+              <div class="co-chips" data-testid="coupons">
+                <button type="button" class="co-chip" aria-pressed={!d.couponId} disabled={!editable} onclick={() => d.couponId && run({ op: 'setCoupon', couponId: null })} data-testid="coupon-none">{t.tariff.noDiscount}</button>
+                {#if d.couponId && d.discount && !coupons.some((c) => c.id === d.couponId)}<button type="button" class="co-chip" aria-pressed="true" disabled>{d.discount.label}</button>{/if}
+                {#each coupons as c (c.id)}
+                  <button type="button" class="co-chip" aria-pressed={d.couponId === c.id} disabled={!editable} onclick={() => d.couponId !== c.id && run({ op: 'setCoupon', couponId: c.id })} data-testid="coupon-{c.code}">{c.label}</button>
+                {/each}
+              </div>
+            </div>
+          {/if}
+        {/if}
+        </div>
+      </details>
+      {/if}
+
+ {#if !deck && (s.products?.length ?? 0) > 0 && !s.pricesLocked}
+        <details class={card} data-testid="builder-packages" open>
+          <summary class="flex cursor-pointer items-center justify-between gap-3">
+            <span class="co-card-title">{PK.title}</span>
+            {#if pkgItem}<strong class="text-sm" data-testid="bpkg-total">{money(((pkgItem.propOverrides as Snap).total ?? null), (s.products ?? [])[0]?.currency ?? 'EUR')}</strong>{/if}
+          </summary>
+          <div class="mt-3 grid gap-3">
+            <p class="co-help m-0">{PK.builderHelp}</p>
+            <div class="grid gap-1"><span class="co-meta text-xs">{PK.size}</span>
+              <div class="co-chips">{#each TIERS as tr (tr)}<button type="button" class="co-chip" aria-pressed={pkgTier === tr} disabled={!editable} onclick={() => (pkgTier = tr)}>{PK.tiers[tr]}</button>{/each}</div>
+            </div>
+            {#each s.products ?? [] as p (p.id)}
+              <div class="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-[var(--console-divider)] px-3 py-2">
+                <label class="flex min-w-0 flex-1 cursor-pointer items-center gap-2">
+                  <input type="checkbox" bind:checked={pkgSel[p.key]} disabled={!editable || p.prices[pkgTier] == null} data-testid={`bpkg-${p.key}`} />
+                  <span class="font-semibold">{p.name}</span>
+                </label>
+                <span class="co-meta text-sm">{p.prices[pkgTier] == null ? PK.noPrice : money(p.prices[pkgTier], p.currency)}</span>
+                {#if p.freeAllowed}<label class="flex items-center gap-1 text-sm"><input type="checkbox" bind:checked={pkgFree[p.key]} disabled={!editable} onchange={() => { if (pkgFree[p.key]) pkgSel[p.key] = true; }} data-testid={`bpkg-free-${p.key}`} />{PK.freeCheck}</label>{/if}
+              </div>
+            {/each}
+            <p class="m-0 text-sm">{PK.normal(money(pkgList, (s.products ?? [])[0]?.currency ?? 'EUR'))}</p>
+            {#if s.customPrices}
+              <div class="flex flex-wrap items-center gap-2">
+                <label class="flex items-center gap-2 text-sm"><input type="checkbox" bind:checked={pkgCustom} disabled={!editable} data-testid="bpkg-custom" />{PK.other}</label>
+                {#if pkgCustom}<input class="co-input !w-24" inputmode="decimal" bind:value={pkgPrice} disabled={!editable} data-testid="bpkg-price" /><span class="co-meta text-sm">{PK.perMonth}</span>{/if}
+              </div>
+            {/if}
+            <div class="flex flex-wrap gap-2">
+              <button type="button" class="co-btn co-btn--primary co-btn--sm" disabled={!editable || !pkgKeys.length} onclick={applyPkgs} data-testid="bpkg-apply">{pkgItem ? PK.update : PK.put}</button>
+              {#if pkgItem}<button type="button" class="co-btn co-btn--quiet co-btn--sm" disabled={!editable} onclick={() => run({ op: 'setPackages', packages: [], tier: pkgTier, priceMode: 'list', price: null })} data-testid="bpkg-remove">{PK.remove}</button>{/if}
+            </div>
+          </div>
+        </details>
+      {/if}
+
       <!-- personalizar: lo que hace que el cliente diga «wow, es mi local» -->
       {#if editable && (usesClientMedia || usesSite)}
         <section class="{card} media-card" data-testid="personalize">
@@ -990,201 +1310,6 @@
         {/if}
       {/if}
 
-      <!-- módulos: arrastrar para ordenar o desde «Añadir» -->
-      <section class={card}>
-        <h2 class="mb-1 co-card-title">{t.modules.title}</h2>
-        <p class="co-meta mb-3">{t.quick.dragHint}</p>
-        {#if recipe && editable}
-          <div class="mb-4 grid gap-3 rounded-[var(--console-radius-control)] border-2 border-[color:var(--co-signal)] p-4" data-testid="preset">
-            <div><p class="co-card-title">{t.preset.title}</p><p class="co-meta">{t.preset.lede}</p></div>
-            {#if s.templates?.some((x) => x.note)}
-              <div class="grid gap-1.5" data-testid="preset-ready">
-                <p class="text-sm font-semibold">{t.preset.ready} <span class="co-meta font-normal">· {t.preset.readyHint}</span></p>
-                <div class="grid gap-2 sm:grid-cols-2">
-                  {#each s.templates.filter((x) => x.note) as tpl (tpl.id)}
-                    <button type="button" class="co-inset grid gap-0.5 text-left hover:!border-[color:var(--co-signal)]" disabled={busy} onclick={() => applyTemplate(tpl)} data-testid="preset-tpl">
-                      <span class="font-semibold">{tpl.name}</span><span class="co-meta">{tpl.note}</span>
-                    </button>
-                  {/each}
-                </div>
-              </div>
-            {/if}
-            {#if s.templates?.some((x) => !x.note)}
-              <div class="grid gap-1.5" data-testid="preset-saved">
-                <p class="text-sm font-semibold">{t.preset.saved} <span class="co-meta font-normal">· {t.preset.useSaved}</span></p>
-                <div class="flex flex-wrap gap-2">
-                  {#each s.templates.filter((x) => !x.note) as tpl (tpl.id)}
-                    <span class="inline-flex items-center gap-1">
-                      <button type="button" class="co-chip" disabled={busy} onclick={() => applyTemplate(tpl)} data-testid="preset-tpl">{tpl.name}</button>
-                      {#if tpl.mine}<button type="button" class="text-xs text-muted" disabled={busy} onclick={() => run({ op: 'deleteTemplate', templateId: tpl.id })} aria-label={t.preset.remove(tpl.name)}>✕</button>{/if}
-                    </span>
-                  {/each}
-                </div>
-              </div>
-            {/if}
-            {#if recipe.hasVisual}
-              <p class="text-sm font-semibold">{t.preset.mode}</p>
-              <div class="grid gap-2 sm:grid-cols-2">
-                {#each [['full', t.preset.full, t.preset.fullHint], ['visual', t.preset.visual, t.preset.visualHint]] as [k, label, hint] (k)}
-                  <button type="button" class="co-inset grid gap-0.5 text-left {presetMode === k ? '!border-[color:var(--co-signal)] ring-2 ring-[color:var(--co-signal)]' : ''}" aria-pressed={presetMode === k} onclick={() => (presetMode = k as 'full' | 'visual')} data-testid="preset-mode-{k}">
-                    <span class="font-semibold">{label}</span><span class="co-meta">{hint}</span>
-                  </button>
-                {/each}
-              </div>
-            {/if}
-            {#each recipe.choices.filter((c) => shows(c.when)) as ch (ch.key)}
-              <div class="grid gap-1.5" data-testid="preset-choice-{ch.key}">
-                <p class="text-sm font-semibold">{ch.label}</p>
-                {#if ch.hint}<p class="co-meta -mt-1">{ch.hint}</p>{/if}
-                <div class="grid gap-2 sm:grid-cols-2">
-                  {#each ch.options as o (o.key)}
-                    <button type="button" class="co-inset grid gap-0.5 text-left {chosen(ch.key) === o.key ? '!border-[color:var(--co-signal)] ring-2 ring-[color:var(--co-signal)]' : ''}" aria-pressed={chosen(ch.key) === o.key} onclick={() => pickOption(ch.key, o.key)} data-testid="preset-opt-{ch.key}-{o.key}">
-                      <span class="font-semibold">{o.label}</span>{#if o.hint}<span class="co-meta">{o.hint}</span>{/if}
-                    </button>
-                  {/each}
-                </div>
-              </div>
-            {/each}
-            {#if recipe.questions.some((q) => shows(q.when))}
-              <p class="text-sm font-semibold">{t.preset.questions}</p>
-              <ul class="grid gap-1.5 p-0">
-                {#each recipe.questions.filter((q) => shows(q.when)) as q (q.key)}
-                  <li class="list-none"><label class="flex items-start gap-2 text-sm">
-                    <input type="checkbox" class="mt-0.5" checked={presetAnswers.includes(q.key)} onchange={() => toggleAnswer(q.key)} data-testid="preset-q-{q.key}" />
-                    <span><span class="font-semibold">{q.label}</span>{#if q.hint}<span class="co-meta block">{q.hint}</span>{/if}</span>
-                  </label></li>
-                {/each}
-              </ul>
-            {/if}
-            <div class="flex flex-wrap items-center gap-3">
-              <button class="co-btn co-btn--primary co-btn--sm" disabled={busy} onclick={applyPreset} data-testid="preset-apply">{presetDone ? t.preset.reapply : t.preset.apply}</button>
-              {#if s.items.length}<span class="co-meta">{t.preset.warn}</span>{/if}
-            </div>
-            {#if presetDone}
-              <form class="flex flex-wrap items-end gap-2 border-t border-line pt-3" onsubmit={(e) => { e.preventDefault(); saveTemplate(); }} data-testid="preset-save">
-                <label class="grid flex-1 gap-1 text-sm"><span class="font-semibold">{t.preset.saveAs}</span>
-                  <input class="co-input" maxlength="60" required bind:value={templateName} placeholder={t.preset.namePh} data-testid="preset-save-name" />
-                </label>
-                <button class="co-btn co-btn--sm" type="submit" disabled={busy || !templateName.trim()}>{t.preset.save}</button>
-              </form>
-            {/if}
-          </div>
-        {/if}
-        {#if s.items.length === 0 && editable}
-          <div class="mb-3 grid gap-3 rounded-[var(--console-radius-control)] bg-surface p-4" data-testid="quick-start">
-            <p class="text-eyebrow">{t.quick.title}</p>
-            {#if market.segments.length}
-              <p class="text-sm font-semibold">{t.quick.sector}</p>
-              <div class="co-chips">
-                {#each market.segments as sg (sg.id)}
-                  <button type="button" class="co-chip" aria-pressed={d.segmentId === sg.id} onclick={() => run({ op: 'setSegment', segmentId: sg.id })}>{sg.name}</button>
-                {/each}
-              </div>
-            {/if}
-            <div class="flex flex-wrap gap-2">
-              {#if recommended.length}<button class="co-btn co-btn--primary co-btn--sm" disabled={busy} onclick={() => addMany(recommended)} data-testid="add-recommended">{t.quick.recommended(recommended.length)}</button>{/if}
-              {#if s.catalog.length}<button class="{btn}" disabled={busy} onclick={() => addMany(s.catalog)} data-testid="add-all">{t.quick.all(s.catalog.length)}</button>{/if}
-            </div>
-          </div>
-        {/if}
-        <ol
-          class="space-y-2 p-0 {s.items.length === 0 ? 'drop-empty' : 'min-h-[3rem]'}"
-          use:dndzone={{ items: list, type: 'module', flipDurationMs: 150, dragDisabled: !editable || busy, dropTargetStyle: { outline: '2px dashed var(--co-signal)', outlineOffset: '4px', borderRadius: '12px' } }}
-          onconsider={onConsider}
-          onfinalize={onFinalize}
-          data-testid="items"
-        >
-          {#each list as item, idx (item.id)}
-            <li class="list-none rounded-[var(--console-radius-control)] {item.cat ? 'border-2 border-dashed border-[color:var(--co-signal)] p-3 font-semibold' : `border border-[var(--console-card-border)] bg-[var(--console-surface)] ${item.visible ? '' : 'opacity-60'}`}" animate:flip={{ duration: 150 }} data-testid={item.cat ? undefined : 'item'} data-item-key={item.moduleKey}>
-              {#if item.cat}{item.moduleName}{:else}
-              <div class="flex items-center gap-2 p-2 pl-3">
-                <span class="cursor-grab select-none text-muted" aria-hidden="true">⠿</span>
-                <div class="min-w-0 flex-1">
-                  <p class="truncate font-semibold">{item.moduleName}</p>
-                  {#if typeof item.propOverrides?.title === 'string' && item.propOverrides.title !== item.moduleName}<p class="truncate text-xs text-muted" data-testid="item-title">{String(item.propOverrides.title).replace(/\{company\}/g, d.prospectCompany || '…')}</p>{/if}
-                  {#if !item.visible || item.price}<p class="truncate text-xs text-muted">
-                    {#if !item.visible}<span class="font-semibold">{t.modules.hidden}</span>{/if}
-                    {#if item.price}{!item.visible ? ' · ' : ''}{item.price.formatted}{/if}
-                  </p>{/if}
-                </div>
-                <button class="co-btn co-btn--sm {openTexts === item.id ? 'co-btn--primary' : 'co-btn--quiet'}" onclick={() => (openTexts = openTexts === item.id ? null : item.id)} aria-expanded={openTexts === item.id} aria-label={t.texts.open(item.moduleName)} data-testid="edit-texts">✎ {t.texts.button}</button>
-                <button class={iconBtn} disabled={!editable || idx === 0} onclick={() => move(item, -1)} aria-label={t.modules.moveUp(item.moduleName)}>↑</button>
-                <button class={iconBtn} disabled={!editable || idx === list.length - 1} onclick={() => move(item, 1)} aria-label={t.modules.moveDown(item.moduleName)}>↓</button>
-                <button class={iconBtn} disabled={!editable} onclick={() => run({ op: 'setVisible', itemId: item.id, visible: !item.visible })} aria-label={item.visible ? t.modules.hide(item.moduleName) : t.modules.show(item.moduleName)} aria-pressed={!item.visible} data-testid="toggle-visible">{item.visible ? '👁' : '◌'}</button>
-                <button class={iconBtn} disabled={!editable} onclick={() => remove(item)} aria-label={t.modules.remove(item.moduleName)}>✕</button>
-                {#if s.customPrices}<button class={iconBtn} onclick={() => toggleProps(item)} aria-expanded={openProps === item.id} aria-label="{t.advanced}: {item.moduleName}" title={t.advanced}>⋯</button>{/if}
-              </div>
-              {#if item.error}<p class="co-alert co-alert--rejection mx-3 mb-2 text-xs">{t.modules.invalid} {item.error}</p>{/if}
-              <!-- Segunda fila solo si tiene algo (precio por módulo o versión nueva): nada de huecos vacíos. -->
-              {#if (d.priceMode === 'per_module' && s.customPrices) || item.upgradeTo}
-              <div class="flex flex-wrap items-center gap-2 border-t border-line px-3 py-2 text-sm">
-                {#if d.priceMode === 'per_module' && s.customPrices}
-                  <label class="flex items-center gap-2">
-                    <span class="text-muted">{t.modules.price}</span>
-                    <input class="co-input !w-28 !min-h-[32px] !py-1" inputmode="decimal" value={item.priceOverride ?? ''} disabled={!editable}
-                      placeholder={item.defaultPrice != null ? String(item.defaultPrice) : '—'} onchange={(e) => saveItemPrice(item, e.currentTarget.value)}
-                      aria-label={t.modules.priceOf(item.moduleName)} data-testid="item-price-input" />
-                  </label>
-                {/if}
-                {#if item.upgradeTo}
-                  <button class={btn} disabled={!editable} onclick={() => run({ op: 'upgradeItem', itemId: item.id })}>{t.modules.upgrade(item.upgradeTo.version)}</button>
-                {/if}
-              </div>
-              {/if}
-              {#if item.blockType === 'cost-math'}
-                <!-- «Lo que ya te cuesta»: las cifras que dio el cliente. Sin ninguna, la diapositiva no sale. -->
-                <div class="grid gap-2 border-t border-line px-3 py-2 text-sm sm:grid-cols-3" data-testid="cost-form">
-                  {#each [['perNight', t.cost.perNight], ['nightsPerMonth', t.cost.nights], ['sundayHours', t.cost.hours]] as [k, label] (k)}
-                    <label class="grid gap-1"><span class="text-xs text-muted">{label}</span>
-                      <input class="co-input !min-h-[32px] !py-1" inputmode="decimal" disabled={!editable} value={item.propOverrides?.[k] ?? ''}
-                        onchange={(e) => saveCost(item, k, e.currentTarget.value)} data-testid="cost-{k}" />
-                    </label>
-                  {/each}
-                  <p class="co-meta sm:col-span-3">{t.cost.help}</p>
-                </div>
-              {/if}
-              {#if item.blockType === 'live-screen'}
-                <LiveScenes {item} photos={media.photos ?? []} hasVideo={!!media.video} {editable} t={t.scenes} onsave={(sc) => saveScenes(item, sc)} />
-              {/if}
-              {#if openTexts === item.id}
-                <TextsEditor {item} {editable} t={t.texts} onsave={(o) => saveTexts(item, o)} onclose={() => (openTexts = null)} />
-              {/if}
-              {#if openProps === item.id}
-                <div class="space-y-2 border-t border-line p-3 text-sm">
-                  <p class="text-xs text-muted">{t.modules.propsHelp}</p>
-                  <textarea class="{field} h-40 font-mono text-xs" bind:value={propsDraft} disabled={!editable} spellcheck="false"></textarea>
-                  {#if propsError}<p class="co-alert co-alert--rejection text-xs">{propsError}</p>{/if}
-                  <details class="text-xs"><summary class="cursor-pointer text-muted">{t.modules.catalogValues}</summary><pre class="mt-1 max-h-48 overflow-auto rounded-lg bg-surface p-2">{JSON.stringify(item.defaultProps, null, 2)}</pre></details>
-                  {#if editable}<button class="co-btn co-btn--primary co-btn--sm" onclick={() => saveProps(item)}>{t.modules.saveProps}</button>{/if}
-                </div>
-              {/if}
-              {/if}
-            </li>
-          {/each}
-        </ol>
-        {#if editable && cat.length}
-          <p class="text-eyebrow mb-2 mt-5">{t.quick.add}</p>
-          <ul
-            class="grid gap-2 p-0 sm:grid-cols-2"
-            use:dndzone={{ items: cat, type: 'module', dropFromOthersDisabled: true, flipDurationMs: 150, dragDisabled: busy, dropTargetStyle: {} }}
-            onconsider={onCatConsider}
-            onfinalize={onCatFinalize}
-            data-testid="catalog"
-          >
-            {#each cat as c (c.id)}
-              <li class="co-row list-none !items-center !p-3" animate:flip={{ duration: 150 }}>
-                <span class="cursor-grab select-none text-muted" aria-hidden="true">⠿</span>
-                <span class="min-w-0 flex-1">
-                  <span class="block truncate font-semibold">{c.moduleName}</span>
-                  {#if c.description}<span class="block truncate text-xs text-muted">{c.description}</span>{/if}
-                </span>
-                <button class={iconBtn} disabled={busy} onclick={() => run({ op: 'addItem', moduleVersionId: c.versionId })} aria-label={t.catalog.addNamed(c.moduleName)} data-testid="add-{c.moduleKey}">＋</button>
-              </li>
-            {/each}
-          </ul>
-        {/if}
-      </section>
-
       <!-- seguimiento -->
       <section class={card} data-testid="followup">
         <h2 class="mb-3 co-card-title">{t.followup.title} {#if overdue}<span class="co-badge co-badge--attention ml-1">{t.followup.overdue}</span>{/if}</h2>
@@ -1226,6 +1351,10 @@
       </section>
 
 
+      <!-- lo de menos uso, plegado: el sector y quién decide, los datos del cliente y archivar o borrar -->
+      <details class="grid gap-5" data-testid="editor-more">
+        <summary class="cursor-pointer px-1 text-sm font-semibold text-muted">{t.moreSection}</summary>
+        <div class="mt-4 space-y-5">
       <!-- cuenta y actores -->
       {#if !deck}
       <section class={card} data-testid="account">
@@ -1315,135 +1444,13 @@
         <p class="mt-2 text-xs text-muted">{t.prospect.tokensPre}<code>{'{company}'}</code>{t.prospect.tokensMid}<code>{'{prospect}'}</code>{t.prospect.tokensPost}</p>
       </details>
 
- {#if !deck && (s.products?.length ?? 0) > 0 && !s.pricesLocked}
-        <details class={card} data-testid="builder-packages" open>
-          <summary class="flex cursor-pointer items-center justify-between gap-3">
-            <span class="co-card-title">{PK.title}</span>
-            {#if pkgItem}<strong class="text-sm" data-testid="bpkg-total">{money(((pkgItem.propOverrides as Snap).total ?? null), (s.products ?? [])[0]?.currency ?? 'EUR')}</strong>{/if}
-          </summary>
-          <div class="mt-3 grid gap-3">
-            <p class="co-help m-0">{PK.builderHelp}</p>
-            <div class="grid gap-1"><span class="co-meta text-xs">{PK.size}</span>
-              <div class="co-chips">{#each TIERS as tr (tr)}<button type="button" class="co-chip" aria-pressed={pkgTier === tr} disabled={!editable} onclick={() => (pkgTier = tr)}>{PK.tiers[tr]}</button>{/each}</div>
-            </div>
-            {#each s.products ?? [] as p (p.id)}
-              <div class="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-[var(--console-divider)] px-3 py-2">
-                <label class="flex min-w-0 flex-1 cursor-pointer items-center gap-2">
-                  <input type="checkbox" bind:checked={pkgSel[p.key]} disabled={!editable || p.prices[pkgTier] == null} data-testid={`bpkg-${p.key}`} />
-                  <span class="font-semibold">{p.name}</span>
-                </label>
-                <span class="co-meta text-sm">{p.prices[pkgTier] == null ? PK.noPrice : money(p.prices[pkgTier], p.currency)}</span>
-                {#if p.freeAllowed}<label class="flex items-center gap-1 text-sm"><input type="checkbox" bind:checked={pkgFree[p.key]} disabled={!editable} onchange={() => { if (pkgFree[p.key]) pkgSel[p.key] = true; }} data-testid={`bpkg-free-${p.key}`} />{PK.freeCheck}</label>{/if}
-              </div>
-            {/each}
-            <p class="m-0 text-sm">{PK.normal(money(pkgList, (s.products ?? [])[0]?.currency ?? 'EUR'))}</p>
-            {#if s.customPrices}
-              <div class="flex flex-wrap items-center gap-2">
-                <label class="flex items-center gap-2 text-sm"><input type="checkbox" bind:checked={pkgCustom} disabled={!editable} data-testid="bpkg-custom" />{PK.other}</label>
-                {#if pkgCustom}<input class="co-input !w-24" inputmode="decimal" bind:value={pkgPrice} disabled={!editable} data-testid="bpkg-price" /><span class="co-meta text-sm">{PK.perMonth}</span>{/if}
-              </div>
-            {/if}
-            <div class="flex flex-wrap gap-2">
-              <button type="button" class="co-btn co-btn--primary co-btn--sm" disabled={!editable || !pkgKeys.length} onclick={applyPkgs} data-testid="bpkg-apply">{pkgItem ? PK.update : PK.put}</button>
-              {#if pkgItem}<button type="button" class="co-btn co-btn--quiet co-btn--sm" disabled={!editable} onclick={() => run({ op: 'setPackages', packages: [], tier: pkgTier, priceMode: 'list', price: null })} data-testid="bpkg-remove">{PK.remove}</button>{/if}
-            </div>
-          </div>
-        </details>
-      {/if}
-
-      {#if !deck}
-      <details class={card} data-testid="price-panel" open={d.priceMode !== 'none' || !!s.partnerAccount || !!d.priceOptionId}>
-        <summary class="flex cursor-pointer items-center justify-between gap-3">
-          <span class="co-card-title">{t.price.title}</span>
-          <span class="text-sm">{#if s.total}{#if s.total.before}<s class="text-muted">{s.total.before.formatted}</s> {/if}<strong data-testid="total">{s.total.formatted}</strong>{:else}<span class="text-muted">{t.price.modeNone}</span>{/if}</span>
-        </summary>
-        <div class="mt-3 grid gap-5">
-        {#if s.partnerAccount}
-          <p class="co-alert co-alert--info mb-3 block" data-testid="partner-account">
-            {t.price.account} <strong>{s.partnerAccount.name}</strong> · {t.policy[s.partnerAccount.pricePolicy]}{s.partnerAccount.pricePolicy === 'adjusted' && s.partnerAccount.priceAdjustPct != null ? t.price.overList(`${s.partnerAccount.priceAdjustPct > 0 ? '+' : ''}${s.partnerAccount.priceAdjustPct}`) : ''}
-            {#if s.pricesLocked}
-              <span class="mt-1 block text-muted">{t.price.locked}{s.partnerAccount.pricePolicy === 'hidden' ? t.price.lockedHidden : ''}</span>
-            {:else}
-              <span class="mt-1 block text-muted">{t.price.partner}</span>
-            {/if}
-          </p>
-        {/if}
-        {#if !s.pricesLocked}
-          <!-- Tarifas: las fija la empresa; aquí solo se eligen -->
-          <div class="grid gap-2">
-            {#if s.priceOptions.length === 0 && !s.customPrices}<p class="co-meta">{t.tariff.empty}</p>{/if}
-            {#if s.priceOptions.length}<p class="co-field">{t.tariff.what}</p>{/if}
-            <div class="co-chips" data-testid="price-kinds">
-              <button type="button" class="co-chip" aria-pressed={!d.priceOptionId && d.priceMode === 'none' && !customOpen} disabled={!editable} onclick={() => { pickedKind = null; customOpen = false; run({ op: 'setPriceOption', priceOptionId: null }); }} data-testid="price-option-none">{t.tariff.none}</button>
-              {#each shownKinds as x (x.k)}
-                <button type="button" class="co-chip" aria-pressed={activeKind === x.k} disabled={!editable} onclick={() => pickKind(x.k)} data-testid="price-kind" data-kind={x.k}>{x.k}</button>
-              {/each}
-              {#if shownKinds.length < kinds.length}<button type="button" class="co-chip co-chip--quiet" onclick={() => (allKinds = true)} data-testid="price-kinds-more">{t.tariff.otherSectors}</button>{/if}
-              {#if s.customPrices}<button type="button" class="co-chip" aria-pressed={customOpen || (!d.priceOptionId && d.priceMode !== 'none')} disabled={!editable} onclick={() => (customOpen = !customOpen)} data-testid="price-custom">{t.tariff.custom}</button>{/if}
-            </div>
-            {#if activeKind && s.priceOptions.filter((o) => kindOf(o) === activeKind && !o.quoteOnly).length > 1}
-              <div class="co-chips mt-1" data-testid="price-options">
-                {#each s.priceOptions.filter((o) => kindOf(o) === activeKind && !o.quoteOnly) as o (o.id)}
-                  <button type="button" class="co-chip" aria-pressed={d.priceOptionId === o.id} disabled={!editable} onclick={() => d.priceOptionId !== o.id && run({ op: 'setPriceOption', priceOptionId: o.id })} data-testid="price-option" data-label={o.label}>{o.kind && o.label.startsWith(o.kind + ' · ') ? o.label.slice(o.kind.length + 3) : o.label} · <strong>{money(o.amount, o.currency)}{t.tariff.period[o.period] ?? ''}</strong></button>
-                {/each}
-              </div>
-            {/if}
-            {#if activeKind}
-              {#each s.priceOptions.filter((o) => kindOf(o) === activeKind && o.quoteOnly) as o (o.id)}
-                <p class="co-alert co-alert--attention mt-1 !py-2 text-sm" data-testid="price-quote-only"><strong>{o.label}</strong>{o.amount > 0 ? ` · ${t.tariff.from(money(o.amount, o.currency))}` : ''} — {o.note ?? t.tariff.quoteOnly}</p>
-              {/each}
-            {/if}
-          </div>
-          {#if s.customPrices && (customOpen || (!d.priceOptionId && d.priceMode !== 'none'))}
-            <div class="grid gap-3 rounded-[var(--console-radius-control)] bg-surface p-3">
-        <div class="co-segmented" role="radiogroup" aria-label={t.price.mode}>
-          {#each [['none', t.price.modeNone], ['total', t.price.modeTotal], ['per_module', t.price.modePerModule]] as [mode, label]}
-            <button
-              role="radio" aria-checked={d.priceMode === mode} disabled={!editable}
-              onclick={() => d.priceMode !== mode && run({ op: 'update', patch: { priceMode: mode as 'none' | 'total' | 'per_module' } })}
-              data-testid={`price-mode-${mode}`}
-            >{label}</button>
-          {/each}
-        </div>
-        <div class="mt-3 grid gap-3 sm:grid-cols-2">
-          {#if d.priceMode === 'total'}
-            <label class="text-sm font-medium">{t.price.totalPrice}
-              <input class={field} inputmode="decimal" value={d.totalPrice ?? ''} disabled={!editable} placeholder="0" onchange={(e) => saveTotal(e.currentTarget.value)} data-testid="total-price" />
-            </label>
-          {/if}
-          {#if d.priceMode !== 'none'}
-            <label class="text-sm font-medium">{t.price.currency}
-              <select class={field} value={d.currency} disabled={!editable} onchange={(e) => saveField('currency', e.currentTarget.value)}>
-                {#each CURRENCIES as c}<option>{c}</option>{/each}
-              </select>
-            </label>
-          {/if}
-        </div>
-        {#if d.priceMode === 'per_module'}<p class="mt-2 text-xs text-muted">{t.price.perModuleHelp}</p>{/if}
-            </div>
-          {/if}
-          {#if d.priceMode !== 'none' && (coupons.length || d.discount)}
-            <div class="grid gap-2">
-              <p class="co-field">{t.tariff.discount}</p>
-              <div class="co-chips" data-testid="coupons">
-                <button type="button" class="co-chip" aria-pressed={!d.couponId} disabled={!editable} onclick={() => d.couponId && run({ op: 'setCoupon', couponId: null })} data-testid="coupon-none">{t.tariff.noDiscount}</button>
-                {#if d.couponId && d.discount && !coupons.some((c) => c.id === d.couponId)}<button type="button" class="co-chip" aria-pressed="true" disabled>{d.discount.label}</button>{/if}
-                {#each coupons as c (c.id)}
-                  <button type="button" class="co-chip" aria-pressed={d.couponId === c.id} disabled={!editable} onclick={() => d.couponId !== c.id && run({ op: 'setCoupon', couponId: c.id })} data-testid="coupon-{c.code}">{c.label}</button>
-                {/each}
-              </div>
-            </div>
-          {/if}
-        {/if}
-        </div>
-      </details>
-      {/if}
-
       <details class="px-1">
         <summary class="cursor-pointer text-sm text-muted">{t.moreActions}</summary>
         <div class="mt-3 flex flex-wrap gap-2">
           {#if d.status !== 'archived'}<button class={btn} disabled={!editable} onclick={() => setStatus('archived')}>{t.publish.archive}</button>{/if}
           {#if d.status !== 'published'}<button class="co-btn co-btn--danger co-btn--sm" disabled={!editable} onclick={destroy}>{t.publish.delete}</button>{/if}
+        </div>
+      </details>
         </div>
       </details>
     </div>

@@ -22,3 +22,18 @@ Criterio de Cristian: la primera vez nadie sabía crear una propuesta sin que se
   deja contando. Ya no hay «Publicar» y luego «Prueba / Real». Las que estaban en modo prueba lo dicen junto al enlace
   («Este enlace aún no cuenta…» · «Que cuente»).
 - «Enlaces (n)» (plegado): más enlaces con caducidad, revocar y «Dejar de compartir» (despublicar).
+
+## Orden del editor (26-nov-2026)
+
+De arriba abajo, lo que se usa más primero:
+
+1. **Compartir**: enlace de prueba y enlace para el cliente.
+2. **Módulos**: el contenido.
+3. **Precio** y **Paquetes**.
+4. **Personaliza** (logo, fotos, vídeo, música).
+5. **Seguimiento**: próximo paso y resultado.
+6. **Más** (plegado, `editor-more`): cuenta y actores (sector, quién decide), datos del cliente y «Más acciones»
+   (duplicar, archivar…).
+
+«Tu contacto en esta propuesta» queda en una línea arriba (`rep-contact-card`, un `<details>`). Solo sale abierto y en
+naranja si hay canal sin número.

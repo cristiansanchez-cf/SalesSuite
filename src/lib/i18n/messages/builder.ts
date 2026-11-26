@@ -204,7 +204,7 @@ const es = {
       default: 'No se ha podido traer ahora. Prueba otra vez en un rato.',
     },
   },
-  clientData: 'Datos del cliente', advanced: 'Avanzado', moreActions: 'Más acciones',
+  clientData: 'Datos del cliente', advanced: 'Avanzado', moreActions: 'Más acciones', moreSection: 'Más: el sector y quién decide, los datos del cliente y archivar',
   preview: { title: 'Vista previa', mobile: 'Móvil', tablet: 'Tablet', desktop: 'Escritorio', open: 'Abrir ↗', frame: 'Vista previa de la propuesta' },
   page: {
     contact: { title: 'Tu contacto en esta propuesta', account: 'Tu contacto en las propuestas', ofAuthor: (n: string) => `Contacto de ${n} en esta propuesta`, channel: 'Canal', value: 'Número, usuario o enlace', save: 'Guardar', saved: 'Contacto guardado',
@@ -429,7 +429,7 @@ export const builderMessages = defineMessages({
         default: 'It could not be brought in right now. Try again in a while.',
       },
     },
-    clientData: 'Customer details', advanced: 'Advanced', moreActions: 'More actions',
+    clientData: 'Customer details', advanced: 'Advanced', moreActions: 'More actions', moreSection: 'More: sector and who decides, customer details and archiving',
     preview: { title: 'Preview', mobile: 'Mobile', tablet: 'Tablet', desktop: 'Desktop', open: 'Open ↗', frame: 'Proposal preview' },
     page: {
       contact: { title: 'Your contact on this proposal', account: 'Your contact on proposals', ofAuthor: (n) => `${n}'s contact on this proposal`, channel: 'Channel', value: 'Number, username or link', save: 'Save', saved: 'Contact saved',
@@ -651,7 +651,7 @@ export const builderMessages = defineMessages({
         default: 'Não foi possível trazer agora. Tente de novo daqui a pouco.',
       },
     },
-    clientData: 'Dados do cliente', advanced: 'Avançado', moreActions: 'Mais ações',
+    clientData: 'Dados do cliente', advanced: 'Avançado', moreActions: 'Mais ações', moreSection: 'Mais: o setor e quem decide, os dados do cliente e arquivar',
     preview: { title: 'Pré-visualização', mobile: 'Celular', tablet: 'Tablet', desktop: 'Desktop', open: 'Abrir ↗', frame: 'Pré-visualização da proposta' },
     page: {
       contact: { title: 'Seu contato nesta proposta', account: 'Seu contato nas propostas', ofAuthor: (n) => `Contato de ${n} nesta proposta`, channel: 'Canal', value: 'Número, usuário ou link', save: 'Salvar', saved: 'Contato salvo',
@@ -873,7 +873,7 @@ export const builderMessages = defineMessages({
         default: '지금은 가져올 수 없습니다. 잠시 후 다시 시도하세요.',
       },
     },
-    clientData: '고객 정보', advanced: '고급', moreActions: '더 보기',
+    clientData: '고객 정보', advanced: '고급', moreActions: '더 보기', moreSection: '더 보기: 업종과 결정권자, 고객 정보, 보관',
     preview: { title: '미리보기', mobile: '모바일', tablet: '태블릿', desktop: '데스크톱', open: '열기 ↗', frame: '제안서 미리보기' },
     page: {
       contact: { title: '이 제안서의 내 연락처', account: '제안서의 내 연락처', ofAuthor: (n) => `이 제안서의 ${n} 연락처`, channel: '채널', value: '번호, 아이디 또는 링크', save: '저장', saved: '연락처를 저장했습니다',

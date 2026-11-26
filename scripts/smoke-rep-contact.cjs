@@ -7,6 +7,8 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
 const BASE = process.env.BASE_URL || 'http://127.0.0.1:4321';
 const OUT = process.env.SHOTS_DIR;
 const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode = 1; } else console.log('ok:', m); };
+// «Tu contacto» va plegado en una línea: se abre para cambiarlo.
+const openContact = async (p) => { if ((await p.getAttribute('[data-testid=rep-contact-card]', 'open')) === null) await p.click('[data-testid=rep-contact-card] > summary'); };
 // Club Sol: propuesta publicada del comercial de ejemplo (la añade la demo).
 const DOSSIER = '00000000-0000-4000-8000-000000d05511';
 const TOKEN = 'demo-club-sol-4Hq8';
@@ -28,7 +30,8 @@ const TOKEN = 'demo-club-sol-4Hq8';
   assert(await p.isVisible('[data-testid=rep-contact-card]'), 'el editor enseña «Tu contacto en esta propuesta»');
 
   // Canal sin número: pendiente (aviso) y la propuesta sigue con el de la marca.
-  await p.selectOption('[data-testid=rep-contact-channel]', 'kakao');
+  // Plegado en una línea (dice qué contacto verá el cliente); se abre para cambiarlo.
+  await openContact(p); await p.selectOption('[data-testid=rep-contact-channel]', 'kakao');
   assert((await p.getAttribute('[data-testid=rep-contact-value]', 'placeholder')).includes('KakaoTalk'), 'el ejemplo del campo cambia con el canal');
   await p.click('[data-testid=rep-contact-save]');
   await p.waitForURL(/ok=contact/);
@@ -38,7 +41,7 @@ const TOKEN = 'demo-club-sol-4Hq8';
 
   // Número mal puesto en WhatsApp: error, no se guarda.
   await p.goto(`${BASE}/admin/dossiers/${DOSSIER}`);
-  await p.selectOption('[data-testid=rep-contact-channel]', 'whatsapp');
+  await openContact(p); await p.selectOption('[data-testid=rep-contact-channel]', 'whatsapp');
   await p.fill('[data-testid=rep-contact-value]', 'hola');
   await p.click('[data-testid=rep-contact-save]');
   await p.waitForLoadState('load');
@@ -46,7 +49,7 @@ const TOKEN = 'demo-club-sol-4Hq8';
 
   // Instagram: botón principal de la propuesta y en el pie.
   await p.goto(`${BASE}/admin/dossiers/${DOSSIER}`);
-  await p.selectOption('[data-testid=rep-contact-channel]', 'instagram');
+  await openContact(p); await p.selectOption('[data-testid=rep-contact-channel]', 'instagram');
   await p.fill('[data-testid=rep-contact-value]', '@ana.ventas');
   await p.click('[data-testid=rep-contact-save]');
   await p.waitForURL(/ok=contact/);
@@ -71,7 +74,7 @@ const TOKEN = 'demo-club-sol-4Hq8';
   await a.waitForURL(/\/admin(\/accounts)?$/); if (!a.url().endsWith("/admin")) await a.goto(`${BASE}/admin`);
   await a.goto(`${BASE}/admin/dossiers/${DOSSIER}`);
   assert(!(await a.textContent('[data-testid=rep-contact-card]')).includes('Tu contacto'), 'admin: la tarjeta dice de quién es el contacto');
-  assert((await a.inputValue('[data-testid=rep-contact-value]')) === '@ana.ventas', 'admin: ve el contacto del comercial');
+  await openContact(a); assert((await a.inputValue('[data-testid=rep-contact-value]')) === '@ana.ventas', 'admin: ve el contacto del comercial');
   await a.selectOption('[data-testid=rep-contact-channel]', 'kakao');
   await a.fill('[data-testid=rep-contact-value]', 'https://open.kakao.com/o/demo');
   await a.click('[data-testid=rep-contact-save]');
@@ -82,7 +85,7 @@ const TOKEN = 'demo-club-sol-4Hq8';
 
   // Se deja como estaba.
   await p.goto(`${BASE}/admin/dossiers/${DOSSIER}`);
-  await p.selectOption('[data-testid=rep-contact-channel]', '');
+  await openContact(p); await p.selectOption('[data-testid=rep-contact-channel]', '');
   await p.fill('[data-testid=rep-contact-value]', '');
   await p.click('[data-testid=rep-contact-save]');
   await p.waitForURL(/ok=contact/);

@@ -42,6 +42,7 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   await p.waitForURL(/\/admin\/dossiers\//);
   const url = p.url();
   await p.click('[data-testid=add-tabs-locales]'); await settle();
+  await p.click('[data-testid=editor-more] > summary');
   await p.selectOption('[data-testid=segment]', { label: 'Locales de ocio nocturno' }); await settle();
   await p.click('[data-testid=facet-region-madrid]'); await settle();
   await p.click('[data-testid=facet-rasgos-local-dj]'); await settle();
