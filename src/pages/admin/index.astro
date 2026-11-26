@@ -18,6 +18,8 @@ import { analyticsMessages } from '~/lib/i18n/messages/analytics';
 import { i18n } from '~/lib/i18n';
 import { sellMessages } from '~/lib/i18n/messages/sell';
 import { welcomeMessages } from '~/lib/i18n/messages/welcome';
+import { newProposalMessages } from '~/lib/i18n/messages/newProposal';
+import { liteOf } from '~/lib/proposal/preset';
 import { can } from '~/lib/admin/permissions';
 import { HOME, HOME_COOKIE, homePath } from '~/lib/admin/home';
 
@@ -81,7 +83,16 @@ if (Astro.request.method === 'POST' && (await Astro.request.clone().formData()).
       const id = crmAccountId && can(session.role).useAccounts
         ? await dossierFromAccount(admin, crmAccountId, { title: parsed.data.title, prospectName: parsed.data.prospectName ?? undefined, fromDossierId: parsed.data.fromDossierId })
         : await service.createDossier(parsed.data);
-      return Astro.redirect(`/admin/dossiers/${id}`, 303);
+      // Lo que ha contestado en «Nueva propuesta» paso a paso: el tipo de cliente y cómo la quiere (la receta).
+      const segmentId = String(form.get('segmentId') ?? '').trim();
+      const wizard = form.get('wizard') === '1' && !parsed.data.fromDossierId;
+      if (wizard && /^[0-9a-f-]{36}$/i.test(segmentId)) {
+        const answers = form.getAll('answers').map(String).filter((a) => /^[a-z0-9][a-z0-9-]{0,62}(:[a-z0-9][a-z0-9-]{0,62})?$/.test(a)).slice(0, 20);
+        const mode = form.get('presetMode') === 'visual' ? 'visual' : 'full';
+        await service.apply(id, { op: 'setSegment', segmentId }).catch(() => null);
+        if (form.get('hasRecipe') === '1') await service.apply(id, { op: 'applyPreset', mode, answers }).catch(() => null);
+      }
+      return Astro.redirect(`/admin/dossiers/${id}${wizard ? '?nueva=1' : ''}`, 303);
     } catch (e) {
       if (!(e instanceof AdminError)) throw e;
       error = e.message;
@@ -90,6 +101,11 @@ if (Astro.request.method === 'POST' && (await Astro.request.clone().formData()).
 }
 
 const isPartner = session.role === 'partner';
+// «Nueva propuesta» paso a paso: los tipos de cliente (sectores) con su receta, para preguntar cómo la quiere.
+const NP = newProposalMessages[locale];
+const wizardSegments = await admin.playbook.market().then((ms) => ms.filter((x) => x.status !== 'archived')
+  .map((x) => ({ id: x.id, name: x.name, recipe: liteOf(x.proposal) }))
+  .sort((a, b) => Number(!!b.recipe) - Number(!!a.recipe) || a.name.localeCompare(b.name, locale))).catch(() => [] as Array<{ id: string; name: string; recipe: ReturnType<typeof liteOf> }>);
 // En «Nueva propuesta», la empresa se puede elegir del CRM (quien trabaja con cuentas; los colaboradores, no).
 const crmPick = can(session.role).useAccounts;
 const team = isPartner ? [] : await service.listDossiers();
@@ -297,6 +313,14 @@ const initial = (d: { prospectCompany: string | null; title: string }) => (d.pro
           <button type="button" class="co-btn co-btn--ghost co-btn--sm" data-close-new>{m.dossiers.close}</button>
         </div>
         {error && <Alert kind="rejection" title={error} />}
+        <input type="hidden" name="wizard" value="0" data-np-wizard />
+        <input type="hidden" name="segmentId" value="" data-np-segment />
+        <input type="hidden" name="presetMode" value="full" data-np-mode />
+        <input type="hidden" name="hasRecipe" value="0" data-np-has-recipe />
+        <div data-np-answers hidden></div>
+        <p class="co-meta -mb-2" data-np-progress data-of="4" data-template={NP.step(9, 8).replace('9', '{n}').replace('8', '{of}')}>{NP.step(1, 4)}</p>
+        <section class="grid gap-4" data-np-step="1">
+          <div><h3 class="co-entity !text-xl m-0">{NP.whoTitle}</h3><p class="co-meta m-0">{NP.whoLede}</p></div>
         <div class="co-field relative">
           <label for="create-company">{m.dossiers.company}</label>
           <input id="create-company" class="co-input" name="prospectCompany" maxlength="120" autofocus autocomplete="off" data-company data-testid="create-company"
@@ -311,13 +335,49 @@ const initial = (d: { prospectCompany: string | null; title: string }) => (d.pro
         <label class="co-field">{m.common.title}<input id="create-title" class="co-input" name="title" required maxlength="140" placeholder={m.dossiers.titlePlaceholder} data-title data-template={welcomeMessages[locale].first.proposalTitle('{c}')} /></label>
         {(manager ? team : all).some((d) => d.itemCount > 0) && (
           <label class="co-field">{m.common.startFrom}
-            <select class="co-select" name="fromDossierId">
+            <select class="co-select" name="fromDossierId" data-np-from>
               <option value="">{m.dossiers.emptyDossier}</option>
               {(manager ? team : all).filter((d) => d.itemCount > 0).map((d) => <option value={d.id}>{d.title}{manager && d.authorId !== session.userId ? ` · ${d.authorName ?? m.dossiers.noAuthor}` : ''}</option>)}
             </select>
           </label>
         )}
-        <button class="co-btn co-btn--primary co-btn--block" type="submit">{m.common.createEdit} <span aria-hidden="true">→</span></button>
+          <p class="co-alert co-alert--rejection m-0" hidden data-np-need>{NP.needCompany}</p>
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <button class="co-btn co-btn--ghost co-btn--sm" type="submit" data-np-skip>{m.common.createEdit}</button>
+            <button class="co-btn co-btn--primary" type="button" data-np-next data-testid="np-next-1">{NP.next} <span aria-hidden="true">→</span></button>
+          </div>
+        </section>
+        <section class="grid gap-3" data-np-step="2" hidden>
+          <div><h3 class="co-entity !text-xl m-0">{NP.kindTitle}</h3><p class="co-meta m-0">{NP.kindLede}</p></div>
+          <div class="grid max-h-[50vh] gap-2 overflow-y-auto sm:grid-cols-2" data-np-kinds>
+            {wizardSegments.map((sg) => (
+              <button type="button" class="co-inset grid gap-0.5 text-left" data-np-kind={sg.id} data-name={sg.name} data-testid="np-kind"><span class="font-semibold">{sg.name}</span></button>
+            ))}
+            <button type="button" class="co-inset grid gap-0.5 text-left" data-np-kind="" data-name={NP.kindOther} data-testid="np-kind-other"><span class="font-semibold">{NP.kindOther}</span><span class="co-meta">{NP.kindOtherHint}</span></button>
+          </div>
+          <div class="flex items-center justify-between gap-2">
+            <button class="co-btn co-btn--ghost" type="button" data-np-back>{NP.back}</button>
+            <button class="co-btn co-btn--primary" type="button" data-np-next disabled data-testid="np-next-2">{NP.next} <span aria-hidden="true">→</span></button>
+          </div>
+        </section>
+        <section class="grid gap-3" data-np-step="3" hidden>
+          <div><h3 class="co-entity !text-xl m-0">{NP.howTitle}</h3><p class="co-meta m-0">{NP.howLede}</p></div>
+          <div class="grid max-h-[55vh] gap-3 overflow-y-auto" data-np-how data-none={NP.howNone} data-mode={NP.mode} data-full={NP.full} data-full-hint={NP.fullHint} data-visual={NP.visual} data-visual-hint={NP.visualHint} data-questions={NP.questions}></div>
+          <div class="flex items-center justify-between gap-2">
+            <button class="co-btn co-btn--ghost" type="button" data-np-back>{NP.back}</button>
+            <button class="co-btn co-btn--primary" type="button" data-np-next data-testid="np-next-3">{NP.next} <span aria-hidden="true">→</span></button>
+          </div>
+        </section>
+        <section class="grid gap-3" data-np-step="4" hidden>
+          <div><h3 class="co-entity !text-xl m-0">{NP.doneTitle}</h3><p class="co-meta m-0">{NP.doneLede}</p></div>
+          <dl class="co-inset grid gap-1 !p-4 text-sm" data-np-summary data-for={NP.sumFor} data-kind={NP.sumKind} data-how={NP.sumHow} data-copy={NP.sumCopy}></dl>
+          <div class="flex items-center justify-between gap-2">
+            <button class="co-btn co-btn--ghost" type="button" data-np-back>{NP.back}</button>
+            <button class="co-btn co-btn--primary" type="submit" data-np-create data-testid="np-create">{NP.create} <span aria-hidden="true">→</span></button>
+          </div>
+        </section>
+        <script type="application/json" data-np-recipes set:html={JSON.stringify(Object.fromEntries(wizardSegments.map((sg) => [sg.id, sg.recipe])))} />
+
       </form>
     </dialog>
   </div>
@@ -438,6 +498,107 @@ const initial = (d: { prospectCompany: string | null; title: string }) => (d.pro
         }, 250);
       });
       dlg.querySelector('[data-company-unlink]')?.addEventListener('click', () => { unlink(); company.focus(); });
+    }
+  }
+
+  // «Nueva propuesta» paso a paso (criterio de Cristian, 26-nov-2026): para quién → qué tipo de cliente → cómo la
+  // quiere (la receta del sector) → resumen. Sale montada; «Crear y editar» del primer paso la crea vacía, como antes.
+  {
+    const form = document.querySelector<HTMLFormElement>('[data-testid=create-form]');
+    if (form) {
+      const steps = [...form.querySelectorAll<HTMLElement>('[data-np-step]')];
+      const progress = form.querySelector<HTMLElement>('[data-np-progress]')!;
+      const recipes = JSON.parse(form.querySelector('[data-np-recipes]')?.textContent || '{}') as Record<string, null | {
+        hasVisual: boolean; choices: Array<{ key: string; label: string; hint?: string; default: string; when?: string[]; options: Array<{ key: string; label: string; hint?: string }> }>;
+        questions: Array<{ key: string; label: string; hint?: string; when?: string[] }> }>;
+      const seg = form.querySelector<HTMLInputElement>('[data-np-segment]')!;
+      const modeIn = form.querySelector<HTMLInputElement>('[data-np-mode]')!;
+      const hasRecipe = form.querySelector<HTMLInputElement>('[data-np-has-recipe]')!;
+      const ansBox = form.querySelector<HTMLElement>('[data-np-answers]')!;
+      const how = form.querySelector<HTMLElement>('[data-np-how]')!;
+      const from = form.querySelector<HTMLSelectElement>('[data-np-from]');
+      let cur = 1; let kindName = ''; let answers: string[] = []; let mode: 'full' | 'visual' = 'full';
+      const esc = (x: string) => x.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
+      const show = (n: number) => {
+        cur = n;
+        steps.forEach((x) => { x.hidden = x.dataset.npStep !== String(n); });
+        progress.textContent = (progress.dataset.template ?? '{n}/{of}').replace('{n}', String(n)).replace('{of}', progress.dataset.of ?? '4');
+        if (n === 3) renderHow();
+        if (n === 4) renderSummary();
+      };
+      // Lo que cuenta de la receta: cada elección con su opción (o la de por defecto) si aplica; las preguntas marcadas.
+      const effective = () => {
+        const r = recipes[seg.value]; if (!r) return [] as string[];
+        const out: string[] = []; const applies = (w?: string[]) => !w?.length || w.some((a) => out.includes(a));
+        for (const ch of r.choices) { if (!applies(ch.when)) continue; const pk = answers.find((a) => a.startsWith(`${ch.key}:`))?.slice(ch.key.length + 1); out.push(`${ch.key}:${ch.options.some((o) => o.key === pk) ? pk : ch.default}`); }
+        for (const q of r.questions) if (answers.includes(q.key) && applies(q.when)) out.push(q.key);
+        return out;
+      };
+      const card = (on: boolean, attrs: string, title: string, hint?: string) => `<button type="button" class="co-inset grid gap-0.5 text-left ${on ? '!border-[color:var(--co-signal)] ring-2 ring-[color:var(--co-signal)]' : ''}" aria-pressed="${on}" ${attrs}><span class="font-semibold">${esc(title)}</span>${hint ? `<span class="co-meta">${esc(hint)}</span>` : ''}</button>`;
+      function renderHow() {
+        const r = recipes[seg.value]; const d = how.dataset;
+        if (!r || (!r.hasVisual && !r.choices.length && !r.questions.length)) { how.innerHTML = `<p class="co-meta">${esc(d.none ?? '')}</p>`; return; }
+        const on = effective(); const shows = (w?: string[]) => !w?.length || w.some((a) => on.includes(a));
+        let h = '';
+        if (r.hasVisual) h += `<div class="grid gap-1.5"><p class="text-sm font-semibold">${esc(d.mode ?? '')}</p><div class="grid gap-2 sm:grid-cols-2">${card(mode === 'full', 'data-np-m="full"', d.full ?? '', d.fullHint)}${card(mode === 'visual', 'data-np-m="visual"', d.visual ?? '', d.visualHint)}</div></div>`;
+        for (const ch of r.choices.filter((c) => shows(c.when))) {
+          const picked = on.find((a) => a.startsWith(`${ch.key}:`))?.slice(ch.key.length + 1);
+          h += `<div class="grid gap-1.5" data-testid="np-choice-${esc(ch.key)}"><p class="text-sm font-semibold">${esc(ch.label)}</p>${ch.hint ? `<p class="co-meta -mt-1">${esc(ch.hint)}</p>` : ''}<div class="grid gap-2 sm:grid-cols-2">${ch.options.map((o) => card(picked === o.key, `data-np-ch="${esc(ch.key)}" data-np-opt="${esc(o.key)}"`, o.label, o.hint)).join('')}</div></div>`;
+        }
+        const qs = r.questions.filter((q) => shows(q.when));
+        if (qs.length) h += `<div class="grid gap-1.5"><p class="text-sm font-semibold">${esc(d.questions ?? '')}</p><ul class="grid gap-1.5 p-0">${qs.map((q) => `<li class="list-none"><label class="flex items-start gap-2 text-sm"><input type="checkbox" class="mt-0.5" data-np-q="${esc(q.key)}" ${answers.includes(q.key) ? 'checked' : ''} /><span><span class="font-semibold">${esc(q.label)}</span>${q.hint ? `<span class="co-meta block">${esc(q.hint)}</span>` : ''}</span></label></li>`).join('')}</ul></div>`;
+        how.innerHTML = h;
+      }
+      how.addEventListener('click', (e) => {
+        const b = (e.target as Element).closest<HTMLElement>('[data-np-m],[data-np-ch]'); if (!b) return;
+        if (b.dataset.npM) mode = b.dataset.npM as 'full' | 'visual';
+        else { const ch = b.dataset.npCh!; answers = [...answers.filter((a) => !a.startsWith(`${ch}:`)), `${ch}:${b.dataset.npOpt}`]; }
+        renderHow();
+      });
+      how.addEventListener('change', (e) => {
+        const q = (e.target as HTMLInputElement).dataset.npQ; if (!q) return;
+        answers = (e.target as HTMLInputElement).checked ? [...answers, q] : answers.filter((a) => a !== q);
+        renderHow();
+      });
+      function renderSummary() {
+        const sum = form!.querySelector<HTMLElement>('[data-np-summary]')!; const d = sum.dataset;
+        const company = form!.querySelector<HTMLInputElement>('[name=prospectCompany]')?.value.trim() || form!.querySelector<HTMLInputElement>('[name=title]')?.value.trim() || '—';
+        const row = (k: string, v: string) => `<div class="flex gap-2"><dt class="co-meta w-24 shrink-0">${esc(k)}</dt><dd class="m-0 font-semibold">${esc(v)}</dd></div>`;
+        const copyFrom = from?.value ? from.selectedOptions[0]?.textContent ?? '' : '';
+        const r = recipes[seg.value];
+        const labels = r ? effective().map((a) => { const [k, o] = a.split(':'); const ch = r.choices.find((c) => c.key === k); return o ? ch?.options.find((x) => x.key === o)?.label ?? '' : r.questions.find((q) => q.key === k)?.label ?? ''; }).filter(Boolean) : [];
+        sum.innerHTML = row(d.for ?? '', company) + (copyFrom ? row(d.copy ?? '', copyFrom) : row(d.kind ?? '', kindName || '—') + (labels.length ? row(d.how ?? '', labels.join(' · ')) : ''));
+      }
+      form.querySelectorAll<HTMLButtonElement>('[data-np-kind]').forEach((b) => b.addEventListener('click', () => {
+        seg.value = b.dataset.npKind ?? ''; kindName = b.dataset.name ?? ''; answers = []; mode = 'full';
+        form.querySelectorAll<HTMLButtonElement>('[data-np-kind]').forEach((x) => { const on = x === b; x.setAttribute('aria-pressed', String(on)); x.classList.toggle('ring-2', on); x.classList.toggle('ring-[color:var(--co-signal)]', on); x.classList.toggle('!border-[color:var(--co-signal)]', on); });
+        form.querySelector<HTMLButtonElement>('[data-np-step="2"] [data-np-next]')!.disabled = false;
+      }));
+      form.addEventListener('click', (e) => {
+        const t = e.target as Element;
+        if (t.closest('[data-np-back]')) show(cur === 4 && from?.value ? 1 : cur === 4 && !seg.value ? 2 : cur - 1);
+        if (!t.closest('[data-np-next]')) return;
+        if (cur === 1) {
+          const need = form.querySelector<HTMLElement>('[data-np-need]')!;
+          const has = !!(form.querySelector<HTMLInputElement>('[name=prospectCompany]')?.value.trim() || form.querySelector<HTMLInputElement>('[name=title]')?.value.trim());
+          need.hidden = has; if (!has) return;
+          const title = form.querySelector<HTMLInputElement>('[name=title]')!;
+          if (!title.value.trim()) title.value = form.querySelector<HTMLInputElement>('[name=prospectCompany]')!.value.trim();
+          show(from?.value ? 4 : 2);
+        } else if (cur === 2) show(seg.value ? 3 : 4);
+        else show(cur + 1);
+      });
+      // Enter no crea a medias: avanza.
+      form.addEventListener('keydown', (e) => {
+        if (e.key !== 'Enter' || (e.target as Element).tagName === 'TEXTAREA' || cur === 4) return;
+        if ((e.target as Element).closest('[data-company-list]')) return;
+        e.preventDefault(); form.querySelector<HTMLButtonElement>(`[data-np-step="${cur}"] [data-np-next]`)?.click();
+      });
+      form.querySelector('[data-np-create]')?.addEventListener('click', () => {
+        form.querySelector<HTMLInputElement>('[data-np-wizard]')!.value = '1';
+        modeIn.value = mode; hasRecipe.value = recipes[seg.value] ? '1' : '0';
+        ansBox.innerHTML = effective().map((a) => `<input type="hidden" name="answers" value="${esc(a)}" />`).join('');
+      });
     }
   }
 </script>

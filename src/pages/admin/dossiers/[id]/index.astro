@@ -1,5 +1,6 @@
 ---
 import { testPath } from '~/lib/admin/test-link';
+import { newProposalMessages } from '~/lib/i18n/messages/newProposal';
 import { liteOf } from '~/lib/proposal/preset';
 import AdminLayout from '~/layouts/AdminLayout.astro';
 import Builder from '~/components/admin/Builder.svelte';
@@ -127,6 +128,9 @@ const conflict = d.outcome === 'won' && d.accountEligibility && d.accountEligibi
 const origin = requestOrigin(Astro.request, Astro.url);
 // El enlace de prueba (test-link.ts): desde que se crea, nunca cuenta.
 const testHref = testPath(admin.session.tenantId, state.dossier.id);
+// Recién creada con «Nueva propuesta» paso a paso: qué hacer ahora, en tres pasos.
+const fresh = Astro.url.searchParams.get('nueva') === '1';
+const NPW = newProposalMessages[locale];
 ---
 <AdminLayout title={d.title} wide>
   {result.error && <div class="mb-4"><Alert kind="rejection" title={result.error} details={result.details} /></div>}
@@ -264,5 +268,12 @@ const testHref = testPath(admin.session.tenantId, state.dossier.id);
   <script>
     document.querySelectorAll<HTMLButtonElement>('button[data-confirm]').forEach((b) => b.addEventListener('click', (e) => { if (!confirm(b.dataset.confirm!)) e.preventDefault(); }));
   </script>
+  {fresh && (
+    <div class="co-card mb-4 grid gap-2 !p-5 border-2 !border-[color:var(--co-signal)]" data-testid="np-welcome">
+      <p class="co-entity !text-xl m-0">{NPW.welcomeTitle}</p>
+      <ol class="m-0 grid gap-1 pl-5">{NPW.welcomeSteps.map((x) => <li>{x}</li>)}</ol>
+      <div><a class="co-btn co-btn--ghost co-btn--sm" href={`/admin/dossiers/${state.dossier.id}`}>{NPW.welcomeClose}</a></div>
+    </div>
+  )}
   <Builder client:load initial={state} publicOrigin={origin} testUrl={testHref ? `${origin}${testHref}` : null} market={market} facets={facets} hasStory={hasStory} coupons={coupons} locale={locale} social={social} socialHint={socialHint} website={linked?.website ?? null} />
 </AdminLayout>

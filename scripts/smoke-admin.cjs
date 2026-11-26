@@ -40,6 +40,18 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
 
   // 3. Crear dossier "Sala X"
   await p.click('[data-testid=new-dossier]');
+  // Paso a paso: para quién → tipo de cliente → cómo la quiere → crear; sale montada y con la bienvenida.
+  {
+    await p.fill('[data-testid=create-form] [name=prospectCompany]', 'Sala Paso a Paso');
+    await p.click('[data-testid=np-next-1]');
+    assert((await p.locator('[data-testid=np-kind]').count()) > 0, 'paso a paso: elige el tipo de cliente');
+    await p.locator('[data-testid=np-kind]').first().click();
+    await p.click('[data-testid=np-next-2]'); await p.click('[data-testid=np-next-3]');
+    assert((await p.textContent('[data-np-summary]')).includes('Sala Paso a Paso'), 'paso a paso: resumen antes de crear');
+    await p.click('[data-testid=np-create]'); await p.waitForURL(/\/admin\/dossiers\/.*nueva=1/);
+    assert(await p.isVisible('[data-testid=np-welcome]'), 'paso a paso: la bienvenida con qué hacer ahora');
+    await p.goto(`${BASE}/admin`); await p.click('[data-testid=new-dossier]');
+  }
   await p.fill('[data-testid=create-form] [name=title]', 'Sala X · E2E');
   await p.fill('[data-testid=create-form] [name=prospectCompany]', 'Sala X');
   await p.click('[data-testid=create-form] button[type=submit]');
