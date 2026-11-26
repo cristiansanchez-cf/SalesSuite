@@ -90,13 +90,21 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   const pay = new URL((await p.textContent('[data-testid=payment-url]')).trim());
   assert(pay.hostname === 'buy.stripe.com' && pay.searchParams.get('client_reference_id') === `dossier_${p.url().split('/').pop()}`, 'enlace de pago con la propuesta (el vendedor)');
 
-  // 4. Publicar + enlace
+  // 4. Dos enlaces: el de prueba (desde el principio, en borrador, nunca cuenta) y el del cliente (un clic, cuenta).
+  const testUrl = (await p.textContent('[data-testid=share-test-url]')).trim();
+  assert(/\/prueba\/[0-9a-f-]{36}\.[A-Za-z0-9_-]{22}$/.test(testUrl), `enlace de prueba en borrador ${testUrl}`);
+  {
+    const anonT = await b.newContext(); const tp = await anonT.newPage();
+    const tr = await tp.goto(testUrl, { waitUntil: 'networkidle' });
+    assert(tr.status() === 200 && (await tp.textContent('body')).includes('Enlace de prueba'), 'el de prueba se abre sin entrar, en borrador, con su aviso');
+    assert((await tp.goto(testUrl.replace(/\.[A-Za-z0-9_-]{22}$/, '.AAAAAAAAAAAAAAAAAAAAAA'))).status() === 404, 'sin la firma buena, 404');
+    await anonT.close();
+  }
   await p.click('[data-testid=publish]'); await settle(); await settle();
   assert((await p.textContent('[data-testid=status]')) === 'Publicado', 'publicado');
-  assert(/\/d\/[A-Za-z0-9_-]{32}$/.test((await p.textContent('[data-testid=share-url]')).trim()), 'publicar crea el enlace en el mismo paso');
-  assert((await p.getAttribute('[data-testid=view-mode-test]', 'aria-checked')) === 'true', 'una propuesta nueva empieza en modo prueba');
-  await p.click('[data-testid=view-mode-live]'); await settle();
-  assert((await p.getAttribute('[data-testid=view-mode-live]', 'aria-checked')) === 'true', 'pasa a real');
+  assert(/\/d\/[A-Za-z0-9_-]{32}$/.test((await p.textContent('[data-testid=share-url]')).trim()), 'el enlace del cliente, en un clic');
+  assert(!(await p.$('[data-testid=share-muted]')) && !(await p.$('[data-testid=view-mode-badge]')), 'el del cliente cuenta desde el principio (sin «pasar a real»)');
+  await p.click('[data-testid=share] details summary');
   await p.click('[data-testid=create-link]'); await settle();
   const url = (await p.textContent('[data-testid=link-url]')).trim();
   assert(/\/d\/[A-Za-z0-9_-]{32}$/.test(url), `enlace generado ${url}`);
@@ -134,7 +142,7 @@ const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode
   await p.click('[data-testid=create-link]'); await settle();
   const url2 = (await p.$$eval('[data-state=active] [data-testid=link-url]', (els) => els.map((e) => e.textContent.trim())))[0];
   assert((await v.goto(url2)).status() === 200, 'nuevo enlace 200');
-  await p.click('text=Despublicar'); await p.click('[data-testid=confirm-modal-ok]'); await settle();
+  await p.click('[data-testid=unpublish]'); await p.click('[data-testid=confirm-modal-ok]'); await settle();
   assert((await v.goto(url2)).status() === 404, 'despublicado → 404');
 
   // Arrastrar un módulo desde «Añadir» a una propuesta nueva (ventana alta: catálogo y lista a la vista).

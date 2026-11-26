@@ -1,4 +1,5 @@
 ---
+import { testPath } from '~/lib/admin/test-link';
 import { liteOf } from '~/lib/proposal/preset';
 import AdminLayout from '~/layouts/AdminLayout.astro';
 import Builder from '~/components/admin/Builder.svelte';
@@ -124,6 +125,8 @@ const coupons = admin.session.role === 'partner' ? [] : (await admin.commissions
 const conflict = d.outcome === 'won' && d.accountEligibility && d.accountEligibility !== 'eligible';
 // El enlace público vive en el mismo host del tenant que la consola.
 const origin = requestOrigin(Astro.request, Astro.url);
+// El enlace de prueba (test-link.ts): desde que se crea, nunca cuenta.
+const testHref = testPath(admin.session.tenantId, state.dossier.id);
 ---
 <AdminLayout title={d.title} wide>
   {result.error && <div class="mb-4"><Alert kind="rejection" title={result.error} details={result.details} /></div>}
@@ -261,5 +264,5 @@ const origin = requestOrigin(Astro.request, Astro.url);
   <script>
     document.querySelectorAll<HTMLButtonElement>('button[data-confirm]').forEach((b) => b.addEventListener('click', (e) => { if (!confirm(b.dataset.confirm!)) e.preventDefault(); }));
   </script>
-  <Builder client:load initial={state} publicOrigin={origin} market={market} facets={facets} hasStory={hasStory} coupons={coupons} locale={locale} social={social} socialHint={socialHint} website={linked?.website ?? null} />
+  <Builder client:load initial={state} publicOrigin={origin} testUrl={testHref ? `${origin}${testHref}` : null} market={market} facets={facets} hasStory={hasStory} coupons={coupons} locale={locale} social={social} socialHint={socialHint} website={linked?.website ?? null} />
 </AdminLayout>

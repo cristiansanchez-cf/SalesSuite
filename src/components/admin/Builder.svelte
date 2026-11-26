@@ -28,8 +28,8 @@
   interface FacetLite { key: string; label: string; question: string | null; scope: 'account' | 'contact'; multi: boolean; options: Array<{ key: string; label: string; hint?: string }> }
   interface CouponLite { id: string; code: string; label: string }
   interface SocialSource { platform: 'instagram' | 'tiktok'; handle: string }
-  let { initial, publicOrigin, market = { segments: [], personas: [] }, facets = [], hasStory = false, coupons = [], locale = 'es', social = [], socialHint = null, website = null }:
-    { initial: BuilderState; publicOrigin: string; market?: MarketLite; facets?: FacetLite[]; hasStory?: boolean; coupons?: CouponLite[]; locale?: Locale; social?: SocialSource[]; socialHint?: { accountId: string; name: string } | null; website?: string | null } = $props();
+  let { initial, publicOrigin, testUrl = null, market = { segments: [], personas: [] }, facets = [], hasStory = false, coupons = [], locale = 'es', social = [], socialHint = null, website = null }:
+    { initial: BuilderState; publicOrigin: string; testUrl?: string | null; market?: MarketLite; facets?: FacetLite[]; hasStory?: boolean; coupons?: CouponLite[]; locale?: Locale; social?: SocialSource[]; socialHint?: { accountId: string; name: string } | null; website?: string | null } = $props();
   // Los textos se importan aquí: las funciones (plurales) no viajan como props de una isla.
   const t = builderMessages[locale] ?? builderMessages.es;
   /** Los avisos de «antes de publicar» llegan del servidor en español: aquí, en el idioma de quien edita. */
@@ -436,9 +436,21 @@
   // ---------- compartir: publicar y enlace en un paso; prueba o real
   const activeLinks = $derived(s.links.filter((l) => l.state === 'active'));
   const viewMode = $derived(d.viewMode ?? 'live');
+  // El enlace para el cliente, en un paso (criterio de Cristian, 26-nov-2026): sin «publicar» ni «pasar a real» aparte.
+  // Lo de probar va por el enlace de prueba, que nunca cuenta.
   async function publishAndLink() {
-    if (!(await run({ op: 'setStatus', status: 'published' }))) return;
+    if (d.status !== 'published' && !(await run({ op: 'setStatus', status: 'published' }))) return;
     if (!s.links.some((l) => l.state === 'active')) await run({ op: 'createLink', expiresAt: null });
+    if ((d.viewMode ?? 'live') === 'test') await run({ op: 'update', patch: { viewMode: 'live' } });
+  }
+  let testCopied = $state(false);
+  async function copyTest() {
+    if (!testUrl) return;
+    try { await navigator.clipboard.writeText(testUrl); } catch {
+      const x = document.createElement('textarea'); x.value = testUrl; document.body.append(x); x.select(); document.execCommand('copy'); x.remove();
+    }
+    testCopied = true;
+    setTimeout(() => { testCopied = false; }, 1800);
   }
   let customOpen = $state(false);
   // Precio en dos pasos: primero QUÉ es (tipo), luego la tarifa; al elegir el tipo se marca la más típica.
@@ -640,7 +652,7 @@
       <input class="builder-title min-w-0 flex-1" value={d.title} disabled={!editable} maxlength="140" aria-label={t.prospect.name}
         onchange={(e) => saveField('title', e.currentTarget.value)} data-testid="title" />
       <span class={STATUS_CLASS[d.status]} data-testid="status">{t.status[d.status]}</span>
-      {#if d.status === 'published'}<span class="co-badge {viewMode === 'test' ? 'co-badge--attention' : 'co-badge--signal'}" data-testid="view-mode-badge">{viewMode === 'test' ? t.share.test : t.share.live}</span>{/if}
+      {#if d.status === 'published' && viewMode === 'test'}<span class="co-badge co-badge--attention" data-testid="view-mode-badge">{t.share.test}</span>{/if}
       <span class="co-meta" aria-live="polite">{busy ? t.header.saving : t.header.saved}</span>
     </div>
   </div>
@@ -670,29 +682,40 @@
       <!-- compartir: lo primero que necesita el comercial -->
       <section class="{card} share-card" data-testid="share">
         <h2 class="mb-3 co-card-title">{t.share.title}</h2>
-        {#if d.status !== 'published'}
-          {#if s.publishBlockers.length}
-            <div class="co-alert co-alert--rejection mb-3 block"><p class="font-semibold">{t.publish.blockers}</p><ul>{#each s.publishBlockers as b}<li>{blockerText(b)}</li>{/each}</ul></div>
-          {:else}
-            <p class="co-meta mb-3">{t.share.draftHelp}</p>
+        <!-- dos enlaces y para qué es cada uno: el de prueba (nunca cuenta) y el del cliente (cuenta y avisa) -->
+        <div class="grid grid-cols-[minmax(0,1fr)] gap-1.5" data-testid="share-test">
+          <p class="text-sm font-semibold">{t.share.testTitle}</p>
+          <p class="co-meta">{t.share.testWhat}</p>
+          {#if testUrl}
+            <div class="flex flex-wrap items-center gap-2">
+              <code class="min-w-0 flex-1 truncate rounded-lg bg-surface px-3 py-2 text-xs" data-testid="share-test-url">{testUrl}</code>
+              <button class={btn} onclick={copyTest} data-testid="share-test-copy">{testCopied ? t.links.copied : t.links.copy}</button>
+              <a class={btn} href={testUrl} target="_blank" rel="noopener noreferrer" data-testid="share-test-open">{t.links.open}</a>
+            </div>
           {/if}
-          <button class="co-btn co-btn--primary co-btn--block" disabled={!editable || s.publishBlockers.length > 0 || busy} onclick={publishAndLink} data-testid="publish">{t.share.publishAndLink} <span aria-hidden="true">→</span></button>
-        {:else}
-          {#if activeLinks[0]}
+        </div>
+        <div class="mt-4 grid grid-cols-[minmax(0,1fr)] gap-1.5 border-t border-[var(--console-divider)] pt-4" data-testid="share-client">
+          <p class="text-sm font-semibold">{t.share.clientTitle}</p>
+          {#if d.status === 'published' && activeLinks[0]}
+            <p class="co-meta">{t.share.clientWhat}</p>
             <div class="flex flex-wrap items-center gap-2">
               <code class="min-w-0 flex-1 truncate rounded-lg bg-surface px-3 py-2 text-xs" data-testid="share-url">{linkUrl(activeLinks[0].token)}</code>
               <button class="co-btn co-btn--primary co-btn--sm" onclick={() => copy(activeLinks[0].token)} data-testid="share-copy">{copied === activeLinks[0].token ? t.links.copied : t.links.copy}</button>
               <a class={btn} href={linkUrl(activeLinks[0].token)} target="_blank" rel="noopener noreferrer">{t.links.open}</a>
             </div>
+            {#if viewMode === 'test'}
+              <p class="co-meta flex flex-wrap items-center gap-2" data-testid="share-muted">{t.share.clientMuted}
+                <button class={btn} disabled={!editable} onclick={() => setMode('live')} data-testid="view-mode-live">{t.share.clientCount}</button></p>
+            {/if}
+          {:else}
+            {#if s.publishBlockers.length}
+              <div class="co-alert co-alert--rejection block"><p class="font-semibold">{t.publish.blockers}</p><ul>{#each s.publishBlockers as b}<li>{blockerText(b)}</li>{/each}</ul></div>
+            {:else}
+              <p class="co-meta">{t.share.clientNotYet}</p>
+            {/if}
+            <button class="co-btn co-btn--primary co-btn--block" disabled={!editable || s.publishBlockers.length > 0 || busy} onclick={publishAndLink} data-testid="publish">{t.share.clientCreate} <span aria-hidden="true">→</span></button>
           {/if}
-          <div class="mt-4 grid gap-2">
-            <div class="co-segmented" role="radiogroup" aria-label={t.share.mode}>
-              <button role="radio" aria-checked={viewMode === 'test'} disabled={!editable} onclick={() => setMode('test')} data-testid="view-mode-test">{t.share.test}</button>
-              <button role="radio" aria-checked={viewMode === 'live'} disabled={!editable} onclick={() => setMode('live')} data-testid="view-mode-live">{t.share.live}</button>
-            </div>
-            <p class="co-meta">{viewMode === 'test' ? t.share.testHelp : t.share.liveHelp}</p>
-          </div>
-        {/if}
+        </div>
         {#if s.payment}
           <div class="mt-4 grid grid-cols-[minmax(0,1fr)] gap-2 border-t border-[var(--console-divider)] pt-4" data-testid="payment">
             <p class="text-sm font-semibold">{t.tariff.payment} · {s.payment.label}</p>
@@ -706,7 +729,7 @@
         {:else if d.priceOptionId}
           <p class="co-meta mt-4">{t.tariff.noLink}</p>
         {/if}
-        <details class="mt-4 border-t border-[var(--console-divider)] pt-3" open={d.status === 'published'}>
+        <details class="mt-4 border-t border-[var(--console-divider)] pt-3">
           <summary class="cursor-pointer text-sm font-semibold text-muted">{t.share.moreLinks(s.links.length)}</summary>
           <div class="mt-3">
             {#if d.status !== 'published'}<p class="mb-3 text-sm text-muted">{t.links.unpublished}</p>{/if}
@@ -738,7 +761,7 @@
             {/each}
           </ul>
           </div>
-          {#if d.status === 'published'}<button class="{btn} mt-3" disabled={!editable} onclick={() => setStatus('draft')}>{t.publish.unpublish}</button>{/if}
+          {#if d.status === 'published'}<button class="{btn} mt-3" disabled={!editable} onclick={() => setStatus('draft')} data-testid="unpublish">{t.share.stop}</button>{/if}
         </details>
       </section>
 

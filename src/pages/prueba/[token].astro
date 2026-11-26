@@ -1,0 +1,32 @@
+---
+/**
+ * El enlace de prueba de una propuesta (src/lib/admin/test-link.ts): como la verá el cliente, en cualquier estado salvo
+ * archivada, sin entrar y sin contar nunca (no lleva el seguimiento de /d/). Firmado: sin la firma, 404.
+ */
+import DossierView from '~/components/dossier/DossierView.astro';
+import { contextAs } from '~/lib/admin/auth';
+import { readTestToken, testAuthor } from '~/lib/admin/test-link';
+import { readContact, toRep } from '~/lib/admin/rep-contact';
+import { moduleTranslations, segmentPhrases, withoutContentLocale } from '~/lib/i18n/content-db';
+import { builderMessages } from '~/lib/i18n/messages/builder';
+
+const { tenant } = Astro.locals;
+const id = tenant ? readTestToken(tenant.id, Astro.params.token ?? '') : null;
+const author = tenant && id ? await testAuthor(tenant.id, id).catch(() => null) : null;
+// Con los permisos de quien la hizo (como su vista previa), nunca con los de la plataforma.
+const admin = tenant && author ? await contextAs(tenant, author).catch(() => null) : null;
+if (!tenant || !id || !admin) return Astro.rewrite('/404');
+let dossier;
+try {
+  dossier = await admin.service.previewDossier(id);
+  dossier = { ...dossier, repContact: toRep(await readContact(admin, author!).catch(() => ({ channel: null, value: '', name: '' }))) };
+} catch { return Astro.rewrite('/404'); }
+const translations = dossier.locale.slice(0, 2) !== tenant.defaultLocale.slice(0, 2) ? await moduleTranslations(admin.content, tenant.id, dossier.locale) : undefined;
+const phrases = translations
+  ? await withoutContentLocale(() => admin.playbook.market()).then((segs) => segmentPhrases(admin.content, tenant.id, dossier.locale, segs as Array<{ id: string; proposal?: unknown }>)).catch(() => ({}))
+  : undefined;
+const T = (builderMessages[dossier.locale.slice(0, 2) as keyof typeof builderMessages] ?? builderMessages.es).share;
+Astro.response.headers.set('X-Robots-Tag', 'noindex, nofollow');
+Astro.response.headers.set('Cache-Control', 'private, no-store');
+---
+<DossierView tenant={tenant} dossier={dossier} banner={T.testBanner} translations={translations} phrases={phrases} />

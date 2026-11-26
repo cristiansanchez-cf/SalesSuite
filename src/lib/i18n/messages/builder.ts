@@ -115,6 +115,10 @@ const es = {
     mode: 'Modo', test: 'Prueba', live: 'Real',
     testHelp: 'Ábrelo y mándaselo a quien quieras: estas aperturas no cuentan ni te avisan.',
     liveHelp: 'Cada apertura del cliente cuenta y te avisamos.', goLive: 'Listo: pasar a real',
+    testTitle: 'Enlace de prueba', testWhat: 'Para ti: ábrelo en el móvil o mándaselo a un compañero. Nunca cuenta ni te avisa, aunque esté a medias.',
+    clientTitle: 'Enlace para el cliente', clientWhat: 'El que le mandas. Cada vez que lo abre cuenta y te avisamos.',
+    clientCreate: 'Crear el enlace para el cliente', clientNotYet: 'Cuando la tengas lista, crea su enlace: sale al momento.',
+    clientMuted: 'Este enlace aún no cuenta las aperturas (estaba en prueba).', clientCount: 'Que cuente', stop: 'Dejar de compartir', testBanner: 'Enlace de prueba · no cuenta como visita del cliente',
     newLink: 'Otro enlace', moreLinks: (n: number) => `Enlaces (${n})`,
   },
   quick: {
@@ -336,6 +340,10 @@ export const builderMessages = defineMessages({
       mode: 'Mode', test: 'Test', live: 'Live',
       testHelp: 'Open it and send it to anyone: these opens do not count or notify you.',
       liveHelp: 'Every customer open counts and we let you know.', goLive: 'Ready: switch to live',
+      testTitle: 'Test link', testWhat: 'For you: open it on your phone or send it to a colleague. It never counts or notifies you, even if unfinished.',
+      clientTitle: 'Link for the customer', clientWhat: 'The one you send. Every time they open it, it counts and we let you know.',
+      clientCreate: 'Create the link for the customer', clientNotYet: 'When it is ready, create their link: it is ready straight away.',
+      clientMuted: 'This link does not count opens yet (it was in test mode).', clientCount: 'Make it count', stop: 'Stop sharing', testBanner: 'Test link · does not count as a customer visit',
       newLink: 'Another link', moreLinks: (n) => `Links (${n})`,
     },
     quick: {
@@ -554,6 +562,10 @@ export const builderMessages = defineMessages({
       mode: 'Modo', test: 'Teste', live: 'Real',
       testHelp: 'Abra e envie para quem quiser: essas aberturas não contam nem avisam você.',
       liveHelp: 'Cada abertura do cliente conta e avisamos você.', goLive: 'Pronto: passar para real',
+      testTitle: 'Link de teste', testWhat: 'Para você: abra no celular ou envie a um colega. Nunca conta nem avisa, mesmo incompleta.',
+      clientTitle: 'Link para o cliente', clientWhat: 'O que você envia. Cada vez que ele abre, conta e avisamos você.',
+      clientCreate: 'Criar o link para o cliente', clientNotYet: 'Quando estiver pronta, crie o link: sai na hora.',
+      clientMuted: 'Este link ainda não conta as aberturas (estava em teste).', clientCount: 'Fazer contar', stop: 'Deixar de compartilhar', testBanner: 'Link de teste · não conta como visita do cliente',
       newLink: 'Outro link', moreLinks: (n) => `Links (${n})`,
     },
     quick: {
@@ -772,6 +784,10 @@ export const builderMessages = defineMessages({
       mode: '모드', test: '테스트', live: '실전',
       testHelp: '열어 보고 누구에게나 보내세요. 이 열람은 집계하지 않고 알림도 없습니다.',
       liveHelp: '고객의 열람이 모두 집계되고 알려 드립니다.', goLive: '준비 완료: 실전으로 전환',
+      testTitle: '테스트 링크', testWhat: '나를 위한 링크: 휴대폰으로 열거나 동료에게 보내세요. 미완성이어도 집계나 알림이 없습니다.',
+      clientTitle: '고객용 링크', clientWhat: '고객에게 보내는 링크. 열 때마다 집계되고 알려 드립니다.',
+      clientCreate: '고객용 링크 만들기', clientNotYet: '준비되면 고객용 링크를 만드세요. 바로 만들어집니다.',
+      clientMuted: '이 링크는 아직 열람을 집계하지 않습니다(테스트 상태였음).', clientCount: '집계 시작', stop: '공유 중지', testBanner: '테스트 링크 · 고객 방문으로 집계하지 않음',
       newLink: '다른 링크', moreLinks: (n) => `링크 (${n})`,
     },
     quick: {
