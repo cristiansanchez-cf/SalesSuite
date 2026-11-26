@@ -29,7 +29,8 @@ export const GET: APIRoute = async (ctx) => {
 
   if (!ok) return ctx.redirect('/admin/login?error=link', 303);
   // En el acceso general solo se elige espacio: la invitación y la contraseña se terminan dentro del espacio.
-  if (ctx.locals.hub) return ctx.redirect('/admin/elige', 303);
+  // Salvo el panel de la plataforma (superadmin), que se sirve aquí.
+  if (ctx.locals.hub) return ctx.redirect(q.get('next')?.startsWith('/admin/platform') ? safeNext(q.get('next')) : '/admin/elige', 303);
   // Invitación: tras fijar la contraseña, «Empieza aquí». Recuperación: vuelve al panel.
   if (type === 'invite') return ctx.redirect('/admin/account?setup=1', 303);
   if (type === 'recovery') return ctx.redirect('/admin/account?setup=recovery', 303);

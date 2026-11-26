@@ -65,8 +65,11 @@ async function newDossier(p, title) {
   // Superadmin: plataforma y, dentro de un espacio, admin.
   const sup = await login(b, 'super@cofundo.test');
   assert((await sup.textContent('[data-testid=role]')).includes('Superadmin'), 'rol: Superadmin');
-  await sup.click('[data-testid=nav-platform]');
-  await sup.waitForURL(/\/admin\/platform/);
+  // La plataforma se sirve en el acceso general: «Superadmin» en el menú de la cuenta lleva allí, ya con sesión.
+  assert((await sup.locator('[data-testid=nav-platform]').count()) === 0, 'sin «Plataforma» en el menú del espacio');
+  await sup.click('[data-testid=profile]');
+  await sup.click('[data-testid=to-platform]');
+  await sup.waitForURL(/hub\.localhost.*\/admin\/platform/);
   assert((await sup.locator('[data-testid=platform-space]').count()) >= 2, 'plataforma: todos los espacios');
   if (OUT) await sup.screenshot({ path: `${OUT}/platform.png`, fullPage: true });
   assert((await sup.goto(adminDossier)).status() === 200, 'superadmin entra en cualquier propuesta del espacio');

@@ -22,8 +22,7 @@ function groups(role: Role, counts: { pendingPlaybook?: number; superadmin?: boo
   const perms = can(role);
   const partner = role === 'partner';
   const sell: Group[] = [
-    // Superadmin (docs/ORG.md): todos los espacios de la plataforma.
-    ...(counts.superadmin ? [{ href: '/admin/platform', label: L.platform, icon: 'shield-check' as IconName, testid: 'nav-platform', tabs: [] }] : []),
+    // Superadmin (docs/ORG.md): la plataforma se sirve en el acceso general; aquí, solo el botón del menú de la cuenta.
     partner
       ? { href: '/admin/start', label: L.start, icon: 'compass' as IconName, testid: 'nav-start', tabs: [{ href: '/admin/start', label: L.start }, { href: '/admin/compose', label: L.compose }] }
       : { href: '/admin/inicio', label: L.home, icon: 'gauge' as IconName, testid: 'nav-home', tabs: [

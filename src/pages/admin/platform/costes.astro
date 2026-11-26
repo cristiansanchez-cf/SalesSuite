@@ -15,6 +15,8 @@ import { GROUPS, isMonth, monthOf, usd, type TenantCost } from '~/lib/usage/repo
 const { admin } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
 if (!admin.session.superadmin) return Astro.rewrite('/admin/forbidden');
+// Se sirve en el acceso general (ventas.cofundo.io); dentro de un espacio, allí.
+if (!Astro.locals.hub) return Astro.redirect(`/admin/a-plataforma?next=${encodeURIComponent(Astro.url.pathname + Astro.url.search)}`, 302);
 const { m, locale } = i18n(Astro, costsMessages);
 const tag = locale === 'en' ? 'en-GB' : locale === 'pt' ? 'pt-PT' : locale === 'ko' ? 'ko-KR' : 'es-ES';
 const $ = (n: number) => usd(n, tag);
@@ -46,7 +48,7 @@ const href = (o: { m?: string; t?: string | null }) => `/admin/platform/costes?m
 const label = (f: string) => m.features[f] ?? f;
 const peak = (t: TenantCost) => Math.max(...t.daily, 0.000001);
 ---
-<AdminLayout title={m.title} wide>
+<AdminLayout title={m.title} wide bare>
   <div class="mx-auto grid max-w-6xl grid-cols-[minmax(0,1fr)] gap-8 pb-10" data-testid="costs">
     <header class="grid gap-2">
       <a class="co-meta inline-flex items-center gap-1" href="/admin/platform"><Icon name="chevron-left" size={14} />{m.back}</a>

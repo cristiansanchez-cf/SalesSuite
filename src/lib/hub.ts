@@ -37,12 +37,16 @@ const HUB_PATHS = new Set(['/admin/login', '/admin/auth/confirm', '/admin/auth/c
 /** Qué hacer con una ruta en el acceso general: dejarla pasar o llevar a la pantalla de elegir. */
 export function hubRoute(path: string): 'pass' | 'pick' {
   if (HUB_PATHS.has(path)) return 'pass';
+  // El panel de la plataforma (superadmin) se sirve aquí, no dentro de un espacio.
+  if (path === '/admin/platform' || path.startsWith('/admin/platform/')) return 'pass';
   // Archivos (CSS, JS, iconos) y bloques que carga la página.
   if (path.startsWith('/_astro/') || /\.[a-z0-9]{2,5}$/i.test(path)) return 'pass';
   return 'pick';
 }
 
-export interface HubUser { id: string; email: string; name: string | null; spaces: Omit<Space, 'current'>[] }
+export interface HubUser { id: string; email: string; name: string | null; spaces: Omit<Space, 'current'>[]; superadmin?: boolean }
+/** Adónde se puede ir directo desde el acceso general (el panel de la plataforma, solo superadmin). */
+export const HUB_NEXT = ['/admin/home', '/admin/platform', '/admin/platform/costes', '/admin/platform/aprendizaje'] as const;
 
 /** Quién ha entrado en el acceso general y sus espacios. null: nadie (al login). */
 export async function hubUser(ctx: RequestLike): Promise<HubUser | null> {
@@ -52,7 +56,7 @@ export async function hubUser(ctx: RequestLike): Promise<HubUser | null> {
     const org = demoOrgDb();
     const superadmin = await org.isSuperadmin(u.id).catch(() => false);
     const spaces = await loadSpaces({ mode: 'demo', userId: u.id, superadmin, supabase: null, platform: async () => (await org.platformOverview()) ?? [] });
-    return { id: u.id, email: u.email, name: u.display_name || null, spaces };
+    return { id: u.id, email: u.email, name: u.display_name || null, spaces, superadmin };
   }
   const sb = supabaseServerClient(ctx);
   const { data, error } = await sb.auth.getUser();
@@ -60,30 +64,48 @@ export async function hubUser(ctx: RequestLike): Promise<HubUser | null> {
   const org = supabaseOrgDb(sb);
   const superadmin = await org.isSuperadmin(data.user.id).catch(() => false);
   const spaces = await loadSpaces({ mode: 'supabase', userId: data.user.id, superadmin, supabase: sb, platform: async () => (await org.platformOverview()) ?? [] }).catch(() => []);
-  return { id: data.user.id, email: data.user.email ?? '', name: (data.user.user_metadata?.name as string) ?? null, spaces };
+  return { id: data.user.id, email: data.user.email ?? '', name: (data.user.user_metadata?.name as string) ?? null, spaces, superadmin };
 }
 
 /**
  * La dirección para entrar en un espacio: con un enlace de un solo uso para tu email (sin correo de por medio). Sin
  * service role, a su login (tendrá que pedir el código allí). En la demo, al host local del espacio con el mismo puerto.
  */
-export async function enterUrl(user: HubUser, space: Omit<Space, 'current'>, origin: string): Promise<string | null> {
+export async function enterUrl(user: HubUser, space: Omit<Space, 'current'>, origin: string, next: string = '/admin/home'): Promise<string | null> {
   const here = new URL(origin);
+  const to = encodeURIComponent((HUB_NEXT as readonly string[]).includes(next) ? next : '/admin/home');
   if (authMode() === 'demo') {
     const local = demoDb().domain.find((d) => d.tenant_id === space.id && d.hostname.endsWith('.localhost'))?.hostname;
     if (!local) return null;
-    return `${here.protocol}//${local}${here.port ? `:${here.port}` : ''}/admin/auth/confirm?demo_user=${encodeURIComponent(user.id)}&next=/admin/home`;
+    return `${here.protocol}//${local}${here.port ? `:${here.port}` : ''}/admin/auth/confirm?demo_user=${encodeURIComponent(user.id)}&next=${to}`;
   }
   if (!space.host) return null;
   const base = `https://${space.host}`;
   try {
     const hash = await serviceIdentity()?.oneTimeLogin?.(user.email);
-    if (hash) return `${base}/admin/auth/confirm?type=magiclink&token_hash=${encodeURIComponent(hash)}&next=/admin/home`;
+    if (hash) return `${base}/admin/auth/confirm?type=magiclink&token_hash=${encodeURIComponent(hash)}&next=${to}`;
   } catch (e) {
     console.warn('[hub] sin enlace de un solo uso, al login del espacio:', e instanceof Error ? e.message : e);
   }
-  return `${base}/admin/login`;
+  return `${base}/admin/login?next=${to}`;
 }
 
 /** El último espacio elegido (para ponerlo primero y marcarlo). Solo el id; cookie del acceso general. */
 export const HUB_LAST_COOKIE = 'ss_hub_last';
+
+/**
+ * Del espacio al panel de la plataforma (en el acceso general): con un enlace de un solo uso para tu email, como al
+ * entrar en un espacio desde aquí, para no tener que volver a entrar. Sin él, al login del acceso general.
+ */
+export async function platformUrl(user: { id: string; email: string }, origin: string, next = '/admin/platform'): Promise<string> {
+  const to = encodeURIComponent(next.startsWith('/admin/platform') ? next : '/admin/platform');
+  const hub = hubUrl(origin);
+  if (authMode() === 'demo') return `${hub}/admin/auth/confirm?demo_user=${encodeURIComponent(user.id)}&next=${to}`;
+  try {
+    const hash = await serviceIdentity()?.oneTimeLogin?.(user.email);
+    if (hash) return `${hub}/admin/auth/confirm?type=magiclink&token_hash=${encodeURIComponent(hash)}&next=${to}`;
+  } catch (e) {
+    console.warn('[hub] sin enlace de un solo uso a la plataforma:', e instanceof Error ? e.message : e);
+  }
+  return `${hub}/admin/login?next=${to}`;
+}

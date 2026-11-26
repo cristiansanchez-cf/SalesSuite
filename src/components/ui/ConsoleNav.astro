@@ -91,6 +91,11 @@ const initials = name.split(/[\s@.]+/).filter(Boolean).slice(0, 2).map((x) => x[
           {LOCALES.map((l) => <button type="submit" name="locale" value={l} class="co-chip !min-h-[28px] !px-2.5 !text-xs" aria-pressed={l === locale ? 'true' : 'false'} lang={l} data-testid={primary ? `locale-${l}` : undefined}>{LOCALE_NAME[l]}</button>)}
         </div>
       </form>
+      {admin.session.superadmin && (
+        <div class="mb-2 px-2">
+          <a class="co-chip !min-h-[28px] !px-2.5 !text-xs inline-flex items-center gap-1" href="/admin/a-plataforma" data-testid={primary ? 'to-platform' : undefined}><Icon name="crown" size={12} />Superadmin</a>
+        </div>
+      )}
       <div class="co-actions">
         <a class="co-action" href="/admin/account"><Icon name="user" /><span class="co-action__label">{m.shell.myAccount}</span><Icon name="chevron-right" size={16} /></a>
         <form method="post" action="/admin/logout"><button class="co-action" type="submit"><Icon name="log-out" /><span class="co-action__label">{m.shell.logout}</span><Icon name="chevron-right" size={16} /></button></form>

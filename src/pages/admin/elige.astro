@@ -75,6 +75,20 @@ const firstName = (user.name ?? '').trim().split(/\s+/)[0] || null;
       </>
     )}
 
+    {user.superadmin && (
+      <section class="co-card grid gap-3 !p-5" data-testid="hub-platform">
+        <div class="grid gap-1">
+          <h2 class="co-entity !text-xl m-0"><Icon name="crown" size={18} /> {m.platform}</h2>
+          <p class="co-meta m-0">{m.platformLede}</p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          {([['/admin/platform', m.platformSpaces, 'plus'], ['/admin/platform/costes', m.platformCosts, 'wallet'], ['/admin/platform/aprendizaje', m.platformLearning, 'sparkles']] as const).map(([href, label, icon]) => (
+            <a class="co-btn co-btn--ghost co-btn--sm" href={href} data-testid="hub-platform-link" data-next={href}><Icon name={icon} size={14} />{label}</a>
+          ))}
+        </div>
+      </section>
+    )}
+
     <div class="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--console-divider)] pt-4">
       <p class="co-meta">{m.signedAs(user.email)}</p>
       <form method="post" action="/admin/logout"><button class="co-btn co-btn--ghost co-btn--sm" type="submit" data-testid="hub-logout">{m.logout}</button></form>

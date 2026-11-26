@@ -15,7 +15,7 @@ import { isSetupPath, onboardedAt } from './lib/onboarding';
 import { withContentLocale } from './lib/i18n/content-db';
 import { can } from './lib/admin/permissions';
 import { withUsageScope } from './lib/usage/meter';
-import { hubRoute, isHubHost } from './lib/hub';
+import { hubRoute, hubUser, isHubHost } from './lib/hub';
 import { CRM_TRAIL, isCrmPath } from './lib/ui/remember';
 
 // Falsear el Host solo cambia qué tenant se resuelve; el RPC exige que el token sea de ese tenant
@@ -63,6 +63,17 @@ export const onRequest = defineMiddleware(async (context, next) => {
     context.locals.tenant = null;
     context.locals.admin = null;
     context.locals.hub = true;
+    // El panel de la plataforma (solo superadmin) se sirve aquí: con el contexto de uno de sus espacios (el que sea; lo
+    // de la plataforma no depende del espacio), sin la consola de ese espacio alrededor.
+    if (hp === '/admin/platform' || hp.startsWith('/admin/platform/')) {
+      const user = await hubUser(context);
+      if (!user) return context.redirect(`/admin/login?next=${encodeURIComponent(hp)}`, 302);
+      if (!user.superadmin || !user.spaces.length) return context.redirect('/admin/elige', 302);
+      const tenant = await publicRepository().resolveTenantBySlug(user.spaces[0]!.slug);
+      const auth = tenant ? await authenticate(context, tenant) : null;
+      if (!auth || auth.kind !== 'ok') return context.redirect('/admin/elige', 302);
+      context.locals.admin = auth.admin;
+    }
     context.locals.locale = resolveLocale({ user: null, cookie: context.cookies.get(LOCALE_COOKIE)?.value, tenant: undefined, accept: context.request.headers.get('accept-language') });
     const res = await withRequestLocale(context.locals.locale, () => next());
     res.headers.set('X-Robots-Tag', 'noindex, nofollow');

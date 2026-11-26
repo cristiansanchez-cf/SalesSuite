@@ -36,3 +36,16 @@ tus empresas»), que es justo cuando alguien ha entrado en la empresa equivocada
    falta para el envío de reserva (cuando el código no sale por nuestro correo de Resend); el código de 6 dígitos
    funciona igual.
 3. **Web de Cofundo:** el botón de «Acceso» → `https://ventas.cofundo.io`.
+
+
+## Plataforma (superadmin) en el acceso general (26-nov-2026)
+
+Todo lo de superadmin se sirve en ventas.cofundo.io, no dentro de un espacio: `/admin/platform` (espacios, dar de alta
+una empresa, topes, decks), `/admin/platform/costes` y `/admin/platform/aprendizaje`.
+- En «¿Dónde quieres ir hoy?», el superadmin ve la tarjeta **Plataforma** con los tres accesos.
+- Dentro de un espacio ya no hay «Plataforma» en el menú: en el menú de la cuenta, junto a los idiomas, el botón
+  **Superadmin** (`/admin/a-plataforma`) lleva allí con un enlace de un solo uso (sin volver a entrar).
+- Cualquier `/admin/platform…` abierto dentro de un espacio redirige allí.
+- Por dentro: el middleware del acceso general monta el contexto del superadmin con uno de sus espacios (lo de la
+  plataforma no depende del espacio) y las páginas van sin la consola alrededor (`bare`). «Entrar» en un espacio desde la
+  plataforma usa `/admin/ir` (enlace de un solo uso).

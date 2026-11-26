@@ -22,7 +22,9 @@ if (!tenant && !hub) return Astro.rewrite('/404');
 const { m } = i18n(Astro, sellMessages);
 const H = i18n(Astro, hubMessages).m;
 const mode = authMode();
-const next = hub ? '/admin/elige' : safeNext(Astro.url.searchParams.get('next'));
+// En el acceso general, a elegir (o al panel de la plataforma, si venía de ahí).
+const hubNext = Astro.url.searchParams.get('next');
+const next = hub ? (hubNext?.startsWith('/admin/platform') ? safeNext(hubNext) : '/admin/elige') : safeNext(Astro.url.searchParams.get('next'));
 let error: string | null = Astro.url.searchParams.get('error') === 'link' ? m.login.errLink : null;
 let info: string | null = null;
 /** Paso 2 del acceso por código: email al que se envió. */

@@ -11,7 +11,8 @@ export const POST: APIRoute = async (ctx) => {
   if (!ctx.locals.hub) return ctx.redirect('/admin/home', 303);
   const user = await hubUser(ctx);
   if (!user) return ctx.redirect('/admin/login', 303);
-  const id = String((await ctx.request.formData()).get('tenant') ?? '');
+  const fd = await ctx.request.formData();
+  const id = String(fd.get('tenant') ?? '');
   const space = user.spaces.find((x) => x.id === id);
   if (!space) return ctx.redirect('/admin/elige', 303);
   const url = await enterUrl(user, space, requestOrigin(ctx.request, ctx.url));

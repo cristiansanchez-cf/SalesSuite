@@ -14,6 +14,8 @@ import { conversations, reviewAi, runReview, reviewDue } from '~/lib/learning/re
 const { admin } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
 if (!admin.session.superadmin) return Astro.rewrite('/admin/forbidden');
+// Se sirve en el acceso general (ventas.cofundo.io); dentro de un espacio, allí.
+if (!Astro.locals.hub) return Astro.redirect(`/admin/a-plataforma?next=${encodeURIComponent(Astro.url.pathname + Astro.url.search)}`, 302);
 const { m, locale } = i18n(Astro, learningMessages);
 const tag = locale === 'en' ? 'en-GB' : locale === 'pt' ? 'pt-PT' : locale === 'ko' ? 'ko-KR' : 'es-ES';
 const day = (iso: string) => new Intl.DateTimeFormat(tag, { day: 'numeric', month: 'short', timeZone: 'Europe/Madrid' }).format(new Date(iso));
@@ -62,7 +64,7 @@ const href = (o: { d?: number; u?: string | null; r?: string | null }) => {
   return `/admin/platform/aprendizaje${s ? `?${s}` : ''}#convos`;
 };
 ---
-<AdminLayout title={m.title} wide>
+<AdminLayout title={m.title} wide bare>
   <div class="mx-auto grid max-w-6xl grid-cols-[minmax(0,1fr)] gap-8 pb-10" data-testid="learning">
     <header class="grid gap-2">
       <a class="co-meta inline-flex items-center gap-1" href="/admin/platform"><Icon name="chevron-left" size={14} />{m.back}</a>

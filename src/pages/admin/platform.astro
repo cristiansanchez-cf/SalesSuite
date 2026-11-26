@@ -18,11 +18,14 @@ import { orgMessages } from '~/lib/i18n/messages/org';
 import { costsMessages } from '~/lib/i18n/messages/costs';
 import { monthOf, usd } from '~/lib/usage/report';
 import { learningMessages } from '~/lib/i18n/messages/learning';
+import { hubMessages } from '~/lib/i18n/messages/hub';
 import { learningStore } from '~/lib/learning/store';
 
 const { admin, tenant } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
 if (!admin.session.superadmin) return Astro.rewrite('/admin/forbidden');
+// Se sirve en el acceso general (ventas.cofundo.io); dentro de un espacio, allí.
+if (!Astro.locals.hub) return Astro.redirect(`/admin/a-plataforma?next=${encodeURIComponent(Astro.url.pathname + Astro.url.search)}`, 302);
 const { m: { platform: m }, f, locale: locale0 } = i18n(Astro, orgMessages);
 const here = new URL(requestOrigin(Astro.request, Astro.url));
 const local = /^(localhost|127\.|.*\.localhost$)/.test(here.hostname);
@@ -60,6 +63,7 @@ const { m: cm, locale } = i18n(Astro, costsMessages);
 const costs = await admin.org.costs(monthOf(new Date())).catch(() => null);
 // Aprender de las conversaciones (docs/APRENDIZAJE.md): la última revisión, para el acceso.
 const LM = learningMessages[locale0];
+const HB = hubMessages[locale0];
 const lastReview = await learningStore()?.reviews(1).then((r) => r[0] ?? null).catch(() => null) ?? null;
 const costOf = new Map((costs?.report.tenants ?? []).map((t) => [t.id, t]));
 const money$ = (n: number) => usd(n, locale === 'en' ? 'en-GB' : locale === 'pt' ? 'pt-PT' : locale === 'ko' ? 'ko-KR' : 'es-ES');
@@ -67,9 +71,10 @@ const createdSlug = Astro.url.searchParams.get('ok') === 'created' ? Astro.url.s
 const created = createdSlug ? spaces.find((x) => x.slug === createdSlug) ?? null : null;
 const total = spaces.reduce((a, x) => ({ members: a.members + x.members, dossiers: a.dossiers + x.dossiers, revenue: a.revenue + x.revenueCents }), { members: 0, dossiers: 0, revenue: 0 });
 ---
-<AdminLayout title={m.title} wide>
+<AdminLayout title={m.title} wide bare>
   <div class="mx-auto grid max-w-6xl grid-cols-[minmax(0,1fr)] gap-10 pb-10" data-testid="platform">
     <header class="grid gap-2">
+      <a class="co-meta inline-flex items-center gap-1" href="/admin/elige" data-testid="platform-back"><Icon name="chevron-left" size={14} />{HB.title}</a>
       <p class="text-eyebrow">{m.eyebrow}</p>
       <h1 class="co-page-title !text-5xl">{m.title}</h1>
       <p class="co-lede !text-lg">{m.lede}</p>
@@ -123,7 +128,7 @@ const total = spaces.reduce((a, x) => ({ members: a.members + x.members, dossier
               <span class="co-meta truncate">{x.domain ?? x.slug}{x.status !== 'active' && <> · <b>{m.suspended}</b></>}</span>
             </div>
             {here ? <span class="co-badge co-badge--signal">{m.here}</span>
-              : href && <a class="co-btn co-btn--primary co-btn--sm" href={href} data-testid="platform-open">{m.open} <Icon name="external-link" size={14} /></a>}
+              : <form method="post" action="/admin/ir"><input type="hidden" name="tenant" value={x.id} /><button class="co-btn co-btn--primary co-btn--sm" type="submit" data-testid="platform-open">{m.open} <Icon name="external-link" size={14} /></button></form>}
           </div>
           <dl class="grid grid-cols-4 gap-2 text-center">
             {[[x.members, m.members], [x.delegations, m.delegations], [x.dossiers, m.dossiers], [x.published, m.published]].map(([v, l]) => (
