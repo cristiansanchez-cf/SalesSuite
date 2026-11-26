@@ -316,7 +316,9 @@ export function claudeResearch(apiKey: string, fetchImpl?: typeof fetch): Resear
   return {
     async research(input) {
       const messages: Anthropic.Beta.BetaMessageParam[] = [{ role: 'user', content: userPrompt(input) }];
-      for (let turn = 0; turn < 4; turn++) {
+      // Cada vuelta vuelve a mandar todo lo leído: como mucho 3 (antes 4), y menos búsquedas y páginas más cortas
+      // (criterio de Cristian, 26-nov-2026: salían ~67.000 tokens y ~0,17 $ por investigación).
+      for (let turn = 0; turn < 3; turn++) {
         const res = await client.beta.messages.create({
           model: RESEARCH_MODEL,
           max_tokens: 16000,
@@ -325,8 +327,8 @@ export function claudeResearch(apiKey: string, fetchImpl?: typeof fetch): Resear
           output_config: { effort: 'medium' },
           system: researchSystem(input.pack, input.lang),
           tools: [
-            { type: 'web_search_20260209', name: 'web_search', max_uses: 6, user_location: { type: 'approximate', ...(input.country !== null ? { country: input.country ?? 'ES' } : {}), ...(input.city ? { city: input.city.slice(0, 60) } : {}) } },
-            { type: 'web_fetch_20260209', name: 'web_fetch', max_uses: 4 },
+            { type: 'web_search_20260209', name: 'web_search', max_uses: 4, user_location: { type: 'approximate', ...(input.country !== null ? { country: input.country ?? 'ES' } : {}), ...(input.city ? { city: input.city.slice(0, 60) } : {}) } },
+            { type: 'web_fetch_20260209', name: 'web_fetch', max_uses: 3, max_content_tokens: 6000 },
             researchTool(input.pack) as unknown as Anthropic.Beta.BetaTool,
           ],
           messages,

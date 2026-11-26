@@ -60,6 +60,13 @@ export function supabaseAccountsDb(sb: SupabaseClient): AccountsDb {
   return {
     async listZones(t) { return (check(await sb.from('zone').select('*').eq('tenant_id', t)) ?? []).map(toZone); },
     async bumpUsage(t, kind, limit) { return !!check(await sb.rpc('bump_usage', { p_tenant: t, p_kind: kind, p_limit: limit })); },
+    async bumpResearch(t, userLimit, tenantLimit) {
+      const r = await sb.rpc('bump_research', { p_tenant: t, p_user_limit: userLimit, p_tenant_limit: tenantLimit });
+      // Sin la migración aún: se deja investigar (el tope general de IA sigue).
+      if (r.error && /bump_research|does not exist|schema cache/i.test(r.error.message)) return 'ok';
+      const v = check(r) as string;
+      return v === 'user' || v === 'tenant' ? v : 'ok';
+    },
     async aiLimits(t) {
       const r = await sb.rpc('ai_limits', { p_tenant: t });
       if (r.error && /ai_limits|tenant_limits|usage_event|does not exist|schema cache/i.test(r.error.message)) return null;

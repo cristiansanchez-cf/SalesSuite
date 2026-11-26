@@ -167,6 +167,18 @@ export function demoAccountsDb(actorId: string): AccountsDb {
       if (!roleOf(t, actorId) && !demoDb().users.find((u) => u.id === actorId)?.platform_admin) throw new Error('permission denied: No es del equipo');
       return demoAiLimits(t);
     },
+    async bumpResearch(t, userLimit, tenantLimit) {
+      if (!roleOf(t, actorId)) throw new Error('permission denied: No es del equipo');
+      const day = new Date().toISOString().slice(0, 10);
+      const s = db();
+      const today = s.usage_counter.filter((x) => x.tenant_id === t && x.kind === 'research' && x.day === day);
+      if (today.reduce((n, x) => n + x.n, 0) >= Math.max(tenantLimit, 1)) return 'tenant';
+      let row = today.find((x) => x.user_id === actorId);
+      if ((row?.n ?? 0) >= Math.max(userLimit, 1)) return 'user';
+      if (!row) { row = { tenant_id: t, user_id: actorId, kind: 'research', day, n: 0 }; s.usage_counter.push(row); }
+      row.n++;
+      return 'ok';
+    },
     async bumpUsage(t, kind, limit) {
       if (!roleOf(t, actorId)) throw new Error('permission denied: No es del equipo');
       const day = new Date().toISOString().slice(0, 10);

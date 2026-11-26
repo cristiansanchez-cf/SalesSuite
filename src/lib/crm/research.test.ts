@@ -133,6 +133,20 @@ describe('investigar desde la ficha', () => {
     await expect(s.aiRun(marina().id, { sector: null, seller: 'Enjoy' })).rejects.toMatchObject({ status: 409 });
   });
 
+  test('tope de investigaciones al día: 5 por persona y 15 por espacio (y no cuenta la que no cabe)', async () => {
+    const s = svc(fixtureResearch());
+    const day = new Date().toISOString().slice(0, 10);
+    demoDb().usage_counter.push({ tenant_id: ENJOY, user_id: REP, kind: 'research', day, n: 4 });
+    await s.aiRun(marina().id, { sector: null, seller: 'Enjoy' });
+    const other = demoDb().account.find((a) => a.tenant_id === ENJOY && (!a.owner_id || a.owner_id === REP) && a.id !== marina().id)!;
+    await expect(s.aiRun(other.id, { sector: null, seller: 'Enjoy' })).rejects.toMatchObject({ status: 409, message: expect.stringContaining('máximo al día por persona') });
+    expect(demoDb().usage_counter.find((x) => x.user_id === REP && x.kind === 'research')?.n).toBe(5);
+    // El espacio entero: aunque esta persona no haya hecho ninguna.
+    demoDb().usage_counter = demoDb().usage_counter.filter((x) => x.kind !== 'research');
+    demoDb().usage_counter.push({ tenant_id: ENJOY, user_id: 'otra', kind: 'research', day, n: 15 });
+    await expect(s.aiRun(other.id, { sector: null, seller: 'Enjoy' })).rejects.toMatchObject({ status: 409, message: expect.stringContaining('en este espacio') });
+  });
+
   test('si la IA falla: 503 y no se guarda nada', async () => {
     const s = svc({ async research() { throw new Error('timeout'); } });
     await expect(s.aiRun(marina().id, { sector: null, seller: 'Enjoy' })).rejects.toMatchObject({ status: 503 });

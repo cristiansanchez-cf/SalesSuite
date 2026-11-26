@@ -138,3 +138,14 @@ Resultados del 3 de noviembre de 2026 (un solo proceso de Node, demo en memoria,
   ~200 ms). Es la primera que hay que optimizar si crece el equipo.
 - Una empresa normal (8 personas) hace como mucho unas 5 peticiones por segundo en hora punta. El servidor de la
   aplicación no es lo que limita el número de empresas.
+
+## Investigar (26-nov-2026)
+
+Investigar con IA es lo más caro (búsqueda y lectura web con Sonnet): Oquea llegó a 3 $ en 18 investigaciones (~67.000
+tokens y ~0,17 $ cada una). Desde ahora:
+- **Tope propio al día:** 5 por persona y 15 por espacio (`RESEARCH_PER_USER_DAY`, `RESEARCH_PER_TENANT_DAY` en
+  `src/lib/crm/service.ts`), aparte del tope general de IA. Si no cabe, no se gasta ni cuenta; el aviso dice cuál ha
+  saltado. RPC `bump_research` (migración `20270130000000_research_cap.sql`).
+- **Más barata:** como mucho 4 búsquedas, 3 páginas de hasta 6.000 tokens cada una y 3 vueltas (antes 6, 4 páginas
+  enteras y 4 vueltas; cada vuelta reenvía todo lo leído).
+- Sigue el tope de gasto al mes por espacio (Plataforma → Costes) como red de seguridad.

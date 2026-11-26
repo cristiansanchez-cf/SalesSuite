@@ -56,6 +56,8 @@ export interface AccountsDb {
   clearZoneLocations(tenantId: string): Promise<number>;
   /** Suma 1 al uso de hoy (RPC bump_usage) y dice si aún cabe en el tope (Google y la IA cuestan dinero). */
   bumpUsage(tenantId: string, kind: 'google' | 'ai', limit: number): Promise<boolean>;
+  /** Una investigación más hoy, si cabe (por persona y por espacio): 'ok' o por qué no (RPC bump_research). */
+  bumpResearch?(tenantId: string, userLimit: number, tenantLimit: number): Promise<'ok' | 'user' | 'tenant'>;
   /** El tope de IA del espacio y lo gastado este mes (RPC ai_limits; docs/COSTES.md §Tope). null si aún no está la migración. */
   aiLimits?(tenantId: string): Promise<AiLimitsNow | null>;
   /** Alta de zonas en bloque (ciudades de una importación). */

@@ -2095,6 +2095,9 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
 
   /** Entre dos investigaciones de la misma empresa (evita el doble clic y gastar dos veces). */
   const AI_COOLDOWN_MS = 2 * 60_000;
+  /** Investigaciones al día (docs/COSTES.md §Investigar): unos 0,10 $ cada una. */
+  const RESEARCH_PER_USER_DAY = 5;
+  const RESEARCH_PER_TENANT_DAY = 15;
   async function aiResearch(accountId: string): Promise<AiResearch | null> {
     requireUse();
     return readResearch(await accounts.getAiResearch(accountId).catch(() => null));
@@ -2125,6 +2128,12 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     // La espera antes que el cupo: un doble clic no gasta.
     if (a.aiResearchAt && Date.now() - Date.parse(a.aiResearchAt) < AI_COOLDOWN_MS) throw new AdminError(409, 'Se acaba de investigar; espera un par de minutos');
     await quota('ai');
+    // Investigar es lo más caro (búsqueda y lectura web): su propio tope al día, por persona y por espacio.
+    if (accounts.bumpResearch) {
+      const r = await accounts.bumpResearch(t, RESEARCH_PER_USER_DAY, RESEARCH_PER_TENANT_DAY).catch((e) => { console.warn('[research-cap]', e instanceof Error ? e.message : e); return 'ok' as const; });
+      if (r === 'user') throw new AdminError(409, `Hoy ya has hecho ${RESEARCH_PER_USER_DAY} investigaciones (el máximo al día por persona); mañana puedes seguir`);
+      if (r === 'tenant') throw new AdminError(409, `Hoy ya se han hecho ${RESEARCH_PER_TENANT_DAY} investigaciones en este espacio (el máximo al día); mañana se puede seguir`);
+    }
     const people = (await actorsOf(accountId)).map((c) => c.name);
     // Primero lo que sale gratis (§25): la razón social y el CIF de su aviso legal, sin IA. Con ellos la IA busca el grupo.
     let legal = { legalName: a.legalName, taxId: a.taxId };
