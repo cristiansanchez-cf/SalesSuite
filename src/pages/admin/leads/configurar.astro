@@ -71,7 +71,19 @@ if (Astro.request.method === 'POST') {
   // parte que se acaba de guardar; al cerrar, a la página con el aviso de guardado.
   const toRaw = f.get('_to');
   const stepTo = toRaw === null ? null : Math.max(0, Math.min(9, Number(toRaw) || 0));
-  const back = (url: string) => {
+  // Lo obligatorio, antes de guardar: si al guardar queda completo y estaba en pruebas, se activa solo (criterio de
+  // Cristian, 26-nov-2026: el botón «Activar» de arriba no lo veía nadie y la web daba error). Si luego lo pausa a
+  // mano, se respeta: solo se activa al completarse.
+  const readyNow = async () => { const c = await svc.settings().catch(() => null); if (!c) return { ready: false, enabled: false }; const doms = c.resendKeyHint ? await ownDomains(admin).catch(() => null) : null; return { ready: readiness(c, doms, { demo, platformMail }).ready, enabled: c.enabled }; };
+  const before = action === 'toggle' ? null : await readyNow();
+  const back = async (url: string) => {
+    if (before && !before.ready && !before.enabled) {
+      const after = await readyNow();
+      if (after.ready && !after.enabled && !(await formAction(async () => { await svc.setEnabled(true); })).error) {
+        const v = new URL(url, Astro.url); v.searchParams.delete('abrir'); v.searchParams.delete('p'); v.searchParams.set('ok', 'autoLive');
+        return Astro.redirect(`${v.pathname}${v.search}`, 303);
+      }
+    }
     if (stepTo === null) return Astro.redirect(url, 303);
     const u = new URL(url, Astro.url);
     if (stepTo === 0) { u.searchParams.delete('abrir'); u.searchParams.delete('p'); u.searchParams.delete('caidas'); }
@@ -250,7 +262,7 @@ const kinds = await svc.usedKinds().catch(() => [] as string[]);
 const steps = leadSetupSteps({ settings: s, domains, received: !!last, demo, platformMail, platformWa: !!env('WHATSAPP_TOKEN') });
 const ready = readiness(s, domains, { demo, platformMail }).ready;
 const progress = requiredProgress(steps);
-const okMsg = flash(Astro.url, { live: L.ok.live, paused: L.ok.paused, webs: T.connect.ok.webs, test: T.connect.ok.test, ...T.email.ok, ...T.messages.ok, ...T.whatsapp.ok, ...T.booking.ok });
+const okMsg = flash(Astro.url, { autoLive: L.ok.autoLive, live: L.ok.live, paused: L.ok.paused, webs: T.connect.ok.webs, test: T.connect.ok.test, ...T.email.ok, ...T.messages.ok, ...T.whatsapp.ok, ...T.booking.ok });
 const fmt = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: s.timezone });
 
 // Las que tienen paso guiado abren su modal; las demás, su sección de los ajustes.
@@ -341,6 +353,12 @@ const pct = progress.total ? Math.round((progress.done / progress.total) * 100) 
     </div>
   </PageHeader>
   {okMsg && !['connect', 'email', 'messages', 'whatsapp', 'booking'].includes(openParam ?? '') && <div class="mb-4"><Alert kind="success" title={okMsg} /></div>}
+  {!s.enabled && ready && (
+    <div class="co-alert co-alert--info mb-4 flex flex-wrap items-center justify-between gap-3" role="status" data-testid="leads-ready">
+      <div class="grid gap-1"><p class="m-0 font-semibold">{S.readyTitle}</p><p class="m-0">{S.readyBody}</p></div>
+      <form method="post" action="/admin/leads/configurar"><input type="hidden" name="action" value="toggle" /><input type="hidden" name="on" value="1" /><button class="co-btn co-btn--primary" data-testid="leads-ready-activate">{S.readyCta}</button></form>
+    </div>
+  )}
   {error && !errorIn && <div class="mb-4"><Alert kind="rejection" title={error} details={errorDetails} /></div>}
 
   <section class="mb-6 grid max-w-3xl gap-2" data-testid="leads-setup-progress" data-done={progress.done} data-total={progress.total}>
