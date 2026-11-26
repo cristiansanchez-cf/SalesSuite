@@ -61,6 +61,9 @@ export const quickAddSchema = personSchema.extend({
   company: opt(160),
   role: opt(80),
   tag: z.string().max(48).optional().transform((v) => (v ? tagSchema.parse(v) || null : null)),
+  /** Si la empresa es nueva: del tipo de este perfil (un lead que es un local, un DJ…) y de quien la da de alta. */
+  profile: z.enum(PROFILES).optional(),
+  mine: z.boolean().optional(),
 });
 
 /** «@club_sol» o «instagram.com/club_sol» → enlace completo. */
@@ -238,7 +241,7 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
   }
 
   /** Empresa por id o, si no existe, nueva con ese nombre (alta al vuelo). Devuelve su id. */
-  async function companyFor(accountId: string | null | undefined, name: string | null | undefined, tag: string | null, zoneId: string | null = null): Promise<string | null> {
+  async function companyFor(accountId: string | null | undefined, name: string | null | undefined, tag: string | null, zoneId: string | null = null, extra: { profile?: string; mine?: boolean } = {}): Promise<string | null> {
     if (accountId) {
       const a = await accounts.getAccount(accountId);
       if (!a || a.tenantId !== t) throw new AdminError(404, 'Cuenta no encontrada');
@@ -248,14 +251,16 @@ export function createCrmService(db: CrmDb, accounts: AccountsDb, admin: AdminDb
     const same = (await accounts.listAccounts(t, { q: name, limit: 50 })).find((a) => norm(a.name) === norm(name));
     if (same) return same.id;
     try {
-      return await accounts.insertAccount(t, { name, zoneId, segmentId: null, address: null, externalRef: null, notes: null, tags: tag ? [tag] : [] });
+      const kind = extra.profile ? (await kinds()).find((k) => k.profile === extra.profile)?.key : undefined;
+      return await accounts.insertAccount(t, { name, zoneId, segmentId: null, address: null, externalRef: null, notes: null, tags: tag ? [tag] : [],
+        ...(kind ? { kind } : {}), ...(extra.mine && s.role !== 'partner' ? { ownerId: s.userId } : {}) });
     } catch (e) { mapError(e); }
   }
 
   async function quickAdd(input: unknown): Promise<{ id: string; accountId: string | null }> {
     requireUse();
     const v = parse(quickAddSchema, input);
-    const accountId = await companyFor(v.accountId, v.company, v.tag);
+    const accountId = await companyFor(v.accountId, v.company, v.tag, null, { profile: v.profile, mine: v.mine });
     let id: string;
     try {
       [id] = await db.insertContacts(t, [{ name: v.name, email: v.email ?? null, phone: v.phone ?? null, instagram: v.instagram ?? null, linkedin: v.linkedin ?? null,

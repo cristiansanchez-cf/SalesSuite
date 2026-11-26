@@ -25,6 +25,9 @@ import { priorityMessages } from '~/lib/i18n/messages/priority';
 import { followupMessages } from '~/lib/i18n/messages/followup';
 import { cleanupContext } from '~/lib/crm/research-context';
 import type { NoteItem } from '~/lib/crm/notes';
+import { leadsFor } from '~/lib/leads/service';
+import { leadTranscript } from '~/lib/leads/conversation';
+import { leadsMessages } from '~/lib/i18n/messages/leads';
 
 const { admin } = Astro.locals;
 if (!admin) return Astro.redirect('/admin/login');
@@ -103,6 +106,19 @@ const items = box.items;
 // «Apuntar sobre este sitio» desde la ficha (§23): la empresa ya elegida, sin buscarla.
 const pre = !items && /^[0-9a-f-]{36}$/i.test(Astro.url.searchParams.get('empresa') ?? '')
   ? await admin.accounts.get(Astro.url.searchParams.get('empresa')!).then((d) => d.account).catch(() => null) : null;
+// «Pasar a la empresa con IA» desde «Viene de la web» (criterio de Cristian: el lead y el CRM viven juntos): la
+// conversación del lead ya escrita, como un chat copiado de WhatsApp. La IA propone; tú revisas y guardas.
+const leadId = Astro.url.searchParams.get('lead') ?? '';
+if (!items && !box.text && /^[0-9a-f-]{36}$/i.test(leadId)) {
+  const d = await (await leadsFor(admin)).detail(leadId).catch(() => null);
+  if (d) {
+    const W = leadsMessages[locale].fromWeb;
+    const sub = d.submissions[0];
+    const cta = ((sub?.context ?? {}) as { cta?: { label?: string | null } }).cta?.label ?? '';
+    box.text = leadTranscript({ name: d.lead.name, intro: W.intro(d.lead.name, cta, d.events.some((e) => e.kind === 'submission' && e.data.message) ? '' : sub?.message?.slice(0, 600) ?? ''), events: d.events,
+      me: admin.session.displayName || admin.session.email.split('@')[0]!, autoTag: W.autoTag, timeZone: d.settings?.timezone ?? 'Europe/Madrid' });
+  }
+}
 const fieldLabel = new Map(items ? (await admin.accounts.crmFields().catch(() => [])).map((x) => [x.key, x.label]) : []);
 const hasAi = admin.crm.hasNotes();
 

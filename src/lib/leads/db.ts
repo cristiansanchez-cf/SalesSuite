@@ -22,6 +22,8 @@ export interface LeadsDb {
   submissionByKey(tenantId: string, key: string): Promise<Submission | null>;
   leadByEmail(tenantId: string, email: string, isTest: boolean): Promise<Lead | null>;
   leadsByPhone(tenantId: string, e164: string): Promise<Lead[]>;
+  /** Los leads (sin pruebas ni anonimizados) que ya son estas personas o estas empresas del CRM: su ficha los enseña. */
+  linkedTo(tenantId: string, by: { contactIds?: string[]; accountIds?: string[] }): Promise<Lead[]>;
   getLead(id: string): Promise<Lead | null>;
   insertLead(l: NewLead): Promise<Lead>;
   /** Devuelve false si no ha cambiado nada (sin permiso o no existe). */

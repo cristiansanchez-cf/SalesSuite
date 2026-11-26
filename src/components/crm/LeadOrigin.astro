@@ -1,0 +1,62 @@
+---
+/**
+ * «Viene de la web» en la ficha de una persona y en la de su empresa (criterio de Cristian, 26-nov-2026: el lead y el
+ * CRM viven juntos). Lo que pidió, qué parece, la etapa y la conversación por WhatsApp en burbujas, con «Ver el lead» y
+ * «Pasar a la empresa con IA» (Apuntar con la conversación ya escrita: la IA propone y tú revisas).
+ */
+import Icon from '~/components/ui/Icon.astro';
+import ChatThread from '~/components/admin/ChatThread.astro';
+import { leadBubbles } from '~/lib/leads/conversation';
+import { leadsMessages } from '~/lib/i18n/messages/leads';
+import { followupMessages } from '~/lib/i18n/messages/followup';
+import type { Lead, LeadEvent, Submission } from '~/lib/leads/types';
+import type { Locale } from '~/lib/i18n/core';
+
+interface Props {
+  items: Array<{ lead: Lead; events: LeadEvent[]; submission: Submission | null }>;
+  locale: Locale;
+  /** Empresa a la que pasar lo hablado (en la ficha de la empresa, ella; en la de la persona, su primera). */
+  company?: { id: string; name: string } | null;
+  /** Hay IA para Apuntar. */
+  ai: boolean;
+}
+const { items, locale, company = null, ai } = Astro.props;
+const L = leadsMessages[locale];
+const W = L.fromWeb;
+const FO = followupMessages[locale].follow;
+const bands: Record<string, string> = L.bands;
+const cats: Record<string, string> = L.cats;
+const day = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'long', year: 'numeric' });
+---
+{items.map(({ lead: l, events, submission: sub }) => {
+  const bubbles = leadBubbles(events, { them: l.name, auto: W.auto, locale });
+  const ctx: { cta?: { label?: string | null } } = sub?.context ?? {};
+  const cls = l.facts.classification as { category?: string; reason?: string } | undefined;
+  const href = `/admin/accounts/apuntar?lead=${l.id}${(company?.id ?? l.accountId) ? `&empresa=${company?.id ?? l.accountId}` : ''}`;
+  return (
+    <section class="co-card grid gap-3" data-testid="lead-origin" data-lead={l.id}>
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <h2 class="co-entity flex items-center gap-2"><Icon name="globe" size={18} />{W.title}</h2>
+        <span class="flex flex-wrap items-center gap-2">
+          <span class="co-tag" title={W.stage}>{L.stages[l.stage]}</span>
+          <a class="co-btn co-btn--ghost co-btn--sm" href={`/admin/leads/${l.id}`} data-testid="lead-origin-open">{W.open}</a>
+        </span>
+      </div>
+      <p class="co-meta m-0">{W.since(day.format(new Date(l.createdAt)))}{ctx.cta?.label ? ` · «${ctx.cta.label}»` : ''}</p>
+      <dl class="m-0 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
+        {sub?.message && <><dt class="co-meta">{W.asked}</dt><dd class="m-0 whitespace-pre-wrap" data-ugc>{sub.message}</dd></>}
+        {cls?.category && <><dt class="co-meta">{W.read}</dt><dd class="m-0"><strong>{cats[cls.category] ?? cls.category}</strong>{cls.reason && <span class="co-meta"> · {cls.reason}</span>}</dd></>}
+        {l.scoreDetail && <><dt class="co-meta">{W.fit}</dt><dd class="m-0">{bands[l.scoreDetail.band] ?? l.scoreDetail.band}{l.score != null ? ` · ${l.score}` : ''}</dd></>}
+      </dl>
+      {bubbles.length > 1
+        ? <ChatThread id={`lead-${l.id}`} bubbles={bubbles} labels={{ title: FO.convoTitle, all: FO.convoAll, older: FO.convoOlder, us: FO.convoUs, them: FO.convoThem, close: FO.convoClose }} />
+        : <p class="co-help m-0">{W.noTalk}</p>}
+      {ai && (
+        <div class="grid gap-1">
+          <a class="co-btn co-btn--primary co-btn--sm w-fit" href={href} data-testid="lead-origin-ai"><Icon name="sparkles" size={14} />{company ? W.toCompany(company.name) : W.toCrm}</a>
+          <span class="co-help">{W.toHelp}</span>
+        </div>
+      )}
+    </section>
+  );
+})}

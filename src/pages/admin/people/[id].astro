@@ -7,6 +7,9 @@ import Icon from '~/components/ui/Icon.astro';
 import ConfirmDialog from '~/components/ui/ConfirmDialog.astro';
 import FieldInput from '~/components/crm/FieldInput.astro';
 import ContactLinks from '~/components/crm/ContactLinks.astro';
+import LeadOrigin from '~/components/crm/LeadOrigin.astro';
+import { leadsFor } from '~/lib/leads/service';
+import { leadsMessages } from '~/lib/i18n/messages/leads';
 import { can } from '~/lib/admin/permissions';
 import { AdminError } from '~/lib/admin/service';
 import { flash, formAction } from '~/lib/admin/forms';
@@ -32,7 +35,13 @@ if (Astro.request.method === 'POST') {
   result = await formAction(async () => {
     switch (str('action')) {
       case 'save': await admin.crm.updatePerson(id, { name: str('name'), email: str('email'), phone: str('phone'), instagram: str('instagram'), linkedin: str('linkedin'), city: str('city'), notes: str('notes') }); to += '?ok=saved'; break;
-      case 'link': await admin.crm.link(id, { company: str('company'), role: str('role') }); to += '?ok=linked'; break;
+      case 'link': {
+        const accountId = await admin.crm.link(id, { company: str('company'), role: str('role') });
+        // Si llegó como lead, el lead pasa a esa empresa y su historial empieza con cómo llegó (criterio de Cristian).
+        const n = await (await leadsFor(admin)).attach(id, accountId).catch((e) => { console.warn('[lead-attach]', e instanceof Error ? e.message : e); return 0; });
+        to += n ? `?ok=attached&c=${encodeURIComponent(str('company').slice(0, 80))}` : '?ok=linked';
+        break;
+      }
       // Cambiar su papel en una empresa en la que ya está (criterio de Cristian: «editar para la empresa»).
       case 'role': await admin.crm.link(id, { accountId: str('accountId'), role: str('role') }); to += '?ok=linked'; break;
       case 'unlink': await admin.crm.unlink(id, str('accountId')); to += '?ok=unlinked'; break;
@@ -53,7 +62,11 @@ try { data = await admin.crm.person(id); } catch (e) {
 const { person: p, crmFields, canEdit, canDelete, companies, similar } = data;
 const members = perms.manageAccounts ? await admin.tenantAdmin.listMembers().catch(() => []) : [];
 const sheet = fieldsFor(crmFields, null, { target: 'contact', tags: p.tags });
-const okMsg = flash(Astro.url, P.person.ok);
+const W = leadsMessages[locale].fromWeb;
+const okMsg = Astro.url.searchParams.get('ok') === 'attached' ? W.attached(Astro.url.searchParams.get('c') ?? '') : flash(Astro.url, P.person.ok);
+// Si llegó por la web: lo que pidió y lo que habéis hablado, aquí y en la ficha de su empresa.
+const fromWeb = await (await leadsFor(admin)).linked({ contactIds: [id] }).catch(() => []);
+const firstCompany = p.companies[0] ? { id: p.companies[0].accountId, name: p.companies[0].name } : null;
 ---
 <AdminLayout title={p.name}>
   <PageHeader eyebrow={p.companies.map((c) => c.name).join(' · ') || P.people.noCompany} title={p.name} back={{ href: '/admin/people', label: P.person.back }}>
@@ -72,7 +85,7 @@ const okMsg = flash(Astro.url, P.person.ok);
     <div class="grid content-start gap-5">
       <section class="co-card grid gap-3" data-testid="person-companies">
         <h2 class="co-entity">{P.person.companies}</h2>
-        {p.companies.length === 0 ? <p class="co-meta">{P.person.noCompanies}</p> : (
+        {p.companies.length === 0 ? <p class:list={['co-meta', fromWeb.length > 0 && 'co-inset co-inset--warn !py-2 font-medium']} data-testid="person-no-company">{fromWeb.length ? W.noCompany : P.person.noCompanies}</p> : (
           <ul class="co-rows">
             {p.companies.map((c) => (
               <li class="co-row flex-wrap" data-name={c.name}>
@@ -109,6 +122,8 @@ const okMsg = flash(Astro.url, P.person.ok);
         </form>
         </details>
       </section>
+
+      <LeadOrigin items={fromWeb} locale={locale} company={firstCompany} ai={admin.crm.hasNotes()} />
 
       <section class="co-card grid gap-4" data-testid="person-sheet">
         <div class="flex flex-wrap items-center justify-between gap-2">

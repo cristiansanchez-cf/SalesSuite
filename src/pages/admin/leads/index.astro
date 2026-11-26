@@ -13,7 +13,7 @@ import { leadsMessages } from '~/lib/i18n/messages/leads';
 import { leadsFor } from '~/lib/leads/service';
 import { formAction } from '~/lib/admin/forms';
 import { AdminError } from '~/lib/admin/service';
-import { LEAD_ERRORS } from '~/lib/leads/service';
+import { LEAD_ERRORS, guessCompany } from '~/lib/leads/service';
 import { rejectReason } from '~/lib/leads/decide';
 import LeadDecide from '~/components/admin/leads/LeadDecide.astro';
 import { afterValidationAt, waConnected, waDelay, waTokenReady } from '~/lib/leads/wa-status';
@@ -41,7 +41,7 @@ if (Astro.request.method === 'POST') {
   let ok = '';
   result = await formAction(async () => {
     if (str('action') === 'accept') {
-      const r = await svc.accept(str('id'), { whatsapp: f.getAll('wa').includes('1') });
+      const r = await svc.accept(str('id'), { whatsapp: f.getAll('wa').includes('1'), company: str('company') || null });
       ok = r.whatsapp ? (r.whatsapp.soon ? `validatedWa&min=${r.whatsapp.minutes}` : 'validatedWaLater') : r.why ? `validatedNoWa&why=${r.why}` : 'validated';
     }
     else if (str('action') === 'reject') { await svc.reject(str('id'), rejectReason(str('reasonPreset'), str('reasonDetail'), L.decide.other)); ok = 'rejected'; }
@@ -211,7 +211,7 @@ const href = (v: View) => `/admin/leads?ver=${v}${search ? `&q=${encodeURICompon
               {l.submissions > 1 && <span class="co-meta">{L.repeat(l.submissions)}</span>}
               <span class="co-meta whitespace-nowrap">{fmt.format(new Date(l.lastSubmissionAt))}</span>
             </a>
-            {!l.validatedAt && !l.isTest && !['discarded', 'spam'].includes(l.stage) && <LeadDecide id={l.id} name={l.name} action={here} M={L.decide} W={W} wa={planOf(l)} compact />}
+            {!l.validatedAt && !l.isTest && !['discarded', 'spam'].includes(l.stage) && <LeadDecide id={l.id} name={l.name} action={here} M={L.decide} W={W} wa={planOf(l)} company={guessCompany(l)} compact />}
           </li>
         );
       })}

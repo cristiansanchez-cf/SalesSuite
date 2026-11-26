@@ -17,6 +17,12 @@ import { RETENTION_LIMITS, sourceKey } from './privacy';
 import { STAGES, STOP_STAGES, type Lead, type LeadSettings, type NewMessage, type WaApproval, type LeadTemplates, type Stage, type View } from './types';
 import { DEFAULT_TEXTS, MEDIA_TYPES } from './templates';
 
+/** La empresa que dijo en la web (local, empresa o evento), si la dijo. */
+export function guessCompany(l: Pick<Lead, 'facts'>): string | null {
+  const f = (l.facts.fields as Record<string, string>) ?? {};
+  return (f.venue_name || f.company || f.event_name || '').trim() || null;
+}
+
 export type WaWhy = 'test' | 'notConnected' | 'closed' | 'noPhone' | 'noConsent' | 'suppressed' | 'already';
 
 export const LEAD_ERRORS = {
@@ -187,22 +193,66 @@ export function createLeadsService(db: LeadsDb, admin: AdminContext) {
     await db.addEvent({ tenantId: t, leadId: id, kind: 'note', byUser: s.userId, data: { text: v } });
   }
 
-  /** Validar: entra al CRM principal como persona (y empresa si se sabe), con su origen en las notas. */
-  async function validate(id: string) {
+  /**
+   * Validar: entra al CRM principal como persona y, con ella, su empresa: la que diga quien valida («¿De qué empresa o
+   * local es?») o la que puso en la web. La empresa empieza su historial con «Llegó por la web» (originNote).
+   */
+  async function validate(id: string, opts: { company?: string | null } = {}) {
     const l = await own(id);
     if (l.validatedAt) return { contactId: l.contactId, accountId: l.accountId };
     const f = (l.facts.fields as Record<string, string>) ?? {};
-    const company = f.venue_name || f.company || f.event_name || null;
+    const company = opts.company?.trim().slice(0, 160) || guessCompany(l);
     const sub = (await db.submissions(id))[0];
     const src = l.attributionFirst ? [l.attributionFirst.utm_source, l.attributionFirst.utm_campaign].filter(Boolean).join(' / ') : '';
     const notes = [`Lead de la web (${l.type}).`, sub?.message ? `Mensaje: ${sub.message}` : '', src ? `Origen: ${src}` : ''].filter(Boolean).join('\n');
-    const r = await admin.crm.quickAdd({ name: l.name, email: l.email, phone: l.phoneE164 ?? l.phoneRaw ?? null, city: f.city ?? null, company, notes: notes.slice(0, 2000), tag: 'web' });
+    // La empresa nueva, del tipo que parece (un local, un DJ, una promotora) y de quien valida: es quien le habla.
+    const cat = (l.facts.classification as { category?: string } | undefined)?.category ?? l.type;
+    const profile = cat === 'venue' || cat === 'dj' || cat === 'promoter' ? cat : undefined;
+    const r = await admin.crm.quickAdd({ name: l.name, email: l.email, phone: l.phoneE164 ?? l.phoneRaw ?? null, city: f.city ?? null, company, notes: notes.slice(0, 2000), tag: 'web', profile, mine: true });
     const now = at();
     if (!(await db.updateLead(id, { validatedAt: now, validatedBy: s.userId, contactId: r.id, accountId: r.accountId, quarantined: false }))) {
       throw new AdminError(403, 'Sin permiso para esta operación');
     }
     await db.addEvent({ tenantId: t, leadId: id, at: now, kind: 'validated', byUser: s.userId, data: { contactId: r.id, accountId: r.accountId } });
+    if (r.accountId) await originNote(l, r.accountId, r.id, sub ?? null);
     return { contactId: r.id, accountId: r.accountId };
+  }
+
+  /** Lo primero del historial de su empresa: cuándo y cómo llegó (la conversación se ve entera en «Viene de la web»). */
+  async function originNote(l: Lead, accountId: string, contactId: string | null, sub: Awaited<ReturnType<LeadsDb['submissions']>>[number] | null) {
+    const ctx = (sub?.context ?? {}) as { cta?: { label?: string | null } };
+    const note = [`Llegó por la web${ctx.cta?.label ? ` («${ctx.cta.label}»)` : ''}.`, sub?.message ? `«${sub.message.slice(0, 600)}»` : ''].filter(Boolean).join(' ');
+    try { await admin.crm.logActivity(accountId, { contactId, channel: 'other', outcome: 'note', note, happenedAt: l.createdAt }); }
+    catch (e) { console.warn('[lead-origin]', e instanceof Error ? e.message : e); }
+  }
+
+  /**
+   * Los leads que ya son estas personas o empresas, con lo que se ha hablado: para «Viene de la web» en sus fichas. Solo
+   * quien gestiona leads (los demás, nada: la RLS tampoco se los deja ver).
+   */
+  async function linked(by: { contactIds?: string[]; accountIds?: string[] }) {
+    if (!can(s.role).manageAccounts) return [];
+    const leads = await db.linkedTo(t, by);
+    return Promise.all(leads.map(async (lead) => {
+      const [events, subs] = await Promise.all([db.events(lead.id), db.submissions(lead.id)]);
+      return { lead, events, submission: subs[0] ?? null };
+    }));
+  }
+
+  /**
+   * La persona de un lead entra en una empresa (la ficha de la persona, «Añadir a otra empresa»): el lead pasa a ser de
+   * esa empresa y su historial empieza con cómo llegó. Solo los que aún no tenían empresa.
+   */
+  async function attach(contactId: string, accountId: string): Promise<number> {
+    if (!can(s.role).manageAccounts) return 0;
+    let n = 0;
+    for (const l of await db.linkedTo(t, { contactIds: [contactId] })) {
+      if (l.accountId || l.contactId !== contactId) continue;
+      if (!(await db.updateLead(l.id, { accountId }))) continue;
+      await originNote(l, accountId, contactId, (await db.submissions(l.id))[0] ?? null);
+      n++;
+    }
+    return n;
   }
 
   /**
@@ -230,11 +280,11 @@ export function createLeadsService(db: LeadsDb, admin: AdminContext) {
    * WhatsApp 1 a los minutos de Ajustes y el 2 al día laborable siguiente. Con `whatsapp: false`, solo lo valida.
    * Devuelve lo que ha pasado de verdad, para decirlo tal cual.
    */
-  async function accept(id: string, opts: { whatsapp?: boolean } = {}) {
+  async function accept(id: string, opts: { whatsapp?: boolean; company?: string | null } = {}) {
     const l = await own(id);
     if (['spam', 'discarded'].includes(l.stage)) throw new AdminError(409, LEAD_ERRORS.closedLead);
     const st = await db.settings(t);
-    const v = await validate(id);
+    const v = await validate(id, { company: opts.company });
     const plan = await waPlan(l, st);
     const fresh = (await db.getLead(id)) ?? l;
     if (opts.whatsapp === false || 'why' in plan) {
@@ -527,7 +577,7 @@ export function createLeadsService(db: LeadsDb, admin: AdminContext) {
     return { total: ls.length, answered: mins.length, medianMins: median, within5: mins.filter((m) => m <= 5).length, bySource: [...bySource].sort((a, b) => b[1] - a[1]).slice(0, 6) };
   }
 
-  return { settings, list, counts, usedKinds, detail, setStage, markContacted, stopSequence, release, note, validate, accept, approveWhatsapp, whatsappPlan, dismissWhatsapp, reject, suppress, saveSettings, saveTexts, saveSignature, clearPastedSignature, saveSignerName, saveWhatsapp, saveBooking, saveEmailStyle, saveRetention, setEnabled, lastSubmission, saveOrigins, saveSender, metrics, canConfigure: perms.manageTenant };
+  return { settings, list, counts, usedKinds, detail, setStage, markContacted, stopSequence, release, note, validate, accept, linked, attach, approveWhatsapp, whatsappPlan, dismissWhatsapp, reject, suppress, saveSettings, saveTexts, saveSignature, clearPastedSignature, saveSignerName, saveWhatsapp, saveBooking, saveEmailStyle, saveRetention, setEnabled, lastSubmission, saveOrigins, saveSender, metrics, canConfigure: perms.manageTenant };
 }
 export type LeadsService = ReturnType<typeof createLeadsService>;
 

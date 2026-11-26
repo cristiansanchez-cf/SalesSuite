@@ -547,7 +547,7 @@ describe('WhatsApp con tu OK (docs/LEADS.md §2f)', () => {
     await intake(deps({ settings: s }), brand());
     const id = demoLeadsStore().leads[0].id;
     const { createLeadsService } = await import('./service');
-    const crm = { async quickAdd() { return { id: 'c1', accountId: 'a1' }; } };
+    const crm = { async quickAdd() { return { id: 'c1', accountId: 'a1' }; }, async logActivity() { return null; } };
     const svc = createLeadsService(demoLeadsDb(), { mode: 'demo', crm, session: { tenantId: ENJOY, role: 'admin', userId: 'u1', email: 'a@enjoy.test' } } as never);
     demoLeadsStore().settings = [{ ...demoLeadsStore().settings[0], waDelayMinutes: 7 }];
     const r = await svc.accept(id, { whatsapp: true });
@@ -578,7 +578,7 @@ describe('WhatsApp con tu OK (docs/LEADS.md §2f)', () => {
     expect(sent.find((e) => e.tag === 'lead-notify')!.text).toContain('no tiene WhatsApp conectado');
     expect(demoWhatsAppOutbox()[0].params[4]).toContain('no tiene WhatsApp conectado');
     const { createLeadsService } = await import('./service');
-    const crm = { async quickAdd() { return { id: 'c1', accountId: 'a1' }; } };
+    const crm = { async quickAdd() { return { id: 'c1', accountId: 'a1' }; }, async logActivity() { return null; } };
     const svc = createLeadsService(demoLeadsDb(), { mode: 'demo', crm, session: { tenantId: ENJOY, role: 'admin', userId: 'u1', email: 'a@enjoy.test' } } as never);
     expect(await svc.whatsappPlan(demoLeadsStore().leads[0].id)).toEqual({ why: 'notConnected' });
     const r = await svc.accept(demoLeadsStore().leads[0].id, { whatsapp: true });
@@ -591,7 +591,7 @@ describe('WhatsApp con tu OK (docs/LEADS.md §2f)', () => {
     await intake(deps({ settings: s }), v2());
     const id = demoLeadsStore().leads[0].id;
     const { createLeadsService } = await import('./service');
-    const crm = { async quickAdd() { return { id: 'c1', accountId: 'a1' }; } };
+    const crm = { async quickAdd() { return { id: 'c1', accountId: 'a1' }; }, async logActivity() { return null; } };
     const svc = createLeadsService(demoLeadsDb(), { mode: 'demo', crm, session: { tenantId: ENJOY, role: 'admin', userId: 'u1', email: 'a@enjoy.test' } } as never);
     const r = await svc.accept(id, { whatsapp: false });
     expect([r.whatsapp, r.why, demoLeadsStore().leads[0].facts.waAwaiting]).toEqual([null, null, false]);
@@ -672,7 +672,7 @@ describe('lo que escribes tú desde la app de WhatsApp Business (coexistencia)',
     expect([l.stage, !!l.firstResponseAt, l.sequenceStopReason, l.facts.waAwaiting]).toEqual(['contacted', true, 'manual', false]);
     expect(demoLeadsStore().events.some((e) => e.kind === 'message_out' && (e.data as { manual?: boolean }).manual)).toBe(true);
     const { createLeadsService } = await import('./service');
-    const crm = { async quickAdd() { return { id: 'c1', accountId: 'a1' }; } };
+    const crm = { async quickAdd() { return { id: 'c1', accountId: 'a1' }; }, async logActivity() { return null; } };
     const svc = createLeadsService(demoLeadsDb(), { mode: 'demo', crm, session: { tenantId: ENJOY, role: 'admin', userId: 'u1', email: 'a@enjoy.test' } } as never);
     const r = await svc.accept(id, { whatsapp: true });
     expect([r.whatsapp, r.why]).toEqual([null, 'already']);
@@ -685,7 +685,7 @@ describe('lo que escribes tú desde la app de WhatsApp Business (coexistencia)',
     await intake({ db: demoLeadsDb(), tenant: { id: ENJOY, name: 'Enjoy the Club' }, settings: s, now: new Date('2026-11-03T10:00:00Z'), origin: 'https://enjoytheclub.es', ip: '9.9.9.9', secret: 's', baseUrl: 'https://x', whatsappReady: true, rand: () => 0.5 }, v2());
     const id = demoLeadsStore().leads[0].id;
     const { createLeadsService } = await import('./service');
-    const crm = { async quickAdd() { return { id: 'c1', accountId: 'a1' }; } };
+    const crm = { async quickAdd() { return { id: 'c1', accountId: 'a1' }; }, async logActivity() { return null; } };
     const svc = createLeadsService(demoLeadsDb(), { mode: 'demo', crm, session: { tenantId: ENJOY, role: 'admin', userId: 'u1', email: 'a@enjoy.test' } } as never);
     await svc.markContacted(id);
     expect((await svc.accept(id, { whatsapp: true })).why).toBe('already');
@@ -710,5 +710,88 @@ describe('aviso de respuestas por WhatsApp: uno por conversación', () => {
     const msg = (id: string, min: number, text: string) => ({ phoneId: '123456789', from: '+34600123123', text, at: new Date(Date.parse('2026-11-24T11:00:00Z') + min * 60_000), id });
     await handleInbound(demoLeadsDb(), [msg('a', 0, 'Hola'), msg('b', 1, 'Tenemos un local'), msg('c', 3, 'Venga vale perfecto')], new Date('2026-11-24T11:05:00Z'));
     expect(demoLeadsStore().msgs.filter((m) => m.step === 'notify').length - before).toBe(s.notifyEmails.length);
+  });
+});
+
+describe('el lead vive en el CRM (criterio de Cristian, 26-nov-2026)', () => {
+  const ENJOY_T = '00000000-0000-4000-8000-000000000e01';
+  const ev = (kind: string, at: string, data: Record<string, unknown>) => ({ id: at, tenantId: ENJOY_T, leadId: 'l1', at, kind, fromStage: null, toStage: null, byUser: null, data }) as never;
+  const events = [
+    ev('submission', '2026-11-23T16:19:00Z', { message: 'solicitud de musica por parte de los clientes' }),
+    ev('message_out', '2026-11-23T16:20:00Z', { step: 'autoreply', channel: 'email', subject: 'Gracias' }),
+    ev('message_out', '2026-11-23T16:40:00Z', { step: 'wa1', channel: 'whatsapp', text: 'Hola Ignacio, soy Cristian de Enjoy' }),
+    ev('message_in', '2026-11-23T16:48:00Z', { channel: 'whatsapp', text: '[audio]' }),
+    ev('message_out', '2026-11-24T08:36:00Z', { channel: 'whatsapp', manual: true, text: 'Te activo 15 días de prueba en La Botellita' }),
+    ev('message_out', '2026-11-24T09:00:00Z', { step: 'wa2', channel: 'whatsapp', status: 'failed', error: 'x' }),
+    ev('note', '2026-11-24T09:10:00Z', { text: 'Secuencia parada' }),
+  ];
+
+  test('la conversación: lo que escribió en la web, lo automático y lo tuyo; sin el email ni lo que falló', async () => {
+    const { leadBubbles, leadSaid } = await import('./conversation');
+    expect(leadSaid(events).map((x) => [x.us, x.auto, x.text.slice(0, 12)])).toEqual([
+      [false, false, 'solicitud de'], [true, true, 'Hola Ignacio'], [false, false, '[audio]'], [true, false, 'Te activo 15'],
+    ]);
+    const b = leadBubbles(events, { them: 'Ignacio', auto: 'Automático', locale: 'es' });
+    expect(b.map((x) => x.who)).toEqual(['Ignacio', 'Automático', 'Ignacio', '']);
+    expect(b[0]!.time).toMatch(/23 nov/);
+  });
+
+  test('para Apuntar: un chat copiado de WhatsApp que entiende igual que uno pegado', async () => {
+    const { leadTranscript } = await import('./conversation');
+    const { pastedChat } = await import('../assistant/flow');
+    const { splitConvo } = await import('../crm/convo');
+    const t = leadTranscript({ name: 'Ignacio', intro: 'Ignacio llegó por la web («Hablemos de tu local»).', events, me: 'Cristian', autoTag: '(mensaje automático)' });
+    expect(t.split('\n')[0]).toBe('Ignacio llegó por la web («Hablemos de tu local»).');
+    expect(t).toContain('[23/11/2026, 17:19] Ignacio: solicitud de musica');
+    expect(t).toContain('[24/11/2026, 09:36] Cristian: Te activo 15 días de prueba');
+    expect(t).toContain('Cristian: (mensaje automático) Hola Ignacio');
+    expect(pastedChat(t)).toHaveLength(4);
+    const c = splitConvo(`Resumen\n\nConversación:\n${pastedChat(t).join('\n')}`, 'Cristian')!;
+    expect(c.bubbles.map((x) => x.us)).toEqual([false, true, false, true]);
+  });
+
+  test('validar con la empresa que dices: entra con ella y su historial empieza con cómo llegó; luego se ve en su ficha', async () => {
+    resetDemoLeads();
+    const db = demoLeadsDb();
+    const lead = await db.insertLead({ tenantId: ENJOY_T, isTest: false, name: 'Ignacio', email: 'ignacio@example.com', emailKind: 'personal', phoneRaw: null, phoneE164: '+34600000009',
+      type: 'venue', locale: 'es', quarantined: false, quarantineReasons: [], score: 40, scoreDetail: { fit: 40, intent: 40, band: 'normal', detail: [] }, facts: { fields: {} },
+      attributionFirst: null, attributionLast: null, consentMarketing: false, consentAds: false, whatsappOk: true } as never);
+    await db.addEvent({ tenantId: ENJOY_T, leadId: lead.id, kind: 'submission', data: { message: 'solicitud de musica' } });
+    const got: Array<{ name: string; company: string | null }> = [], acts: Array<{ accountId: string; note: string; happenedAt: string }> = [];
+    const crm = {
+      async quickAdd(v: { name: string; company: string | null }) { got.push({ name: v.name, company: v.company }); return { id: 'c1', accountId: v.company ? 'a1' : null }; },
+      async logActivity(accountId: string, v: { note: string; happenedAt: string }) { acts.push({ accountId, note: v.note, happenedAt: v.happenedAt }); return null; },
+    };
+    const { createLeadsService } = await import('./service');
+    const svc = createLeadsService(db, { mode: 'demo', crm, session: { tenantId: ENJOY_T, role: 'admin', userId: 'u1', email: 'a@enjoy.test' } } as never);
+    await svc.accept(lead.id, { whatsapp: false, company: '  La Botellita ' });
+    expect(got).toEqual([{ name: 'Ignacio', company: 'La Botellita' }]);
+    expect(acts).toEqual([{ accountId: 'a1', note: 'Llegó por la web.', happenedAt: lead.createdAt }]);
+    const seen = await svc.linked({ accountIds: ['a1'] });
+    expect(seen.map((x) => x.lead.id)).toEqual([lead.id]);
+    expect(seen[0]!.events.some((e) => e.kind === 'submission')).toBe(true);
+    // Un comercial (sin gestionar leads) no lo ve: tampoco la RLS se lo deja.
+    const rep = createLeadsService(db, { mode: 'demo', crm, session: { tenantId: ENJOY_T, role: 'rep', userId: 'u2', email: 'r@enjoy.test' } } as never);
+    expect(await rep.linked({ accountIds: ['a1'] })).toEqual([]);
+  });
+
+  test('validado sin empresa: al añadirle una en su ficha, el lead pasa a ella (una vez)', async () => {
+    resetDemoLeads();
+    const db = demoLeadsDb();
+    const lead = await db.insertLead({ tenantId: ENJOY_T, isTest: false, name: 'Ignacio', email: 'ignacio@example.com', emailKind: 'personal', phoneRaw: null, phoneE164: null,
+      type: 'venue', locale: 'es', quarantined: false, quarantineReasons: [], score: null, scoreDetail: null, facts: { fields: {} },
+      attributionFirst: null, attributionLast: null, consentMarketing: false, consentAds: false, whatsappOk: false } as never);
+    const acts: string[] = [];
+    const crm = { async quickAdd() { return { id: 'c1', accountId: null }; }, async logActivity(accountId: string) { acts.push(accountId); return null; } };
+    const { createLeadsService } = await import('./service');
+    const svc = createLeadsService(db, { mode: 'demo', crm, session: { tenantId: ENJOY_T, role: 'admin', userId: 'u1', email: 'a@enjoy.test' } } as never);
+    await svc.accept(lead.id, { whatsapp: false });
+    expect(acts).toEqual([]);
+    expect((await svc.linked({ contactIds: ['c1'] })).length).toBe(1);
+    expect(await svc.attach('c1', 'a9')).toBe(1);
+    expect((await db.getLead(lead.id))!.accountId).toBe('a9');
+    expect(await svc.attach('c1', 'a10')).toBe(0);
+    expect(acts).toEqual(['a9']);
+    expect((await svc.linked({ accountIds: ['a9'] })).length).toBe(1);
   });
 });

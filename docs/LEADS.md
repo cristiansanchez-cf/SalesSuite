@@ -191,6 +191,32 @@ Ha escrito: «{{4}}»
 {{5}}
 ```
 
+## 2g. El lead en el CRM
+
+Criterio de Cristian (26-nov-2026): el lead y el CRM viven juntos. Lo que entra son personas, pero se trabaja la empresa.
+Lo que se sabe de un lead no puede quedarse en Leads.
+
+- **Aceptar pregunta la empresa.** El diálogo trae «¿De qué empresa o local es?» con lo que dijo en la web; si no dijo
+  nada, va vacío para escribirlo. Entra al CRM con ella (se crea si no está). Por MCP, `lead_validar` lleva `empresa`.
+- **La empresa nueva:**
+  - es del tipo que parece (local, DJ o promotora) y de quien valida (es quien le habla);
+  - su historial empieza con «Llegó por la web («botón»). «mensaje»», con la fecha en que llegó.
+- **«Viene de la web»** (`components/crm/LeadOrigin.astro`) sale en la ficha de la persona y en la de su empresa
+  (por el lead o por su gente). Lleva:
+  - lo que pidió, qué parece y el encaje;
+  - la etapa del lead;
+  - la conversación por WhatsApp en burbujas: lo suyo, lo vuestro y lo automático;
+  - «Ver el lead».
+  Se lee en vivo de `lead_event`, sin copiar nada: lo que llega después también sale. Solo lo ve quien gestiona leads
+  (admin o gerente, como la RLS).
+- **Validado sin empresa:**
+  - su ficha avisa de que le falta;
+  - al añadírsela, el lead pasa a esa empresa (`attach`) y su historial empieza con cómo llegó.
+- **«Pasar a … con IA»:**
+  - abre Apuntar (`?lead=&empresa=`) con lo que pidió y la conversación ya escritas, como un chat copiado de WhatsApp;
+  - la IA propone qué guardar en la empresa (estado, prueba, próximo paso, datos, cualificación) y tú lo revisas;
+  - el audio sale como «[audio]»: lo que dijo en él lo añades tú.
+
 ## 2c. Mensajes de cada empresa
 Leads → Ajustes → **Mensajes**, por idioma: asunto y cuerpo del email, WhatsApp 1 y 2 y la pregunta del WhatsApp 1
 según lo que pidió. **Proponer con IA** los escribe a partir de qué vende la empresa, a quién y quién firma (no guarda:

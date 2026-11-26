@@ -6,7 +6,7 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import type { AdminContext } from '../admin/auth';
-import { leadsFor } from '../leads/service';
+import { guessCompany, leadsFor } from '../leads/service';
 import { summary } from '../leads/templates';
 
 type Json = Record<string, unknown> | unknown[];
@@ -28,7 +28,7 @@ export function registerLeadTools(server: McpServer, run: Run) {
     const svc = await leadsFor(admin);
     const rows = await svc.list('inbox', a.buscar ?? '');
     return rows.slice(0, 30).map((l) => ({
-      id: l.id, nombre: l.name, email: l.email, telefono: l.phoneE164 ?? l.phoneRaw, tipo: l.type,
+      id: l.id, nombre: l.name, email: l.email, telefono: l.phoneE164 ?? l.phoneRaw, tipo: l.type, empresa: guessCompany(l),
       pidio: summary(l.type, (l.facts.fields as Record<string, string>) ?? {}, 'es'), llego: l.lastSubmissionAt,
       clasificacion: (l.facts.classification as { category?: string; auto?: boolean } | undefined) ?? null,
       espera_whatsapp: !!l.facts.waAwaiting,
@@ -38,10 +38,11 @@ export function registerLeadTools(server: McpServer, run: Run) {
   server.registerTool('lead_validar', {
     title: 'Leads: validar',
     description: 'Valida un lead: entra al CRM como persona (y su empresa, si la dijo). Si el espacio tiene su WhatsApp conectado y se le puede escribir, '
-      + 'le sale el WhatsApp de bienvenida a los minutos de Ajustes (con whatsapp: false, no). Antes de validar, confirma con la persona.',
-    inputSchema: { lead_id: z.string().uuid(), whatsapp: z.boolean().optional() },
-  }, run(async (admin, a: { lead_id: string; whatsapp?: boolean }) => {
-    const r = await (await leadsFor(admin)).accept(a.lead_id, { whatsapp: a.whatsapp !== false });
+      + 'le sale el WhatsApp de bienvenida a los minutos de Ajustes (con whatsapp: false, no). Si no dijo su empresa o local y la persona lo sabe, '
+      + 'pásalo en empresa: entra al CRM con ella (se crea si no está). Antes de validar, confirma con la persona.',
+    inputSchema: { lead_id: z.string().uuid(), whatsapp: z.boolean().optional(), empresa: z.string().trim().min(1).max(160).optional() },
+  }, run(async (admin, a: { lead_id: string; whatsapp?: boolean; empresa?: string }) => {
+    const r = await (await leadsFor(admin)).accept(a.lead_id, { whatsapp: a.whatsapp !== false, company: a.empresa ?? null });
     return {
       validado: true, nombre: r.name, contacto_id: r.contactId ?? null, empresa_id: r.accountId ?? null,
       whatsapp: r.whatsapp ? (r.whatsapp.soon ? `sale a los ${r.whatsapp.minutes} min` : 'sale al abrir el horario de envío') : `no sale${r.why ? `: ${WHY[r.why] ?? r.why}` : ''}`,

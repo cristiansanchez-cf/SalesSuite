@@ -13,8 +13,10 @@ interface Props {
   id: string; name: string; action: string; M: (typeof leadsMessages)['es']['decide']; W: W; compact?: boolean;
   /** Qué pasa con el WhatsApp al aceptar (service.whatsappPlan o su versión de la bandeja): sale, o por qué no. */
   wa: { soon: boolean; minutes: number } | { why: keyof W['why'] };
+  /** La empresa que dijo en la web (guessCompany): sale escrita; si no dijo ninguna, el campo vacío para ponerla. */
+  company?: string | null;
 }
-const { id, name, action, M, W, wa, compact = false } = Astro.props;
+const { id, name, action, M, W, wa, compact = false, company = null } = Astro.props;
 const sends = 'minutes' in wa;
 const does = sends ? (wa.soon ? W.acceptWa(wa.minutes) : W.acceptWaLater) : W.acceptNoWa;
 const doesNot = sends ? W.acceptWaDoesNot : W.acceptNoWaDoesNot(W.why[wa.why]);
@@ -26,6 +28,9 @@ const size = compact ? 'co-btn--sm' : '';
 </span>
 <ConfirmDialog id={`accept-${id}`} title={M.acceptTitle(name)} does={does} doesNot={doesNot} confirmLabel={M.accept} action={action} testid={`accept-${id}`}>
   <input type="hidden" name="action" value="accept" /><input type="hidden" name="id" value={id} /><input type="hidden" name="wa" value="0" />
+  {/* Con su empresa desde el primer momento (criterio de Cristian): si no la dijo, se pregunta aquí. */}
+  <label class="co-field mt-3 text-left">{M.company}<span class="co-help">{M.companyHelp}</span>
+    <input class="co-input" name="company" maxlength="160" value={company ?? ''} placeholder={M.companyPh} autocomplete="off" data-testid={`accept-${id}-company`} /></label>
   {sends && <label class="co-check mt-3 text-left"><input type="checkbox" name="wa" value="1" checked data-testid={`accept-${id}-wa`} /> <span>{W.sendWa}<span class="co-help block">{W.manualHint}</span></span></label>}
 </ConfirmDialog>
 <ConfirmDialog id={`reject-${id}`} title={M.rejectTitle(name)} does={M.rejectDoes} doesNot={M.rejectDoesNot} confirmLabel={M.reject} danger action={action} testid={`reject-${id}`}>
