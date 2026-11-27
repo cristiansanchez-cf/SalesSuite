@@ -4,12 +4,14 @@ import { adminSteps, progressOf, repSteps } from './first-steps';
 describe('primeros pasos', () => {
   it('admin: un espacio nuevo no tiene nada hecho', () => {
     const s = adminSteps({ segments: 0, hasLogo: false, members: 1, leadsReady: false, assistantOn: false });
-    expect(s.map((x) => x.key)).toEqual(['company', 'brand', 'team', 'leads', 'assistant']);
-    expect(progressOf(s)).toEqual({ done: 0, total: 5, finished: false });
+    expect(s.map((x) => x.key)).toEqual(['company', 'data', 'brand', 'team', 'leads', 'assistant']);
+    expect(s[1]).toMatchObject({ key: 'data', href: '/admin/arranca', done: false });
+    expect(progressOf(s)).toEqual({ done: 0, total: 6, finished: false });
+    expect(adminSteps({ segments: 0, hasLogo: false, members: 1, leadsReady: false, assistantOn: false, accounts: 10 })[1]!.done).toBe(true);
   });
 
   it('admin: con todo hecho, desaparece', () => {
-    expect(progressOf(adminSteps({ segments: 2, hasLogo: true, members: 3, leadsReady: true, assistantOn: true })).finished).toBe(true);
+    expect(progressOf(adminSteps({ segments: 2, hasLogo: true, members: 3, leadsReady: true, assistantOn: true, accounts: 40 })).finished).toBe(true);
   });
 
   it('comercial: sin móvil, «escribe al asistente» lleva a Mi cuenta; con móvil, a WhatsApp', () => {

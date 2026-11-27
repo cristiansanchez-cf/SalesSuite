@@ -26,7 +26,7 @@ const es = {
   features: {
     'crm.notes': 'Apuntar interacciones', 'crm.research': 'Investigar empresas', 'crm.cleanup': 'Limpiar empresas', 'crm.places': 'Ordenar zonas',
     'crm.places-review': 'Revisar zonas', 'setup.agent': 'Asistente de configuración', 'catalog.edit': 'Cambios en el catálogo con IA', 'i18n.translate': 'Traducciones', 'leads.classify': 'Clasificar leads',
-    'leads.texts': 'Textos de los leads', 'assistant.draft': 'Propuestas de mensaje (WhatsApp)', 'assistant.audio': 'Audios del asistente',
+    'leads.texts': 'Textos de los leads', 'assistant.draft': 'Propuestas de mensaje (WhatsApp)', 'assistant.audio': 'Audios del asistente', 'leads.audio': 'Audios de los leads',
     'whatsapp.template': 'Plantillas de WhatsApp', 'whatsapp.reply': 'Respuestas por WhatsApp (gratis)', 'social.list': 'Ver sus redes', 'social.download': 'Traer fotos y vídeos',
     'email.immediate': 'Correos de avisos', 'email.digest': 'Correos de resumen', 'email.daily': 'Correo de la mañana', 'email.lead-autoreply': 'Correos a leads', 'email.invite': 'Invitaciones',
   } as Record<string, string>,
@@ -60,7 +60,7 @@ export const costsMessages = defineMessages({
     features: {
       'crm.notes': 'Logging interactions', 'crm.research': 'Researching companies', 'crm.cleanup': 'Cleaning up companies', 'crm.places': 'Sorting areas',
       'crm.places-review': 'Reviewing areas', 'setup.agent': 'Setup assistant', 'catalog.edit': 'AI catalog edits', 'i18n.translate': 'Translations', 'leads.classify': 'Classifying leads',
-      'leads.texts': 'Lead message texts', 'assistant.draft': 'Suggested messages (WhatsApp)', 'assistant.audio': 'Assistant voice notes',
+      'leads.texts': 'Lead message texts', 'assistant.draft': 'Suggested messages (WhatsApp)', 'assistant.audio': 'Assistant voice notes', 'leads.audio': 'Lead voice notes',
       'whatsapp.template': 'WhatsApp templates', 'whatsapp.reply': 'WhatsApp replies (free)', 'social.list': 'Viewing their social media', 'social.download': 'Bringing in photos and videos',
       'email.immediate': 'Alert emails', 'email.digest': 'Digest emails', 'email.daily': 'Morning email', 'email.lead-autoreply': 'Emails to leads', 'email.invite': 'Invitations',
     },
@@ -91,7 +91,7 @@ export const costsMessages = defineMessages({
     features: {
       'crm.notes': 'Registar interações', 'crm.research': 'Pesquisar empresas', 'crm.cleanup': 'Limpar empresas', 'crm.places': 'Ordenar zonas',
       'crm.places-review': 'Rever zonas', 'setup.agent': 'Assistente de configuração', 'catalog.edit': 'Alterações no catálogo com IA', 'i18n.translate': 'Traduções', 'leads.classify': 'Classificar leads',
-      'leads.texts': 'Textos dos leads', 'assistant.draft': 'Propostas de mensagem (WhatsApp)', 'assistant.audio': 'Áudios do assistente',
+      'leads.texts': 'Textos dos leads', 'assistant.draft': 'Propostas de mensagem (WhatsApp)', 'assistant.audio': 'Áudios do assistente', 'leads.audio': 'Áudios dos leads',
       'whatsapp.template': 'Modelos de WhatsApp', 'whatsapp.reply': 'Respostas por WhatsApp (grátis)', 'social.list': 'Ver as suas redes', 'social.download': 'Trazer fotos e vídeos',
       'email.immediate': 'Emails de avisos', 'email.digest': 'Emails de resumo', 'email.daily': 'Email da manhã', 'email.lead-autoreply': 'Emails a leads', 'email.invite': 'Convites',
     },
@@ -122,7 +122,7 @@ export const costsMessages = defineMessages({
     features: {
       'crm.notes': '상호작용 기록', 'crm.research': '회사 조사', 'crm.cleanup': '회사 정리', 'crm.places': '지역 정리',
       'crm.places-review': '지역 검토', 'setup.agent': '설정 도우미', 'catalog.edit': 'AI 카탈로그 수정', 'i18n.translate': '번역', 'leads.classify': '리드 분류',
-      'leads.texts': '리드 메시지 문구', 'assistant.draft': '메시지 제안(WhatsApp)', 'assistant.audio': '도우미 음성 메시지',
+      'leads.texts': '리드 메시지 문구', 'assistant.draft': '메시지 제안(WhatsApp)', 'assistant.audio': '도우미 음성 메시지', 'leads.audio': '리드 음성 메시지',
       'whatsapp.template': 'WhatsApp 템플릿', 'whatsapp.reply': 'WhatsApp 답장(무료)', 'social.list': 'SNS 보기', 'social.download': '사진·동영상 가져오기',
       'email.immediate': '알림 이메일', 'email.digest': '요약 이메일', 'email.daily': '아침 이메일', 'email.lead-autoreply': '리드 이메일', 'email.invite': '초대',
     },

@@ -32,7 +32,7 @@ if (Astro.request.method === 'POST') {
     throw e;
   }
   const welcome = Astro.url.searchParams.get('from') === 'welcome';
-  return Astro.redirect(welcome ? '/admin/welcome?step=3' : '/admin/learn?ok=sector', 303);
+  return Astro.redirect(welcome ? '/admin/welcome?step=who' : '/admin/learn?ok=sector', 303);
 }
 let v;
 try { v = await admin.playbook.segmentView(Astro.params.key ?? ''); } catch (e) {
@@ -42,7 +42,7 @@ try { v = await admin.playbook.segmentView(Astro.params.key ?? ''); } catch (e) 
 const sg = v.segment;
 const fromWelcome = Astro.url.searchParams.get('from') === 'welcome';
 const qs = fromWelcome ? '?from=welcome' : '';
-const back = fromWelcome ? { href: '/admin/welcome?step=3', label: msg.sector.backWelcome } : { href: '/admin/learn', label: msg.common.backLearn.replace(/^←\s*/, '') };
+const back = fromWelcome ? { href: '/admin/welcome?step=who', label: msg.sector.backWelcome } : { href: '/admin/learn', label: msg.common.backLearn.replace(/^←\s*/, '') };
 const icon = (sg.icon && sg.icon in ICONS ? sg.icon : 'target') as IconName;
 // «- a\n- b» → [a, b]; un texto corrido queda como una sola línea.
 const bullets = (t: string | null) => (t ? t.split('\n').map((l) => l.replace(/^\s*[-*•]\s*/, '').trim()).filter(Boolean) : []);

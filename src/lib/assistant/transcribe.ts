@@ -6,7 +6,8 @@ import { meterUnits } from '../usage/meter';
 export type Transcriber = (audio: { bytes: Uint8Array; type: string }, language?: string) => Promise<string>;
 
 export const WHISPER_MODEL = 'whisper-1';
-export function whisper(apiKey: string, fetchImpl: typeof fetch = fetch): Transcriber {
+/** `feature`: dónde se apunta el coste (los del asistente o los de los leads, docs/COSTES.md). */
+export function whisper(apiKey: string, fetchImpl: typeof fetch = fetch, feature = 'assistant.audio', tenantId?: string | null): Transcriber {
   return async (audio, language) => {
     const ext = /mpeg|mp3/.test(audio.type) ? 'mp3' : /mp4|m4a|aac/.test(audio.type) ? 'm4a' : /wav/.test(audio.type) ? 'wav' : 'ogg';
     const form = new FormData();
@@ -21,10 +22,12 @@ export function whisper(apiKey: string, fetchImpl: typeof fetch = fetch): Transc
       const r = await fetchImpl('https://api.openai.com/v1/audio/transcriptions', { method: 'POST', headers: { Authorization: `Bearer ${apiKey}` }, body: form, signal: ctl.signal });
       const body = (await r.json().catch(() => null)) as { text?: string; duration?: number; error?: { message?: string } } | null;
       if (!r.ok) throw new Error(`Whisper ${r.status}: ${body?.error?.message ?? ''}`.slice(0, 300));
-      await meterUnits('assistant.audio', 'openai', Number(body?.duration) || 0, { model: WHISPER_MODEL });
+      await meterUnits(feature, 'openai', Number(body?.duration) || 0, { model: WHISPER_MODEL, ...(tenantId !== undefined ? { tenantId } : {}) });
       return String(body?.text ?? '').trim();
     } finally { clearTimeout(timer); }
   };
 }
 /** Demo y pruebas: un texto fijo. */
 export const fixtureTranscriber: Transcriber = async () => 'He estado en Club Sol con Marta, les interesa la pantalla para los viernes. Quedamos en llamarla el jueves.';
+/** Demo y pruebas: lo que diría un lead en un audio. */
+export const fixtureLeadTranscriber: Transcriber = async () => 'Hola, sí, me interesa para el local los viernes. ¿Me dices precio y si lo podemos probar unos días?';

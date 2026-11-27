@@ -141,7 +141,7 @@ export interface StatusUpdate { phoneId: string; id: string; status: string; err
  * Lo que la empresa escribe desde la app de WhatsApp Business con el número conectado en coexistencia (webhook
  * `smb_message_echoes`, hay que suscribirlo en la app de Meta): para saber que ya le ha escrito una persona.
  */
-export interface Echo { phoneId: string; to: string; text: string; at: Date; id: string }
+export interface Echo { phoneId: string; to: string; text: string; at: Date; id: string; kind?: 'text' | 'audio' | 'other'; mediaId?: string | null }
 
 /** Lo que interesa del webhook: mensajes recibidos (para parar la secuencia) y fallos de entrega. */
 export function parseWebhook(body: unknown): { inbound: Inbound[]; statuses: StatusUpdate[]; echoes: Echo[] } {
@@ -172,7 +172,9 @@ export function parseWebhook(body: unknown): { inbound: Inbound[]; statuses: Sta
       for (const m of (v.message_echoes as Record<string, unknown>[] | undefined) ?? []) {
         const text = (m.text as { body?: string } | undefined)?.body ?? `[${String(m.type ?? 'mensaje')}]`;
         const to = String(m.to ?? '').replace(/^\+/, '');
-        if (to) echoes.push({ phoneId, to: `+${to}`, text: String(text).slice(0, 4000), at: new Date(Number(m.timestamp ?? 0) * 1000 || Date.now()), id: String(m.id ?? '') });
+        const audio = (m.audio as { id?: string } | undefined)?.id ?? null;
+        if (to) echoes.push({ phoneId, to: `+${to}`, text: String(text).slice(0, 4000), at: new Date(Number(m.timestamp ?? 0) * 1000 || Date.now()), id: String(m.id ?? ''),
+          kind: m.type === 'text' ? 'text' : m.type === 'audio' ? 'audio' : 'other', mediaId: audio });
       }
       for (const st of (v.statuses as Record<string, unknown>[] | undefined) ?? []) {
         const err = (st.errors as { code?: number; title?: string; message?: string; error_data?: { details?: string } }[] | undefined)?.[0];

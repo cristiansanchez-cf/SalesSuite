@@ -215,7 +215,11 @@ Lo que se sabe de un lead no puede quedarse en Leads.
 - **«Pasar a … con IA»:**
   - abre Apuntar (`?lead=&empresa=`) con lo que pidió y la conversación ya escritas, como un chat copiado de WhatsApp;
   - la IA propone qué guardar en la empresa (estado, prueba, próximo paso, datos, cualificación) y tú lo revisas;
-  - el audio sale como «[audio]»: lo que dijo en él lo añades tú.
+- **Audios transcritos.** Los audios del lead y los tuyos desde la app de WhatsApp Business se pasan a texto con Whisper
+  (`OPENAI_API_KEY`), en segundo plano para que Meta tenga su 200 al momento. Se guardan como texto con `audio: true`
+  y salen con 🎤 en el lead, la persona, la empresa, el aviso por email y Apuntar. El coste se apunta como `leads.audio`.
+  Sin clave, o si no se puede oír, se queda «[audio]». Los audios de antes de este cambio no se guardaron, así que se
+  quedan como «[audio]».
 
 ## 2c. Mensajes de cada empresa
 Leads → Ajustes → **Mensajes**, por idioma: asunto y cuerpo del email, WhatsApp 1 y 2 y la pregunta del WhatsApp 1

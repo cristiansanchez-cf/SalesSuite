@@ -3,6 +3,18 @@
  * historial, pasa a «respondió» y se avisa a quien atiende. Si pide que no le escriban, se le da de baja de WhatsApp.
  */
 import type { LeadsDb } from './db';
+
+/**
+ * Oír un audio (criterio de Cristian: «¿y los audios? que se transcriban»): el id del archivo en WhatsApp y el idioma →
+ * lo que dice, o null si no se ha podido. Sin él (sin clave de Whisper), queda «[audio]».
+ */
+export type Hear = (mediaId: string, locale: string, tenantId: string) => Promise<string | null>;
+/** Lo que se guarda de un mensaje: el texto o, si es un audio y se ha podido oír, lo que dice (marcado como audio). */
+async function said(m: { text: string; kind?: string; mediaId?: string | null }, locale: string, tenantId: string, hear?: Hear): Promise<{ text: string; audio?: true; mediaId?: string }> {
+  if (m.kind !== 'audio' || !m.mediaId) return { text: m.text };
+  const heard = hear ? await hear(m.mediaId, locale, tenantId).catch((e) => { console.warn('[lead audio]', e instanceof Error ? e.message : e); return null; }) : null;
+  return heard?.trim() ? { text: heard.trim().slice(0, 4000), audio: true, mediaId: m.mediaId } : { text: m.text, mediaId: m.mediaId };
+}
 import type { Echo, Inbound } from './whatsapp';
 import { isStopWord } from './whatsapp';
 
@@ -19,7 +31,7 @@ export function replyWorthNotifying(lead: { lastInboundAt: string | null; facts:
   return !recent(lead.lastInboundAt) && !recent(lead.facts.lastManualAt);
 }
 
-export async function handleEchoes(db: LeadsDb, echoes: Echo[], now: Date): Promise<number> {
+export async function handleEchoes(db: LeadsDb, echoes: Echo[], now: Date, hear?: Hear): Promise<number> {
   let matched = 0;
   for (const m of echoes) {
     const s = await db.settingsByWhatsappPhone(m.phoneId);
@@ -28,7 +40,7 @@ export async function handleEchoes(db: LeadsDb, echoes: Echo[], now: Date): Prom
     matched++;
     const at = m.at.toISOString();
     await db.cancelPending(lead.id, ['wa1', 'wa2']);
-    await db.addEvent({ tenantId: lead.tenantId, leadId: lead.id, at, kind: 'message_out', data: { channel: 'whatsapp', manual: true, text: m.text, id: m.id } });
+    await db.addEvent({ tenantId: lead.tenantId, leadId: lead.id, at, kind: 'message_out', data: { channel: 'whatsapp', manual: true, ...(await said(m, lead.locale, lead.tenantId, hear)), id: m.id } });
     const patch: Parameters<LeadsDb['updateLead']>[1] = {};
     if (!lead.sequenceStoppedAt) { patch.sequenceStoppedAt = now.toISOString(); patch.sequenceStopReason = 'manual'; }
     if (!lead.firstResponseAt) patch.firstResponseAt = at;
@@ -42,7 +54,7 @@ export async function handleEchoes(db: LeadsDb, echoes: Echo[], now: Date): Prom
   return matched;
 }
 
-export async function handleInbound(db: LeadsDb, msgs: Inbound[], now: Date): Promise<{ matched: number; unknown: number }> {
+export async function handleInbound(db: LeadsDb, msgs: Inbound[], now: Date, hear?: Hear): Promise<{ matched: number; unknown: number }> {
   let matched = 0, unknown = 0;
   for (const m of msgs) {
     const s = await db.settingsByWhatsappPhone(m.phoneId);
@@ -50,9 +62,10 @@ export async function handleInbound(db: LeadsDb, msgs: Inbound[], now: Date): Pr
     if (!s || !lead) { unknown++; continue; }
     matched++;
     const at = m.at.toISOString();
-    const stop = isStopWord(m.text);
+    const heard = await said(m, lead.locale, lead.tenantId, hear);
+    const stop = isStopWord(heard.text);
     await db.cancelPending(lead.id, ['wa1', 'wa2']);
-    await db.addEvent({ tenantId: lead.tenantId, leadId: lead.id, at, kind: 'message_in', data: { channel: 'whatsapp', text: m.text, id: m.id } });
+    await db.addEvent({ tenantId: lead.tenantId, leadId: lead.id, at, kind: 'message_in', data: { channel: 'whatsapp', ...heard, id: m.id } });
     const patch: Parameters<LeadsDb['updateLead']>[1] = { lastInboundAt: at };
     if (!lead.sequenceStoppedAt) { patch.sequenceStoppedAt = now.toISOString(); patch.sequenceStopReason = stop ? 'stop' : 'replied'; }
     if (lead.stage === 'new' || lead.stage === 'contacted') {
@@ -69,7 +82,7 @@ export async function handleInbound(db: LeadsDb, msgs: Inbound[], now: Date): Pr
     // respuesta o vuelve a escribir tras QUIET horas de silencio, y nunca si ya le estás escribiendo tú desde tu WhatsApp.
     if (replyWorthNotifying(lead, m.at)) {
       await db.enqueue(s.notifyEmails.map((to) => ({ tenantId: lead.tenantId, leadId: lead.id, channel: 'email' as const, step: 'notify' as const, toAddr: to, sendAt: now.toISOString(),
-        payload: { kind: 'reply', text: m.text.slice(0, 500), base: lead.facts.base ?? '', brandName: s.brand } })));
+        payload: { kind: 'reply', text: `${heard.audio ? '🎤 ' : ''}${heard.text}`.slice(0, 500), base: lead.facts.base ?? '', brandName: s.brand } })));
     }
   }
   return { matched, unknown };

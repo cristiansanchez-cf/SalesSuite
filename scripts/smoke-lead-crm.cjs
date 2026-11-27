@@ -10,9 +10,9 @@ const OUT = process.env.SHOTS_DIR;
 const RUN = Date.now().toString(36);
 const assert = (c, m) => { if (!c) { console.error('FAIL:', m); process.exitCode = 1; } else console.log('ok:', m); };
 const WEB = 'https://enjoytheclub.es';
-const lead = (name, email) => ({
+const lead = (name, email, phone = '600 555 101') => ({
   schema: 'enjoy.lead.v2', idempotency_key: `crm-${RUN}-${Math.random()}`, brand: 'enjoy', type: 'venue',
-  contact: { name, email, phone: '600 555 101' }, fields: { city: 'Cuenca' }, message: 'solicitud de musica por parte de los clientes',
+  contact: { name, email, phone }, fields: { city: 'Cuenca' }, message: 'solicitud de musica por parte de los clientes',
   consent: { marketing: false, whatsapp_contact: true, legal_text_version: '2026-11-01', policy_url: `${WEB}/es/politica-de-privacidad/`, submitted_at: new Date().toISOString() },
   context: { locale: 'es', form_version: '2026-11-01', page_url: `${WEB}/es/soluciones/locales/`, page_path: '/es/soluciones/locales/', time_to_submit_ms: 30000, cta: { id: 'venue', label: 'Hablemos de tu local' } },
 });
@@ -57,8 +57,33 @@ const post = async (body) => (await fetch(`${BASE}/api/v1/leads`, { method: 'POS
   assert(/Ignacio Smoke llegó por la web/.test(text) && /\] Ignacio Smoke: solicitud de musica/.test(text), 'Apuntar: con lo que pidió y la conversación ya escritas');
   assert((await p.textContent('[data-testid=notes-who-chosen]')).includes(venue), 'Apuntar: con su empresa ya elegida');
 
+  // 1b) Te manda un audio por WhatsApp: queda escrito (🎤) en su ficha y en la de su empresa.
+  const submit = async (testid, values) => {
+    await p.goto(`${BASE}/admin/leads/configurar?abrir=whatsapp`);
+    await Promise.all([p.waitForURL(/ok=/), p.evaluate(([id, v]) => {
+      const f = document.querySelector(`[data-testid=${id}]`);
+      for (const [k, val] of Object.entries(v)) {
+        const els = f.querySelectorAll(`[name="${k}"]`);
+        if (!els.length) { const i = document.createElement('input'); i.type = 'hidden'; i.name = k; i.value = String(val); f.append(i); continue; }
+        els.forEach((el) => { el.value = String(val); });
+      }
+      f.requestSubmit();
+    }, [testid, values])]);
+  };
+  await submit('whatsapp-connect', { phoneId: '1493985227120621' });
+  const hook = await fetch(`${BASE}/api/v1/whatsapp/webhook`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ entry: [{ changes: [{ value: {
+    metadata: { phone_number_id: '1493985227120621' },
+    messages: [{ from: '34600555101', id: `wamid.${RUN}`, timestamp: String(Math.floor(Date.now() / 1000)), type: 'audio', audio: { id: `media-${RUN}`, mime_type: 'audio/ogg' } }],
+  } }] }] }) }).then((r) => r.json());
+  assert(hook.audio === 1, 'webhook: el audio se transcribe aparte (en segundo plano, sin hacer esperar a Meta)');
+  await p.goto(`${BASE}/admin/leads/${one.id}`);
+  assert((await p.textContent('[data-testid=lead-history]')).includes('🎤 «Hola, sí, me interesa para el local'), 'lead: el audio, escrito (🎤)');
+  await p.click('[data-testid=lead-open-contact]');
+  await p.waitForURL(/\/admin\/people\//);
+  assert((await p.textContent(card)).includes('🎤 Hola, sí, me interesa'), 'persona: la conversación con lo que dijo en el audio');
+
   // 2) Aceptar sin saber el local: se avisa en su ficha y, al añadírselo, el lead pasa a él.
-  const two = await post(lead('Marta Smoke', `marta-${RUN}@example.com`));
+  const two = await post(lead('Marta Smoke', `marta-${RUN}@example.com`, '600 555 102'));
   await accept(two.id, '');
   assert(await p.isVisible('[data-testid=person-no-company]'), 'persona sin empresa: aviso de que le falta (y su historial irá con ella)');
   assert(await p.isVisible(card), 'persona sin empresa: «Viene de la web» igual');

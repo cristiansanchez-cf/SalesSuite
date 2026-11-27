@@ -13,6 +13,11 @@ import { createDossierSchema } from '~/lib/admin/ops';
 import { markOnboarded, needsCompanySetup } from '~/lib/onboarding';
 import { i18n, LOCALES, LOCALE_NAME } from '~/lib/i18n';
 import { welcomeMessages } from '~/lib/i18n/messages/welcome';
+import { getStartedMessages } from '~/lib/i18n/messages/getStarted';
+import Ways from '~/components/admin/start/Ways.astro';
+import { can } from '~/lib/admin/permissions';
+import { ways } from '~/lib/get-started';
+import { assistantFacts } from '~/lib/get-started-facts';
 import { ICONS, type IconName } from '~/lib/ui/icons';
 import { summarize } from '~/lib/playbook/markdown';
 import Thumb from '~/modules/Thumb.astro';
@@ -25,11 +30,16 @@ if (!admin || !tenant) return Astro.redirect('/admin/login');
 if (Astro.request.method === 'GET' && await needsCompanySetup(admin)) return Astro.redirect('/admin/setup/ia?first=1');
 const { m, f, locale } = i18n(Astro, welcomeMessages);
 const partner = admin.session.role === 'partner';
-const KEYS = ['hello', 'sell', 'who', 'how', 'terms', 'first'] as const;
-type Key = (typeof KEYS)[number];
-const ICON: Record<Key, IconName> = { hello: 'sparkles', sell: 'boxes', who: 'target', how: 'book-open', terms: 'wallet', first: 'file-text' };
+type Key = 'hello' | 'crm' | 'sell' | 'who' | 'how' | 'terms' | 'first';
+// «Mete lo que ya tienes» (criterio de Cristian, 27-nov-2026): lo primero, antes que nada, para quien lleva el CRM.
+const perms = can(admin.session.role);
+const KEYS: Key[] = perms.useAccounts && !partner ? ['hello', 'crm', 'sell', 'who', 'how', 'terms', 'first'] : ['hello', 'sell', 'who', 'how', 'terms', 'first'];
+const ICON: Record<Key, IconName> = { hello: 'sparkles', crm: 'upload', sell: 'boxes', who: 'target', how: 'book-open', terms: 'wallet', first: 'file-text' };
 const total = KEYS.length;
-const n = Math.min(total, Math.max(1, Number(Astro.url.searchParams.get('step') ?? '1') || 1));
+// El paso, por número o por su nombre (?step=sell): las vueltas desde el recorrido o un sector no dependen del orden.
+const rawStep = Astro.url.searchParams.get('step') ?? '1';
+const named = KEYS.indexOf(rawStep as Key);
+const n = named >= 0 ? named + 1 : Math.min(total, Math.max(1, Number(rawStep) || 1));
 const key = KEYS[n - 1] as Key;
 const home = partner ? '/admin' : '/admin/inicio';
 
@@ -59,6 +69,11 @@ if (Astro.request.method === 'POST') {
 }
 
 const first = (admin.session.displayName || admin.session.email).split(/[\s@]/)[0];
+const GS = getStartedMessages[locale];
+// En la bienvenida, las rápidas: lo que ya tienes de golpe y el audio por WhatsApp (todas, en «Tu CRM en marcha»).
+const crmFacts = key === 'crm' ? await assistantFacts(admin).catch(() => ({ hasPhone: false, waLink: null })) : null;
+const quick = crmFacts ? [...ways({ importCrm: perms.importCrm, manageTenant: perms.manageTenant, useAccounts: true, ...crmFacts }).bulk.filter((x) => x.key !== 'notion'),
+  ...ways({ importCrm: false, manageTenant: false, useAccounts: true, ...crmFacts }).daily.filter((x) => x.key === 'whatsapp')] : [];
 const [catalog, learn, segments, plays, terms] = await Promise.all([
   key === 'sell' ? admin.service.catalog().catch(() => []) : [],
   key === 'sell' ? admin.playbook.learnIndex().catch(() => null) : null,
@@ -109,6 +124,13 @@ const tourCover = tourSteps[0]?.image ?? null;
       {key === 'hello' && <>
         <h1 class="co-page-title">{m.hello.title(first)}</h1>
         <p class="co-lede">{m.hello.lede(tenant.name)}</p>
+      </>}
+
+      {key === 'crm' && <>
+        <h1 class="co-page-title">{GS.step.title}</h1>
+        <p class="co-lede">{GS.step.lede}</p>
+        <div data-testid="welcome-crm"><Ways items={quick} T={GS} compact /></div>
+        <a class="co-btn co-btn--ghost co-btn--sm w-fit" href="/admin/arranca" data-testid="welcome-crm-all">{GS.step.all} <Icon name="chevron-right" size={14} /></a>
       </>}
 
       {key === 'sell' && <>

@@ -23,9 +23,9 @@ const { m } = i18n(Astro, learnMessages);
 const fromWelcome = Astro.url.searchParams.get('from') === 'welcome';
 if (Astro.request.method === 'POST') {
   await pb.markLearned('tour', true);
-  return Astro.redirect(fromWelcome ? '/admin/welcome?step=2' : '/admin/learn?ok=tour#offer', 303);
+  return Astro.redirect(fromWelcome ? '/admin/welcome?step=sell' : '/admin/learn?ok=tour#offer', 303);
 }
-const back = fromWelcome ? { href: '/admin/welcome?step=2', label: m.tour.backWelcome } : { href: '/admin/learn', label: m.tour.back };
+const back = fromWelcome ? { href: '/admin/welcome?step=sell', label: m.tour.backWelcome } : { href: '/admin/learn', label: m.tour.back };
 const { tour, kit } = await pb.learnIndex();
 const steps = tour.steps;
 // Cada paso, con la UI de verdad cuando la hay (móvil, pantalla, informe); si no, su foto.

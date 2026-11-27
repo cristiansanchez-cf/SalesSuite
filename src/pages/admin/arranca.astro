@@ -1,0 +1,41 @@
+---
+/**
+ * Tu CRM en marcha (docs/ARRANCA.md; criterio de Cristian, 27-nov-2026): todas las formas de meter lo que ya tienes
+ * sin dar de alta una a una (CSV, Notion, tu IA, dictar con «Apuntar»), las del día a día (audios por WhatsApp, el botón
+ * «Apuntar») y las de que entre solo (web, WhatsApp con los leads, el equipo). Sale en la bienvenida, en Inicio y en el
+ * CRM vacío.
+ */
+import AdminLayout from '~/layouts/AdminLayout.astro';
+import PageHeader from '~/components/ui/PageHeader.astro';
+import Ways from '~/components/admin/start/Ways.astro';
+import { can } from '~/lib/admin/permissions';
+import { i18n } from '~/lib/i18n';
+import { getStartedMessages } from '~/lib/i18n/messages/getStarted';
+import { ways } from '~/lib/get-started';
+import { assistantFacts } from '~/lib/get-started-facts';
+
+const { admin } = Astro.locals;
+if (!admin) return Astro.redirect('/admin/login');
+const perms = can(admin.session.role);
+if (!perms.useAccounts) return Astro.rewrite('/admin/forbidden');
+const { m: T } = i18n(Astro, getStartedMessages);
+const [facts, total] = await Promise.all([
+  assistantFacts(admin).catch(() => ({ hasPhone: false, waLink: null })),
+  admin.accounts.list({ scope: 'all' }).then((r) => r.total).catch(() => 0),
+]);
+const w = ways({ importCrm: perms.importCrm, manageTenant: perms.manageTenant, useAccounts: perms.useAccounts, ...facts });
+const groups = [[T.bulkTitle, w.bulk, 'bulk'], [T.dailyTitle, w.daily, 'daily'], [T.aloneTitle, w.alone, 'alone']] as const;
+---
+<AdminLayout title={T.title}>
+  <PageHeader eyebrow="CRM" title={T.title} lede={T.lede} />
+  <p class="co-meta mb-5" data-testid="arranca-have">{T.have(total)}</p>
+  <div class="grid max-w-4xl gap-6" data-testid="arranca">
+    {groups.filter(([, items]) => items.length > 0).map(([title, items, key]) => (
+      <section class="grid gap-3" data-testid={`arranca-${key}`}>
+        <h2 class="co-entity">{title}</h2>
+        <Ways items={items} T={T} />
+      </section>
+    ))}
+    <p class="co-help">{T.always}</p>
+  </div>
+</AdminLayout>

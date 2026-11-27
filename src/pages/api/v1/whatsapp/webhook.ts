@@ -9,7 +9,8 @@ import { hubConfig, hubWhatsApp } from '~/lib/assistant/hub-config';
 import { processHub } from '~/lib/assistant/hub';
 import type { Member } from '~/lib/assistant/db';
 import { deliveryStore } from '~/lib/assistant/delivery';
-import { handleInbound, handleEchoes } from '~/lib/leads/inbound';
+import { handleInbound, handleEchoes, type Hear } from '~/lib/leads/inbound';
+import { fixtureLeadTranscriber, whisper } from '~/lib/assistant/transcribe';
 import { json, leadsRuntime } from '~/lib/leads/server';
 import { parseWebhook, validSignature, type Inbound } from '~/lib/leads/whatsapp';
 
@@ -75,15 +76,32 @@ export const POST: APIRoute = async ({ request }) => {
       };
       if (demo) await run(); else waitUntil(run());
     }
-    const r = await handleInbound(rt.db, leads, new Date());
-    const manual = echoes.length ? await handleEchoes(rt.db, echoes, new Date()) : 0;
+    // Los audios del lead (y los tuyos desde la app de WhatsApp Business) se transcriben (Whisper): tardan, así que van
+    // en segundo plano y Meta recibe su 200 al momento. Sin clave de Whisper quedan como «[audio]».
+    const key = env('OPENAI_API_KEY');
+    const wa = rt.whatsapp;
+    const hear: Hear | undefined = wa?.media && (key || demo)
+      ? async (id, locale, tenantId) => (key ? whisper(key, fetch, 'leads.audio', tenantId) : fixtureLeadTranscriber)(await wa.media!(id), locale) : undefined;
+    const isAudio = (m: { kind?: string; mediaId?: string | null }) => !!hear && m.kind === 'audio' && !!m.mediaId;
+    const r = await handleInbound(rt.db, leads.filter((m) => !isAudio(m)), new Date());
+    const manual = echoes.length ? await handleEchoes(rt.db, echoes.filter((m) => !isAudio(m)), new Date()) : 0;
+    const audios = { leads: leads.filter(isAudio), echoes: echoes.filter(isAudio) };
+    if (audios.leads.length || audios.echoes.length) {
+      const later = async () => {
+        try {
+          await handleInbound(rt.db, audios.leads, new Date(), hear);
+          await handleEchoes(rt.db, audios.echoes, new Date(), hear);
+        } catch (e) { console.error('[whatsapp audio]', e instanceof Error ? e.message : e); }
+      };
+      if (demo) await later(); else waitUntil(later());
+    }
     for (const s of statuses.filter((x) => x.status === 'failed')) console.warn('[whatsapp] entrega fallida', s.id, s.error);
     // Lo que pasa con los WhatsApp del asistente (recordatorios): se guarda para decirlo en «Probarlo ahora».
     if (statuses.length) {
       const store = await deliveryStore().catch(() => null);
       for (const s of statuses) await store?.update(s.id, s.status, s.error).catch(() => {});
     }
-    return json({ ok: true, ...r, manual, assistant: team.length + hubTeam.length });
+    return json({ ok: true, ...r, manual, audio: audios.leads.length + audios.echoes.length, assistant: team.length + hubTeam.length });
   } catch (e) {
     console.error('[whatsapp]', e instanceof Error ? e.message : e);
     return json({ error: 'server_error' }, 500);

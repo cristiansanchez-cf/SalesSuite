@@ -11,6 +11,8 @@ import GroupPicker from '~/components/crm/GroupPicker.astro';
  */
 import AdminLayout from '~/layouts/AdminLayout.astro';
 import PageHeader from '~/components/ui/PageHeader.astro';
+import { FEW_ACCOUNTS } from '~/lib/get-started';
+import { getStartedMessages } from '~/lib/i18n/messages/getStarted';
 import Alert from '~/components/ui/Alert.astro';
 import EmptyState from '~/components/ui/EmptyState.astro';
 import Icon from '~/components/ui/Icon.astro';
@@ -47,6 +49,7 @@ const perms = can(admin.session.role);
 if (!perms.useAccounts) return Astro.rewrite('/admin/forbidden');
 const acc = admin.accounts;
 const { m: { list: M, detail: D }, f: fmt, locale } = i18n(Astro, accountsMessages);
+const GS = getStartedMessages[locale];
 const S = shellMessages[locale];
 const CF = crmMessages[locale].filters;
 const P = peopleMessages[locale];
@@ -215,6 +218,14 @@ const panelOpen = nFilters > 0;
       </div>
     </details>
   </PageHeader>
+  {/* Pocas empresas y sin filtros: que sepa que puede meterlas de golpe (criterio de Cristian, 27-nov-2026). */}
+  {total < FEW_ACCOUNTS && Astro.url.searchParams.size === 0 && (
+    <a class="co-inset mb-4 flex flex-wrap items-center gap-3 !py-3 !no-underline text-inherit" href="/admin/arranca" data-testid="accounts-arranca">
+      <Icon name="upload" size={18} />
+      <span class="min-w-0 flex-1"><strong class="block text-sm">{GS.nudge.title}</strong><span class="co-meta">{GS.nudge.body}</span></span>
+      <span class="co-btn co-btn--ghost co-btn--sm">{GS.nudge.go}</span>
+    </a>
+  )}
   {okMsg && <div class="mb-4"><Alert kind="success" title={okMsg} /></div>}
   {result.error && <div class="mb-4"><Alert kind="rejection" title={result.error} details={result.details} /></div>}
 

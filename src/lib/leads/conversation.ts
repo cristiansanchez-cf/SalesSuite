@@ -13,7 +13,8 @@ export function leadSaid(events: LeadEvent[]): Said[] {
   const out: Said[] = [];
   for (const e of events) {
     const d = e.data as Record<string, unknown>;
-    const text = typeof d.text === 'string' ? d.text.trim() : '';
+    // Un audio que se ha podido oír sale con lo que dice (🎤 delante para saber que era un audio).
+    const text = typeof d.text === 'string' && d.text.trim() ? `${d.audio ? '🎤 ' : ''}${d.text.trim()}` : '';
     if (e.kind === 'submission' && typeof d.message === 'string' && d.message.trim()) out.push({ at: e.at, us: false, auto: false, text: d.message.trim() });
     else if (e.kind === 'message_in' && text) out.push({ at: e.at, us: false, auto: false, text });
     // Los automáticos con texto (WhatsApp 1 y 2); el email de confirmación no lleva el texto en el historial.

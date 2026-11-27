@@ -1,0 +1,31 @@
+---
+/**
+ * Las formas de meter datos (lib/get-started.ts) en tarjetas: título, qué hace y su botón. En la bienvenida, compacto
+ * (solo título y botón); en «Tu CRM en marcha», con la explicación.
+ */
+import Icon from '~/components/ui/Icon.astro';
+import type { Way } from '~/lib/get-started';
+import type { getStartedMessages } from '~/lib/i18n/messages/getStarted';
+
+interface Props { items: Way[]; T: (typeof getStartedMessages)['es']; compact?: boolean }
+const { items, T, compact = false } = Astro.props;
+---
+<ul class:list={['m-0 grid gap-3 p-0', compact ? 'grid-cols-[minmax(0,1fr)]' : 'sm:grid-cols-2']}>
+  {items.map((w) => {
+    const t = T.ways[w.key];
+    const go = w.setup && 'setup' in t ? t.setup : t.go;
+    return (
+      <li class="list-none">
+        <a class:list={['co-inset grid h-full content-start gap-2 !p-4 transition-colors hover:border-[var(--co-ink)]', compact && '!grid-cols-[auto_minmax(0,1fr)] items-center']}
+          href={w.href} data-testid={`way-${w.key}`} {...(w.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}>
+          <span class="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[color:var(--co-signal-soft,#efe9ff)] text-[color:var(--co-signal)]" aria-hidden="true"><Icon name={w.icon} size={18} /></span>
+          <span class="grid gap-1">
+            <span class="font-semibold">{t.t}</span>
+            {!compact && <span class="co-meta">{t.d}</span>}
+            <span class="flex items-center gap-1 text-sm font-semibold">{go} <Icon name="chevron-right" size={14} /></span>
+          </span>
+        </a>
+      </li>
+    );
+  })}
+</ul>

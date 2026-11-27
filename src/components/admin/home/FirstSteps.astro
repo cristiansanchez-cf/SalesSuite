@@ -12,6 +12,7 @@ import { i18n } from '~/lib/i18n';
 import { firstStepsMessages } from '~/lib/i18n/messages/firstSteps';
 import { appMode } from '~/lib/mode';
 import { adminSteps, progressOf, repSteps } from '~/lib/first-steps';
+import { FEW_ACCOUNTS } from '~/lib/get-started';
 import { leadsFor } from '~/lib/leads/service';
 import { leadsRuntime } from '~/lib/leads/server';
 import { ownDomains } from '~/lib/leads/resend-key';
@@ -31,17 +32,19 @@ const contact = await assistantContact(settings, { demo }).catch(() => null);
 let steps: { key: string; done: boolean; href: string; external?: boolean; t: string; d: string }[] = [];
 if (isAdmin) {
   const svc = await leadsFor(admin);
-  const [segments, members, last, domains] = await Promise.all([
+  const [segments, members, last, domains, accounts] = await Promise.all([
     admin.playbook.market().catch(() => []),
     admin.tenantAdmin.listMembers().catch(() => []),
     svc.lastSubmission({ external: true }).catch(() => null),
     settings?.resendKeyHint ? ownDomains(admin).catch(() => null) : Promise.resolve(null),
+    // Con unas pocas basta para saber si ya ha metido lo que tenía.
+    admin.accounts.list({ scope: 'all', limit: FEW_ACCOUNTS }).then((r) => r.total).catch(() => 0),
   ]);
   const leadsReady = !!settings && (() => {
     const p = requiredProgress(leadSetupSteps({ settings, domains, received: !!last, demo, platformMail: !!(env('RESEND_API_KEY') && env('RESEND_FROM')), platformWa: !!env('WHATSAPP_TOKEN') }));
     return p.done === p.total;
   })();
-  steps = adminSteps({ segments: segments.length, hasLogo: !!tenant?.brand?.logoUrl, members: members.length, leadsReady, assistantOn: !!contact && contact.mode !== 'off' })
+  steps = adminSteps({ segments: segments.length, hasLogo: !!tenant?.brand?.logoUrl, members: members.length, leadsReady, assistantOn: !!contact && contact.mode !== 'off', accounts })
     .map((x) => ({ ...x, ...T.admin[x.key] }));
 } else {
   const phone = admin.mode === 'supabase' && admin.supabase
@@ -72,7 +75,7 @@ const hideKey = `ss_first_steps:${admin.session.tenantId}:${isAdmin ? 'admin' : 
   <div class="h-1.5 overflow-hidden rounded-full bg-[var(--console-progress-track)]" role="progressbar" aria-valuemin={0} aria-valuemax={p.total} aria-valuenow={p.done}>
     <span class="block h-full rounded-full bg-[var(--co-ink)]" style={`width:${Math.round((p.done / p.total) * 100)}%`}></span>
   </div>
-  <ol class={`grid gap-2 p-0 ${steps.length > 3 ? 'sm:grid-cols-2 lg:grid-cols-5' : 'sm:grid-cols-3'}`}>
+  <ol class={`grid gap-2 p-0 ${steps.length > 5 ? 'sm:grid-cols-2 lg:grid-cols-3' : steps.length > 3 ? 'sm:grid-cols-2 lg:grid-cols-5' : 'sm:grid-cols-3'}`}>
     {steps.map((x, i) => (
       <li class="list-none">
         <a class:list={['co-inset grid h-full content-start gap-2 !p-4 transition-colors hover:border-[var(--co-ink)]', x.key === next && '!border-[var(--co-signal)]']}

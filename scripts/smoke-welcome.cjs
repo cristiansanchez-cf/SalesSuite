@@ -29,15 +29,15 @@ async function login(b, email, mobile = false) {
   for (let i = 0; i < 10; i++) {
     const step = await p.getAttribute('[data-testid=welcome]', 'data-step');
     seen.push(step);
-    if (OUT && ['hello', 'sell', 'who', 'how', 'first'].includes(step)) await p.screenshot({ path: `${OUT}/welcome-${step}.png`, fullPage: true });
+    if (OUT && ['hello', 'crm', 'sell', 'who', 'how', 'first'].includes(step)) await p.screenshot({ path: `${OUT}/welcome-${step}.png`, fullPage: true });
     const w = await p.evaluate(() => document.documentElement.scrollWidth);
     if (w > 390) assert(false, `paso ${step} cabe en el móvil (mide ${w})`);
     if (step === 'first') break;
     await p.click('[data-testid=welcome-next]');
     await p.waitForLoadState();
   }
-  assert(seen.join(',') === 'hello,sell,who,how,terms,first', `comercial: 6 pasos en orden (${seen.join(',')})`);
-  assert((await p.textContent('[data-testid=welcome-progress]')).includes('Paso 6 de 6'), 'progreso visible');
+  assert(seen.join(',') === 'hello,crm,sell,who,how,terms,first', `comercial: 7 pasos en orden, el 2.º «mete lo que ya tienes» (${seen.join(',')})`);
+  assert((await p.textContent('[data-testid=welcome-progress]')).includes('Paso 7 de 7'), 'progreso visible');
 
   await p.click('[data-testid=welcome-back]');
   await p.waitForLoadState();
@@ -52,24 +52,32 @@ async function login(b, email, mobile = false) {
   await p.click('[data-testid=welcome-locale-es]');
   await p.waitForURL(/\/admin\/welcome\?step=2/);
 
+  // «Mete lo que ya tienes»: las formas rápidas (un comercial no sube CSV) y «Ver todas las formas».
+  await p.goto(`${BASE}/admin/welcome?step=crm`);
+  assert(await p.isVisible('[data-testid=way-notes]') && await p.isVisible('[data-testid=way-ai]') && await p.isVisible('[data-testid=way-whatsapp]') && !(await p.isVisible('[data-testid=way-csv]')),
+    'comercial: dictar/pegar con IA, su IA y WhatsApp (sin CSV)');
+  await p.click('[data-testid=welcome-crm-all]');
+  await p.waitForURL(/\/admin\/arranca/);
+  assert(await p.isVisible('[data-testid=arranca-daily]') && !(await p.isVisible('[data-testid=arranca-alone]')), '«Tu CRM en marcha»: el comercial ve lo suyo, no conectar la web');
+
   // «Qué vendemos»: primero el recorrido del producto (y vuelve aquí), después los módulos con su imagen.
-  await p.goto(`${BASE}/admin/welcome?step=2`);
+  await p.goto(`${BASE}/admin/welcome?step=3`);
   assert((await p.locator('[data-testid=welcome-module]').count()) > 0, 'qué vendemos: módulos en tarjetas visuales');
   await p.click('[data-testid=welcome-tour]');
   await p.waitForURL(/\/admin\/learn\/tour\?from=welcome/);
   await p.click('[data-testid=tour-got]');
-  await p.waitForURL(/\/admin\/welcome\?step=2/);
-  assert(true, 'recorrido desde la bienvenida y vuelta');
+  await p.waitForURL(/\/admin\/welcome\?step=sell/);
+  assert((await p.getAttribute('[data-testid=welcome]', 'data-step')) === 'sell', 'recorrido desde la bienvenida y vuelta a «Qué vendemos»');
 
   // «A quién»: cada sector abre su ficha y se vuelve a la bienvenida.
-  await p.goto(`${BASE}/admin/welcome?step=3`);
+  await p.goto(`${BASE}/admin/welcome?step=4`);
   await p.click('[data-testid=welcome-sector] >> nth=0');
   await p.waitForURL(/\/admin\/learn\/sector\/[^?]+\?from=welcome/);
   assert(await p.isVisible('[data-testid=sector-hero]') && (await p.locator('[data-testid=persona]').count()) > 0, 'ficha del sector: cabecera y quién está en la sala');
   if (OUT) await p.screenshot({ path: `${OUT}/welcome-sector.png`, fullPage: true });
   await p.click('[data-testid=sector-back]');
-  await p.waitForURL(/\/admin\/welcome\?step=3/);
-  await p.goto(`${BASE}/admin/welcome?step=6`);
+  await p.waitForURL(/\/admin\/welcome\?step=who/);
+  await p.goto(`${BASE}/admin/welcome?step=first`);
 
   // Termina haciendo algo: la primera propuesta.
   await p.fill('[data-testid=welcome-create] [name=company]', 'Sala Luna');
@@ -83,8 +91,14 @@ async function login(b, email, mobile = false) {
 
   // Admin: la misma bienvenida (el CEO también vende); preparar el espacio va aparte, en Inicio. Saltarla cuenta como vista.
   const a = await login(b, 'admin@enjoy.test');
-  await a.goto(`${BASE}/admin/welcome?step=6`);
-  assert((await a.getAttribute('[data-testid=welcome]', 'data-step')) === 'first', 'admin: los mismos 6 pasos, sin mezclar la preparación del espacio');
+  await a.goto(`${BASE}/admin/welcome?step=crm`);
+  assert(await a.isVisible('[data-testid=way-csv]') && await a.isVisible('[data-testid=way-notes]'), 'admin: lo primero, subir su Excel/CSV o dictarlo');
+  if (OUT) await a.screenshot({ path: `${OUT}/welcome-crm-admin.png`, fullPage: true });
+  await a.goto(`${BASE}/admin/arranca`);
+  assert(await a.isVisible('[data-testid=arranca-alone] [data-testid=way-web]') && await a.isVisible('[data-testid=arranca-bulk] [data-testid=way-csv]'), 'admin: «Tu CRM en marcha» con CSV, Notion, IA, web y WhatsApp');
+  if (OUT) await a.screenshot({ path: `${OUT}/arranca-admin.png`, fullPage: true });
+  await a.goto(`${BASE}/admin/welcome?step=7`);
+  assert((await a.getAttribute('[data-testid=welcome]', 'data-step')) === 'first', 'admin: los mismos 7 pasos, sin mezclar la preparación del espacio');
   await a.click('[data-testid=welcome-skip]');
   await a.waitForURL(/\/admin\/inicio/);
   assert(!(await a.isVisible('[data-testid=welcome-resume]')), 'saltar la bienvenida la da por vista');

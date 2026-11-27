@@ -7,6 +7,7 @@ const es = {
   ledeRep: 'Tres cosas para empezar. Se van tachando solas.',
   admin: {
     company: { t: 'Prepara tu empresa', d: 'Qué vendes y a quién: lo usa todo lo demás.' },
+    data: { t: 'Mete lo que ya tienes', d: 'De golpe: tu Excel, tu IA o dictándolo. No una a una.' },
     brand: { t: 'Pon tu marca', d: 'Tu logo y tus colores en las propuestas.' },
     team: { t: 'Invita a tu equipo', d: 'Cada persona con su acceso.' },
     leads: { t: 'Conecta tus leads', d: 'Que la web o la app mande cada solicitud al CRM y se conteste sola.' },
@@ -27,6 +28,7 @@ export const firstStepsMessages = defineMessages({
     ledeRep: 'Three things to get started. They tick themselves off.',
     admin: {
       company: { t: 'Set up your company', d: 'What you sell and to whom: everything else uses it.' },
+      data: { t: 'Bring in what you have', d: 'All at once: your Excel, your AI or by dictating. Not one by one.' },
       brand: { t: 'Add your brand', d: 'Your logo and colours on your proposals.' },
       team: { t: 'Invite your team', d: 'Each person with their own access.' },
       leads: { t: 'Connect your leads', d: 'Your website or app sends every request to the CRM and it gets a reply on its own.' },
@@ -44,6 +46,7 @@ export const firstStepsMessages = defineMessages({
     ledeRep: 'Três coisas para começar. Vão se marcando sozinhas.',
     admin: {
       company: { t: 'Prepare sua empresa', d: 'O que você vende e para quem: todo o resto usa isso.' },
+      data: { t: 'Traga o que você já tem', d: 'De uma vez: seu Excel, sua IA ou ditando. Não um a um.' },
       brand: { t: 'Coloque sua marca', d: 'Seu logo e suas cores nas propostas.' },
       team: { t: 'Convide sua equipe', d: 'Cada pessoa com seu acesso.' },
       leads: { t: 'Conecte seus leads', d: 'O site ou o app envia cada pedido para o CRM e ele é respondido sozinho.' },
@@ -61,6 +64,7 @@ export const firstStepsMessages = defineMessages({
     ledeRep: '시작하는 데 필요한 세 가지입니다. 하면 저절로 체크됩니다.',
     admin: {
       company: { t: '회사 준비', d: '무엇을 누구에게 파는지: 다른 모든 것이 이것을 씁니다.' },
+      data: { t: '이미 가진 것 넣기', d: '한 번에: Excel, AI 또는 말로. 하나씩 말고요.' },
       brand: { t: '브랜드 넣기', d: '제안서에 들어갈 로고와 색상.' },
       team: { t: '팀 초대', d: '각자 자신의 계정으로.' },
       leads: { t: '리드 연결', d: '웹사이트나 앱의 문의가 CRM으로 들어오고 자동으로 답장합니다.' },

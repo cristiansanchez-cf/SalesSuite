@@ -78,9 +78,9 @@ const origins: [string, unknown][] = [[D.first, l.attributionFirst], [D.last, l.
 const evText = (e: (typeof events)[number]) => {
   const d = e.data as Record<string, unknown>;
   if (e.kind === 'stage') return `${L.stages[(e.fromStage ?? 'new') as Stage] ?? e.fromStage} → ${L.stages[(e.toStage ?? 'new') as Stage] ?? e.toStage}${d.reason ? ` · ${d.reason}` : ''}${d.auto ? ' (auto)' : ''}`;
-  if (e.kind === 'message_out' && d.manual) return `${L.waStatus.fromYourWa} · «${String(d.text ?? '').slice(0, 300)}»`;
+  if (e.kind === 'message_out' && d.manual) return `${L.waStatus.fromYourWa} · ${d.audio ? '🎤 ' : ''}«${String(d.text ?? '').slice(0, 300)}»`;
   if (e.kind === 'message_out') return `${L.steps[(d.step as 'wa1') ?? 'wa1'] ?? d.step}${d.status === 'failed' ? ` · ${L.status.failed}: ${d.error ?? ''}` : ''}${d.text ? ` · «${String(d.text).slice(0, 160)}…»` : ''}`;
-  if (e.kind === 'message_in') return `«${String(d.text ?? '').slice(0, 300)}»`;
+  if (e.kind === 'message_in') return `${d.audio ? '🎤 ' : ''}«${String(d.text ?? '').slice(0, 600)}»`;
   if (e.kind === 'note') return String(d.text ?? '');
   if (e.kind === 'submission') return [d.message ? `«${String(d.message).slice(0, 200)}»` : '', (d.cta as { label?: string } | undefined)?.label ?? '', d.page ?? ''].filter(Boolean).join(' · ');
   if (e.kind === 'quarantine') return ((d.reasons as string[]) ?? []).map((r) => (L.reasons as Record<string, string>)[r] ?? r).join(', ');

@@ -247,6 +247,23 @@ describe('entrada y cola (memoria)', () => {
       await intake(deps({ settings: s, whatsappReady: true, now: new Date('2026-11-03T12:00:00Z') }), v2());
       expect(demoLeadsStore().msgs.filter((m) => m.step === 'wa1')).toHaveLength(1);
     });
+    test('audios: lo que dice el lead (y lo que le mandas tú) queda escrito, con 🎤; sin poder oírlo, «[audio]»', async () => {
+      const s = waSettings();
+      demoLeadsStore().settings = [s];
+      await intake(deps({ settings: s, whatsappReady: true }), v2());
+      const heard: string[] = [];
+      const hear = async (id: string, locale: string) => { heard.push(`${id}:${locale}`); return id === 'm1' ? 'Sí, me interesa para los viernes' : id === 'm3' ? 'Te activo 15 días de prueba' : null; };
+      await handleInbound(demoLeadsDb(), [{ phoneId: '123456789', from: '+34600123123', text: '[audio]', kind: 'audio', mediaId: 'm1', at: new Date('2026-11-03T10:10:00Z'), id: 'w1' }], new Date('2026-11-03T10:10:00Z'), hear);
+      await handleInbound(demoLeadsDb(), [{ phoneId: '123456789', from: '+34600123123', text: '[audio]', kind: 'audio', mediaId: 'm2', at: new Date('2026-11-03T10:11:00Z'), id: 'w2' }], new Date('2026-11-03T10:11:00Z'), hear);
+      const { handleEchoes } = await import('./inbound');
+      await handleEchoes(demoLeadsDb(), [{ phoneId: '123456789', to: '+34600123123', text: '[audio]', kind: 'audio', mediaId: 'm3', at: new Date('2026-11-03T10:12:00Z'), id: 'e1' }], new Date('2026-11-03T10:12:00Z'), hear);
+      expect(heard).toEqual(['m1:es', 'm2:es', 'm3:es']);
+      const ev = demoLeadsStore().events.filter((e) => e.kind === 'message_in' || (e.kind === 'message_out' && e.data.manual));
+      expect(ev.map((e) => [e.data.text, e.data.audio ?? false])).toEqual([['Sí, me interesa para los viernes', true], ['[audio]', false], ['Te activo 15 días de prueba', true]]);
+      expect(demoLeadsStore().msgs.find((m) => m.step === 'notify' && m.payload.kind === 'reply')!.payload.text).toBe('🎤 Sí, me interesa para los viernes');
+      const { leadSaid } = await import('./conversation');
+      expect(leadSaid(demoLeadsStore().events).filter((x) => x.text.startsWith('🎤')).length).toBe(2);
+    });
     test('«baja» por WhatsApp → no se le vuelve a escribir por ahí', async () => {
       const s = waSettings();
       demoLeadsStore().settings = [s];
