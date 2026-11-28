@@ -230,6 +230,9 @@ export function createLeadsService(db: LeadsDb, admin: AdminContext) {
    * Los leads que ya son estas personas o empresas, con lo que se ha hablado: para «Viene de la web» en sus fichas. Solo
    * quien gestiona leads (los demás, nada: la RLS tampoco se los deja ver).
    */
+  /** ¿Nos llega lo que escribís desde la app de WhatsApp Business? Si no, en las fichas solo sale su lado. */
+  async function echoesSeen() { return can(s.role).manageAccounts ? db.echoSeen(t).catch(() => false) : false; }
+
   async function linked(by: { contactIds?: string[]; accountIds?: string[] }) {
     if (!can(s.role).manageAccounts) return [];
     const leads = await db.linkedTo(t, by);
@@ -577,7 +580,7 @@ export function createLeadsService(db: LeadsDb, admin: AdminContext) {
     return { total: ls.length, answered: mins.length, medianMins: median, within5: mins.filter((m) => m <= 5).length, bySource: [...bySource].sort((a, b) => b[1] - a[1]).slice(0, 6) };
   }
 
-  return { settings, list, counts, usedKinds, detail, setStage, markContacted, stopSequence, release, note, validate, accept, linked, attach, approveWhatsapp, whatsappPlan, dismissWhatsapp, reject, suppress, saveSettings, saveTexts, saveSignature, clearPastedSignature, saveSignerName, saveWhatsapp, saveBooking, saveEmailStyle, saveRetention, setEnabled, lastSubmission, saveOrigins, saveSender, metrics, canConfigure: perms.manageTenant };
+  return { settings, list, counts, usedKinds, detail, setStage, markContacted, stopSequence, release, note, validate, accept, linked, attach, echoesSeen, approveWhatsapp, whatsappPlan, dismissWhatsapp, reject, suppress, saveSettings, saveTexts, saveSignature, clearPastedSignature, saveSignerName, saveWhatsapp, saveBooking, saveEmailStyle, saveRetention, setEnabled, lastSubmission, saveOrigins, saveSender, metrics, canConfigure: perms.manageTenant };
 }
 export type LeadsService = ReturnType<typeof createLeadsService>;
 

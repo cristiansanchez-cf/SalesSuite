@@ -6,7 +6,7 @@
  */
 import Icon from '~/components/ui/Icon.astro';
 import ChatThread from '~/components/admin/ChatThread.astro';
-import { leadBubbles } from '~/lib/leads/conversation';
+import { leadBubbles, onlyTheirSide } from '~/lib/leads/conversation';
 import { leadsMessages } from '~/lib/i18n/messages/leads';
 import { followupMessages } from '~/lib/i18n/messages/followup';
 import type { Lead, LeadEvent, Submission } from '~/lib/leads/types';
@@ -19,8 +19,12 @@ interface Props {
   company?: { id: string; name: string } | null;
   /** Hay IA para Apuntar. */
   ai: boolean;
+  /** ¿Llega lo que el equipo escribe desde la app de WhatsApp Business? (leads service: echoesSeen) */
+  echoes?: boolean;
+  /** Superadmin: el único que puede activarlo (en la app de Meta de la plataforma). */
+  platform?: boolean;
 }
-const { items, locale, company = null, ai } = Astro.props;
+const { items, locale, company = null, ai, echoes = false, platform = false } = Astro.props;
 const L = leadsMessages[locale];
 const W = L.fromWeb;
 const FO = followupMessages[locale].follow;
@@ -51,6 +55,14 @@ const day = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'long', yea
       {bubbles.length > 1
         ? <ChatThread id={`lead-${l.id}`} bubbles={bubbles} labels={{ title: FO.convoTitle, all: FO.convoAll, older: FO.convoOlder, us: FO.convoUs, them: FO.convoThem, close: FO.convoClose }} />
         : <p class="co-help m-0">{W.noTalk}</p>}
+      {/* Solo su lado (criterio de Cristian: «no se entiende la conversación»): por qué y cómo pasarla entera. */}
+      {onlyTheirSide(events) && (
+        <div class="co-inset co-inset--warn grid gap-1 !py-3 text-sm" data-testid="lead-origin-one-side">
+          <strong>{echoes ? W.olderSide : W.onlySide}</strong>
+          {!echoes && platform && <span>{W.fixEchoes}</span>}
+          <span class="co-meta">{W.exportTip}</span>
+        </div>
+      )}
       {ai && (
         <div class="grid gap-1">
           <a class="co-btn co-btn--primary co-btn--sm w-fit" href={href} data-testid="lead-origin-ai"><Icon name="sparkles" size={14} />{company ? W.toCompany(company.name) : W.toCrm}</a>

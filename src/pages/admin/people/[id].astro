@@ -65,7 +65,8 @@ const sheet = fieldsFor(crmFields, null, { target: 'contact', tags: p.tags });
 const W = leadsMessages[locale].fromWeb;
 const okMsg = Astro.url.searchParams.get('ok') === 'attached' ? W.attached(Astro.url.searchParams.get('c') ?? '') : flash(Astro.url, P.person.ok);
 // Si llegó por la web: lo que pidió y lo que habéis hablado, aquí y en la ficha de su empresa.
-const fromWeb = await (await leadsFor(admin)).linked({ contactIds: [id] }).catch(() => []);
+const leadSvc = await leadsFor(admin);
+const [fromWeb, echoes] = await Promise.all([leadSvc.linked({ contactIds: [id] }).catch(() => []), leadSvc.echoesSeen()]);
 const firstCompany = p.companies[0] ? { id: p.companies[0].accountId, name: p.companies[0].name } : null;
 ---
 <AdminLayout title={p.name}>
@@ -123,7 +124,7 @@ const firstCompany = p.companies[0] ? { id: p.companies[0].accountId, name: p.co
         </details>
       </section>
 
-      <LeadOrigin items={fromWeb} locale={locale} company={firstCompany} ai={admin.crm.hasNotes()} />
+      <LeadOrigin items={fromWeb} locale={locale} company={firstCompany} ai={admin.crm.hasNotes()} echoes={echoes} platform={!!admin.session.superadmin} />
 
       <section class="co-card grid gap-4" data-testid="person-sheet">
         <div class="flex flex-wrap items-center justify-between gap-2">

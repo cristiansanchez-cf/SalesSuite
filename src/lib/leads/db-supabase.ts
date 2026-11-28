@@ -110,6 +110,9 @@ export function supabaseLeadsDb(sb: SupabaseClient): LeadsDb {
     async leadsByPhone(tenantId, e164) {
       return (check(await sb.from('lead').select('*').eq('tenant_id', tenantId).eq('phone_e164', e164).order('last_submission_at', { ascending: false }).limit(5)) as Row[]).map(leadOf);
     },
+    async echoSeen(tenantId) {
+      return ((check(await sb.from('lead_event').select('id').eq('tenant_id', tenantId).eq('kind', 'message_out').contains('data', { manual: true }).limit(1)) as Row[]) ?? []).length > 0;
+    },
     async linkedTo(tenantId, by) {
       const uuid = (x: string) => /^[0-9a-f-]{36}$/i.test(x);
       const cs = (by.contactIds ?? []).filter(uuid).slice(0, 200), as = (by.accountIds ?? []).filter(uuid).slice(0, 200);

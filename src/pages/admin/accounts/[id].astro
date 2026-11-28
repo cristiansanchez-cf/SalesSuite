@@ -226,7 +226,8 @@ const accountLists = listsAll.filter((l) => l.accounts > 0).map((l) => l.tag);
 // Contacto: el de la empresa y, de respaldo, el de su persona principal (empresa pequeña: el móvil del dueño).
 const primary = tl.actors[0];
 // Los que llegaron por la web (la empresa o su gente): lo que pidieron y lo que habéis hablado, aquí también.
-const fromWeb = await (await leadsFor(admin)).linked({ accountIds: [id], contactIds: tl.actors.map((x) => x.id) }).catch(() => []);
+const leadSvc = await leadsFor(admin);
+const [fromWeb, echoes] = await Promise.all([leadSvc.linked({ accountIds: [id], contactIds: tl.actors.map((x) => x.id) }).catch(() => []), leadSvc.echoesSeen()]);
 const fallback = primary ? { name: primary.name, phone: primary.phone, email: primary.email, instagram: primary.instagram, linkedin: primary.linkedin } : undefined;
 const sug = tl.suggestion;
 const nextAt = tl.next?.at ? new Date(tl.next.at) : null;
@@ -536,7 +537,7 @@ const STATE_ALERT = {
         ? <QualificationCard q={a.qualification} p={prio} canEdit={canQualify} cooling={coolingMap.get(id) ?? null} />
         : <ProfileCard profile={profile} q={a.qualification as Record<string, unknown>} p={prio} canEdit={canQualify} />)}
 
-      <LeadOrigin items={fromWeb} locale={locale} company={{ id, name: a.name }} ai={admin.crm.hasNotes()} />
+      <LeadOrigin items={fromWeb} locale={locale} company={{ id, name: a.name }} ai={admin.crm.hasNotes()} echoes={echoes} platform={!!admin.session.superadmin} />
 
       <section id="follow" class="co-card grid gap-4" data-testid="follow">
         <div class="flex flex-wrap items-baseline justify-between gap-2">

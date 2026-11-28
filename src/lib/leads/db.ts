@@ -23,6 +23,8 @@ export interface LeadsDb {
   leadByEmail(tenantId: string, email: string, isTest: boolean): Promise<Lead | null>;
   leadsByPhone(tenantId: string, e164: string): Promise<Lead[]>;
   /** Los leads (sin pruebas ni anonimizados) que ya son estas personas o estas empresas del CRM: su ficha los enseña. */
+  /** ¿Ha llegado alguna vez lo que escribe el equipo desde la app de WhatsApp Business (smb_message_echoes)? */
+  echoSeen(tenantId: string): Promise<boolean>;
   linkedTo(tenantId: string, by: { contactIds?: string[]; accountIds?: string[] }): Promise<Lead[]>;
   getLead(id: string): Promise<Lead | null>;
   insertLead(l: NewLead): Promise<Lead>;

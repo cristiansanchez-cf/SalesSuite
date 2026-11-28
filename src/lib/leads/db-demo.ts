@@ -59,6 +59,7 @@ export function demoLeadsDb(store: LeadsStore = demoLeadsStore()): LeadsDb {
     async submissionByKey(tenantId, key) { const r = s.subs.find((x) => x.tenantId === tenantId && x.idempotencyKey === key); return r ? clone(r) : null; },
     async leadByEmail(tenantId, email, isTest) { const r = s.leads.find((x) => x.tenantId === tenantId && x.email === email && x.isTest === isTest); return r ? clone(r) : null; },
     async leadsByPhone(tenantId, e164) { return s.leads.filter((x) => x.tenantId === tenantId && x.phoneE164 === e164).map(clone); },
+    async echoSeen(tenantId) { return s.events.some((e) => e.tenantId === tenantId && e.kind === 'message_out' && !!e.data.manual); },
     async linkedTo(tenantId, by) {
       const cs = new Set(by.contactIds ?? []), as = new Set(by.accountIds ?? []);
       return s.leads.filter((x) => x.tenantId === tenantId && !x.isTest && !x.anonymizedAt && ((x.contactId && cs.has(x.contactId)) || (x.accountId && as.has(x.accountId))))

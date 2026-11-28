@@ -81,6 +81,7 @@ const post = async (body) => (await fetch(`${BASE}/api/v1/leads`, { method: 'POS
   await p.click('[data-testid=lead-open-contact]');
   await p.waitForURL(/\/admin\/people\//);
   assert((await p.textContent(card)).includes('🎤 Hola, sí, me interesa'), 'persona: la conversación con lo que dijo en el audio');
+  assert((await p.textContent('[data-testid=lead-origin-one-side]')).includes('Exportar chat'), 'solo su lado: avisa y dice cómo pasar la conversación entera');
 
   // 2) Aceptar sin saber el local: se avisa en su ficha y, al añadírselo, el lead pasa a él.
   const two = await post(lead('Marta Smoke', `marta-${RUN}@example.com`, '600 555 102'));

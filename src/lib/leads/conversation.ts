@@ -6,6 +6,15 @@
 import type { Bubble } from '../crm/convo';
 import type { LeadEvent } from './types';
 
+const PLACEHOLDER: Record<string, string> = {
+  '[audio]': '🎤 (audio)', '[image]': '📷 (foto)', '[document]': '📄 (documento)', '[video]': '🎬 (vídeo)', '[sticker]': '(sticker)', '[location]': '📍 (ubicación)', '[contacts]': '👤 (contacto)',
+};
+
+/** ¿Hay mensajes suyos pero ninguno vuestro escrito a mano? Entonces lo vuestro no está llegando (smb_message_echoes). */
+export function onlyTheirSide(events: LeadEvent[]): boolean {
+  return events.some((e) => e.kind === 'message_in') && !events.some((e) => e.kind === 'message_out' && !!(e.data as Record<string, unknown>).manual);
+}
+
 interface Said { at: string; us: boolean; auto: boolean; text: string }
 
 /** Lo dicho, en orden: el mensaje de la web, lo que contesta él y lo que se le escribe (a mano o automático). */
@@ -13,8 +22,10 @@ export function leadSaid(events: LeadEvent[]): Said[] {
   const out: Said[] = [];
   for (const e of events) {
     const d = e.data as Record<string, unknown>;
-    // Un audio que se ha podido oír sale con lo que dice (🎤 delante para saber que era un audio).
-    const text = typeof d.text === 'string' && d.text.trim() ? `${d.audio ? '🎤 ' : ''}${d.text.trim()}` : '';
+    // Un audio que se ha podido oír sale con lo que dice (🎤 delante para saber que era un audio); lo que no es texto
+    // («[image]», «[document]», un audio sin oír) dice qué es.
+    const raw = typeof d.text === 'string' ? d.text.trim() : '';
+    const text = raw ? (PLACEHOLDER[raw] ?? `${d.audio ? '🎤 ' : ''}${raw}`) : '';
     if (e.kind === 'submission' && typeof d.message === 'string' && d.message.trim()) out.push({ at: e.at, us: false, auto: false, text: d.message.trim() });
     else if (e.kind === 'message_in' && text) out.push({ at: e.at, us: false, auto: false, text });
     // Los automáticos con texto (WhatsApp 1 y 2); el email de confirmación no lleva el texto en el historial.

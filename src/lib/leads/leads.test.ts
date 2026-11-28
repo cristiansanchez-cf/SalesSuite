@@ -262,7 +262,7 @@ describe('entrada y cola (memoria)', () => {
       expect(ev.map((e) => [e.data.text, e.data.audio ?? false])).toEqual([['Sí, me interesa para los viernes', true], ['[audio]', false], ['Te activo 15 días de prueba', true]]);
       expect(demoLeadsStore().msgs.find((m) => m.step === 'notify' && m.payload.kind === 'reply')!.payload.text).toBe('🎤 Sí, me interesa para los viernes');
       const { leadSaid } = await import('./conversation');
-      expect(leadSaid(demoLeadsStore().events).filter((x) => x.text.startsWith('🎤')).length).toBe(2);
+      expect(leadSaid(demoLeadsStore().events).filter((x) => x.text.startsWith('🎤')).map((x) => x.text)).toEqual(['🎤 Sí, me interesa para los viernes', '🎤 (audio)', '🎤 Te activo 15 días de prueba']);
     });
     test('«baja» por WhatsApp → no se le vuelve a escribir por ahí', async () => {
       const s = waSettings();
@@ -746,11 +746,20 @@ describe('el lead vive en el CRM (criterio de Cristian, 26-nov-2026)', () => {
   test('la conversación: lo que escribió en la web, lo automático y lo tuyo; sin el email ni lo que falló', async () => {
     const { leadBubbles, leadSaid } = await import('./conversation');
     expect(leadSaid(events).map((x) => [x.us, x.auto, x.text.slice(0, 12)])).toEqual([
-      [false, false, 'solicitud de'], [true, true, 'Hola Ignacio'], [false, false, '[audio]'], [true, false, 'Te activo 15'],
+      [false, false, 'solicitud de'], [true, true, 'Hola Ignacio'], [false, false, '🎤 (audio)'], [true, false, 'Te activo 15'],
     ]);
     const b = leadBubbles(events, { them: 'Ignacio', auto: 'Automático', locale: 'es' });
     expect(b.map((x) => x.who)).toEqual(['Ignacio', 'Automático', 'Ignacio', '']);
     expect(b[0]!.time).toMatch(/23 nov/);
+  });
+
+  test('solo su lado (no llegan los tuyos): se detecta; fotos y documentos dicen qué son', async () => {
+    const { onlyTheirSide, leadSaid } = await import('./conversation');
+    expect(onlyTheirSide(events)).toBe(false);
+    const theirs = [events[0], ev('message_in', '2026-11-24T09:37:00Z', { channel: 'whatsapp', text: '[image]' }), ev('message_in', '2026-11-24T09:38:00Z', { channel: 'whatsapp', text: '[document]' })];
+    expect(onlyTheirSide(theirs)).toBe(true);
+    expect(leadSaid(theirs).map((x) => x.text)).toEqual(['solicitud de musica por parte de los clientes', '📷 (foto)', '📄 (documento)']);
+    expect(leadSaid([ev('message_in', '2026-11-24T09:39:00Z', { text: '[audio]' })])[0]!.text).toBe('🎤 (audio)');
   });
 
   test('para Apuntar: un chat copiado de WhatsApp que entiende igual que uno pegado', async () => {
